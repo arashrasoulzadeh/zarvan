@@ -1,5 +1,5 @@
 import 'dart:math' as math;
-import 'dart:ui' show Offset;
+import 'dart:ui' show Offset, Rect, Size;
 
 import 'package:zarvan_core/zarvan_core.dart';
 import 'package:zarvan_flutter/zarvan_flutter.dart' hide Text;
@@ -24,7 +24,6 @@ import '../fx/hit_feedback.dart';
 import '../fx/hit_feedback_system.dart';
 import '../fx/hit_stop.dart';
 import '../hud/upgrade_bar.dart';
-import '../hud/world_text.dart';
 import '../progress/gear.dart';
 import '../combat/combo_tracker.dart';
 import '../progress/hero_loadout.dart';
@@ -37,6 +36,7 @@ import '../fighters/fighter_meta.dart';
 import '../fx/combat_fx.dart';
 import '../hud/dialogue_caption.dart';
 import '../hud/hud_layout.dart';
+import '../hud/result_popup.dart';
 import '../hud/scene_hud.dart';
 import '../hud/sprite_health_bar.dart';
 import '../hud/wave_path.dart';
@@ -267,6 +267,7 @@ class WaveCombatScene extends Scene {
   static const _uiButtons = 'ui_buttons';
   static const _uiIcons = 'ui_icons';
   static const _uiPanel = 'ui_panel';
+  static const _uiCurrency = 'ui_currency';
 
   late final WavePlan plan = WavePlan.generate(
     level,
@@ -294,6 +295,13 @@ class WaveCombatScene extends Scene {
   EntityId? _enemyHudId;
   SpriteHealthBar? _heroBar;
   SpriteHealthBar? _enemyBar;
+  SpriteHealthBar? _ultBar;
+  ScreenChrome? _chrome;
+  ResultPopup? _popup;
+  ModalDialog? _info;
+  final Map<EntityId, ({EntityId bar, double drawn})> _overhead = {};
+  double _currencyCell = 32;
+  int _earnedCoins = 0;
   WavePath? _path;
   List<EntityId> _corpses = [];
   final List<EntityId> _squad = [];
@@ -498,6 +506,57 @@ class WaveCombatScene extends Scene {
         );
       }
     }
+    final chrome = config.ui.chrome;
+    if (chrome != null && config.ui.panelImage != null) {
+      _chrome = ScreenChrome.spawn(
+        world,
+        style: chrome,
+        fillAtlasId: _uiPanel,
+        fillSize: Size(
+          config.ui.upgradeLayout.frameSource.width -
+              2 * config.ui.upgradeLayout.frameInset,
+          config.ui.upgradeLayout.frameSource.height -
+              2 * config.ui.upgradeLayout.frameInset,
+        ),
+        iconAtlasId: config.ui.iconsStem == null ? null : _uiIcons,
+        iconCell: _iconCell,
+        currencyAtlasId: config.ui.currencyIconsStem == null
+            ? null
+            : _uiCurrency,
+        currencyCell: _currencyCell,
+      );
+      _syncChrome();
+    }
+    if (chrome != null && config.ui.panelImage != null) {
+      final layout = config.ui.upgradeLayout;
+      _info = ModalDialog.spawn(
+        world,
+        rect: const Rect.fromLTRB(24, 104, 156, 204),
+        z: 150,
+        frameAtlasId: _uiPanel,
+        frameSource: layout.frameSource,
+        frameInset: layout.frameInset,
+        frameCorner: layout.frameCorner,
+        dark: layout.darkDialog,
+        blurSigma: layout.blurSigma,
+        rtl: chrome.rtl,
+      )..addText(90, 156, config.strings.comingSoon, 7, 0xFFF6E7B4);
+    }
+    if (config.ui.popup != null && config.ui.panelImage != null) {
+      _popup = ResultPopup(
+        world,
+        frameAtlasId: _uiPanel,
+        scrollAtlasId: config.ui.captionBackdropImage == null
+            ? null
+            : _uiScroll,
+        currencyAtlasId: config.ui.currencyIconsStem == null
+            ? null
+            : _uiCurrency,
+        currencyCell: _currencyCell,
+        goldIcon: config.ui.chrome?.goldIcon ?? 0,
+        style: config.ui.popup!,
+      );
+    }
     waves.index = math.min(
       progress.checkpoint(config.checkpointEvery),
       plan.ids.length,
@@ -514,7 +573,7 @@ class WaveCombatScene extends Scene {
     _gearLabel = spawnWorldText(
       world,
       90,
-      74,
+      config.hud.gearY,
       config.strings.gearSummary(progress.gear.values),
       fontSize: 4.2,
       colorArgb: 0xFFCFE8FF,
@@ -588,7 +647,8 @@ class WaveCombatScene extends Scene {
         (ui.pathLineImage != null ? 1 : 0) +
         (ui.captionBackdropImage != null ? 1 : 0) +
         (ui.buttonImage != null ? 1 : 0) +
-        (ui.iconsStem != null ? 1 : 0);
+        (ui.iconsStem != null ? 1 : 0) +
+        (ui.currencyIconsStem != null ? 1 : 0);
     var done = 0;
     void loaded() => reportAssetProgress(++done, total);
     for (final layer in level.parallax) {
@@ -648,7 +708,7 @@ class WaveCombatScene extends Scene {
       final full = await SpriteAtlas.loadFullImageFromAssets(ui.panelImage!);
       registry.register(
         _uiPanel,
-        UpgradeBar.frameAtlasFor(full, ui.upgradeLayout.frameInset),
+        panelFrameAtlas(full, ui.upgradeLayout.frameInset),
       );
       loaded();
     }
@@ -665,6 +725,17 @@ class WaveCombatScene extends Scene {
       final icons = await loadSpriteSheet(ui.iconsStem!, measurePivots: false);
       registry.register(_uiIcons, icons.atlas);
       _iconCell = (await loadSheetSidecar(ui.iconsStem!)).cell.toDouble();
+      loaded();
+    }
+    if (ui.currencyIconsStem != null) {
+      final icons = await loadSpriteSheet(
+        ui.currencyIconsStem!,
+        measurePivots: false,
+      );
+      registry.register(_uiCurrency, icons.atlas);
+      _currencyCell = (await loadSheetSidecar(
+        ui.currencyIconsStem!,
+      )).cell.toDouble();
       loaded();
     }
     return registry;
@@ -716,8 +787,23 @@ class WaveCombatScene extends Scene {
         left: bar.x,
         top: bar.y,
         width: bar.width,
-        fill: 'xp',
+        height: bar.artHeight,
+        fill: bar.fillArt ?? 'xp',
       );
+      final ult = config.hud.ultBar;
+      if (ult != null) {
+        _ultBar = SpriteHealthBar.spawn(
+          world,
+          atlasId: _uiBars,
+          source: heroId!,
+          left: ult.x,
+          top: ult.y,
+          width: ult.width,
+          height: ult.artHeight,
+          fill: ult.fillArt ?? 'xp',
+          fractionOf: () => _combat.ultimate,
+        );
+      }
     } else {
       spawnHealthHudBar(
         world,
@@ -737,6 +823,7 @@ class WaveCombatScene extends Scene {
   /// walked up to its anchor. The previous one stays as a corpse that
   /// scrolls away with the ground.
   void _spawnEnemy(World world) {
+    _clearOverhead(world);
     _rewarded.clear();
     _lastDead = null;
     _focus = null;
@@ -755,7 +842,9 @@ class WaveCombatScene extends Scene {
 
     final meta = _meta[waves.currentId]!;
     final stats = meta.stats;
-    status = waves.isBoss ? config.bossLabel : waves.label;
+    status = waves.isBoss
+        ? config.bossLabel
+        : config.strings.waveLabel(waves.index + 1, waves.wave.length);
     final kind = waves.isBoss ? WaveKind.normal : plan.kinds[waves.index];
     final rw = level.randomWaves;
     final sizeKind = kind.sizeFactor(rw);
@@ -795,6 +884,7 @@ class WaveCombatScene extends Scene {
     _spawnExtras(world, meta, stats, kind, scale);
     _combat.focus = enemyId;
     _spawnEnemyBar(world);
+    _addOverhead(world, enemyId!, drawn);
     _path?.update(waves.index, config.ui.pathNodeSize);
     enemyLabel = switch (kind) {
       WaveKind.elite => config.strings.eliteName(meta.name),
@@ -814,8 +904,55 @@ class WaveCombatScene extends Scene {
     _syncHud(world);
   }
 
+  /// Puts a small plain health bar over [enemy] ([HudLayout.enemyOverhead]).
+  void _addOverhead(World world, EntityId enemy, double drawn) {
+    final style = config.hud.enemyOverhead;
+    if (style == null) return;
+    _overhead[enemy] = (
+      bar: spawnHealthHudBar(
+        world,
+        source: enemy,
+        x: -1000,
+        y: -1000,
+        width: style.width,
+        height: style.height,
+        fillColorArgb: style.fillColorArgb,
+        backgroundColorArgb: 0xB0000000,
+        screenSpace: false,
+        zIndex: 115,
+      ),
+      drawn: drawn,
+    );
+  }
+
+  /// Moves every overhead bar to its enemy's head and drops those of dead or
+  /// removed enemies.
+  void _followOverhead(World world) {
+    final style = config.hud.enemyOverhead;
+    if (style == null || _overhead.isEmpty) return;
+    for (final e in _overhead.entries.toList()) {
+      final pos = world.componentsOf<Position>().get(e.key);
+      if (pos == null || !_alive(world, e.key)) {
+        world.destroy(e.value.bar);
+        _overhead.remove(e.key);
+        continue;
+      }
+      world.componentsOf<Position>().get(e.value.bar)
+        ?..x = pos.x - style.width / 2
+        ..y = pos.y - e.value.drawn * config.hud.overheadLift - style.height;
+    }
+  }
+
+  void _clearOverhead(World world) {
+    for (final e in _overhead.values) {
+      world.destroy(e.bar);
+    }
+    _overhead.clear();
+  }
+
   /// The health bar of the enemy being fought (the focused one).
   void _spawnEnemyBar(World world) {
+    if (config.hud.enemyOverhead != null) return;
     if (_enemyHudId != null) world.destroy(_enemyHudId!);
     _enemyHudId = null;
     _enemyBar?.destroy();
@@ -829,7 +966,8 @@ class WaveCombatScene extends Scene {
         left: bar.x,
         top: bar.y,
         width: bar.width,
-        fill: waves.isBoss ? 'boss' : 'hp',
+        height: bar.artHeight,
+        fill: waves.isBoss ? 'boss' : (bar.fillArt ?? 'hp'),
       );
     } else {
       _enemyHudId = spawnHealthHudBar(
@@ -889,6 +1027,7 @@ class WaveCombatScene extends Scene {
         zIndex: 20 - i,
       );
       _squad.add(id);
+      _addOverhead(world, id, meta.stats.cell * s);
     }
   }
 
@@ -929,11 +1068,11 @@ class WaveCombatScene extends Scene {
     for (final id in _squad) {
       if (_alive(world, id) || !_rewarded.add(id)) continue;
       final front = id == _squad.first;
-      progress.addCoins(
-        front
-            ? _rewardCoins
-            : (_rewardCoins * (config.squad?.extraStrength ?? 1)).ceil(),
-      );
+      final reward = front
+          ? _rewardCoins
+          : (_rewardCoins * (config.squad?.extraStrength ?? 1)).ceil();
+      progress.addCoins(reward);
+      _earnedCoins += reward;
       progress.recordKill();
       if (front) _rollLoot(world);
       _upgradeBar?.sync(world);
@@ -981,16 +1120,53 @@ class WaveCombatScene extends Scene {
       ..y = pos.y - config.fighterSize * 0.55;
   }
 
-  void _syncHud(World world) =>
-      _hud.sync(world, status: status, enemy: enemyLabel);
+  void _syncHud(World world) => _hud.sync(
+    world,
+    status: status,
+    enemy: enemyLabel,
+    ultimate: config.strings.ultimateLabel(_combat.ultimate),
+  );
+
+  /// Whether a tab's dialog is open; the engine has paused the world and
+  /// blurred the fight, and the scene's own logic stands still too.
+  bool get _modalOpen =>
+      (_upgradeBar?.dialogOpen ?? false) || (_info?.isOpen ?? false);
+
+  void _syncChrome() => _chrome?.sync(
+    gold: config.strings.localize(_compact(progress.coins)),
+    gems: config.strings.localize('${progress.stars}'),
+    title: level.name,
+  );
+
+  /// 12400 -> `12.4K`, so the currency bar never outgrows its slot.
+  static String _compact(int n) =>
+      n >= 10000 ? '${(n / 1000).toStringAsFixed(n >= 100000 ? 0 : 1)}K' : '$n';
 
   void _finish(World world, String message) {
     finished = true;
-    status = message;
+    // The popup carries the message; the wave label stays as it was.
+    if (_popup == null || !(_heroFell || _heroWon)) status = message;
     _caption.hide();
     _syncHud(world);
     final bar = _upgradeBar;
-    if (config.showSummary && _heroFell) {
+    final popup = _popup;
+    if (popup != null && (_heroFell || _heroWon)) {
+      popup.show(
+        title: _heroWon ? config.strings.victory : config.strings.defeat,
+        message: message,
+        detail: config.showSummary
+            ? config.strings.summary(
+                wave: waves.index + 1,
+                killCount: progress.kills,
+                bestWave: progress.bestWave,
+              )
+            : null,
+        reward: _heroWon || _earnedCoins > 0
+            ? config.strings.localize('+${_withCommas(_earnedCoins)}')
+            : null,
+      );
+      _syncChrome();
+    } else if (config.showSummary && _heroFell) {
       _caption.show(
         world,
         config.strings.summary(
@@ -1007,6 +1183,11 @@ class WaveCombatScene extends Scene {
     }
     if (_heroWon && config.prestigeBonusPerStar > 0) bar.showAscend(world);
   }
+
+  static String _withCommas(int n) => n.toString().replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+    (m) => ',',
+  );
 
   /// Rolls the loot for the enemy just killed and wears it if it is better.
   void _rollLoot(World world) {
@@ -1052,12 +1233,16 @@ class WaveCombatScene extends Scene {
   @override
   void update(double dt, World world) {
     _upgradeBar?.update(world, dt);
-    if (_upgradeBar?.dialogOpen ?? false) return;
+    _popup?.update(dt);
+    _info?.update(dt);
+    if (_modalOpen) return;
     _hitStop?.update(dt);
     _skills?.tick(dt);
     _barSync += dt;
     if (_barSync >= 0.2) {
       _barSync = 0;
+      _syncChrome();
+      _syncHud(world);
       final skills = _skills;
       if (skills != null) {
         _upgradeBar?.syncSkills(
@@ -1070,7 +1255,9 @@ class WaveCombatScene extends Scene {
     _updateConditionLabel(world);
     _caption.update(world, dt);
     _heroBar?.sync();
+    _followOverhead(world);
     _enemyBar?.sync();
+    _ultBar?.sync();
     if (finished) return;
     final h = heroId;
     final e = enemyId;
@@ -1127,6 +1314,13 @@ class WaveCombatScene extends Scene {
   @override
   void handleTap(World world, SceneController scenes, Offset worldPosition) {
     final bar = _upgradeBar;
+    final tab = _chrome?.hit(worldPosition);
+    if (tab != null) return _onTab(world, bar, tab);
+    final info = _info;
+    if (info != null && info.isOpen) {
+      if (info.closesOn(worldPosition)) _closeTabs(bar);
+      return;
+    }
     final pressed = bar?.hit(worldPosition);
     if (pressed == UpgradeBar.retryAction) return _restart(scenes);
     if (pressed == UpgradeBar.ascendAction) {
@@ -1135,7 +1329,7 @@ class WaveCombatScene extends Scene {
     }
     if (pressed == UpgradeBar.menuAction) {
       bar!.toggleMenu(world);
-      world.timeScale = bar.dialogOpen ? 0 : 1;
+      if (!bar.dialogOpen) _chrome?.setActive(-1);
       return;
     }
     if (pressed != null && pressed.startsWith(UpgradeBar.skillPrefix)) {
@@ -1165,7 +1359,7 @@ class WaveCombatScene extends Scene {
       }
       return;
     }
-    if (bar?.dialogOpen ?? false) return;
+    if (_modalOpen) return;
     if (!finished) {
       if (_focusEnemyAt(world, worldPosition)) return;
       if (config.timing != null) _combat.tap(world);
@@ -1175,6 +1369,36 @@ class WaveCombatScene extends Scene {
     // replays.
     if (bar != null) return;
     _restart(scenes);
+  }
+
+  /// Closes whatever tab dialog is open and lights the Battle tab again.
+  void _closeTabs(UpgradeBar? bar) {
+    bar?.closeMenu();
+    _info?.close();
+    _chrome?.setActive(-1);
+  }
+
+  /// A tap on the tab bar: Battle closes any dialog; Hero, Upgrade and Skills
+  /// open the upgrades dialog; the tabs with no screen yet open a "coming
+  /// soon" dialog. Every dialog blurs and pauses the fight (`ModalDialog`).
+  void _onTab(World world, UpgradeBar? bar, String tab) {
+    final chrome = _chrome!;
+    if (finished) return;
+    switch (tab) {
+      case 'battle':
+        _closeTabs(bar);
+      case 'hero' || 'upgrade' || 'skills':
+        if (bar == null) return;
+        _info?.close();
+        if (!bar.dialogOpen) bar.toggleMenu(world);
+        chrome.setActive(chrome.indexOf(tab));
+      default:
+        bar?.closeMenu();
+        _info
+          ?..setTitle(chrome.style.tabs[chrome.indexOf(tab)].label)
+          ..open();
+        chrome.setActive(chrome.indexOf(tab));
+    }
   }
 
   void _restart(SceneController scenes) => (_scenes ?? scenes).loadScene(

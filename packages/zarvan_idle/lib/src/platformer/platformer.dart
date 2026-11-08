@@ -22,6 +22,7 @@ export 'fx/hit_feedback.dart';
 export 'fx/hit_feedback_system.dart';
 export 'fx/hit_stop.dart';
 export 'hud/dialogue_caption.dart';
+export 'hud/result_popup.dart';
 export 'hud/sprite_health_bar.dart';
 export 'hud/wave_path.dart';
 export 'hud/wave_ui_art.dart';

@@ -1,3 +1,5 @@
+import 'package:zarvan_flutter/zarvan_flutter.dart' show TextAlignment;
+
 /// One label of the wave-combat HUD. All positions and sizes are world units
 /// (the text scales with the window like the rest of the scene).
 class HudTextStyle {
@@ -8,9 +10,10 @@ class HudTextStyle {
     this.colorArgb = 0xFFFFFFFF,
     this.maxWidth = 80,
     this.rtl,
+    this.align = TextAlignment.center,
   });
 
-  /// Centre of the label.
+  /// Centre of the label, or its left/right edge for a non-centred [align].
   final double x;
   final double y;
   final double fontSize;
@@ -19,6 +22,9 @@ class HudTextStyle {
 
   /// Forces right-to-left layout (`Text.rtl`); null follows the locale.
   final bool? rtl;
+
+  /// Horizontal alignment of the text about [x].
+  final TextAlignment align;
 }
 
 /// One health bar of the wave-combat HUD (world units). With generated bar
@@ -31,6 +37,8 @@ class HudBarStyle {
     this.width = 80,
     this.height = 6,
     required this.fillColorArgb,
+    this.artHeight,
+    this.fillArt,
   });
 
   /// Top-left corner.
@@ -39,6 +47,14 @@ class HudBarStyle {
   final double width;
   final double height;
   final int fillColorArgb;
+
+  /// With bar art, stretches the frame to this height (world units) instead of
+  /// keeping the sheet's aspect ratio; null keeps the aspect.
+  final double? artHeight;
+
+  /// With bar art, the fill sprite to use (`hp`, `xp` or `boss`); null picks
+  /// the default for the bar (the enemy bar turns `boss` on the boss wave).
+  final String? fillArt;
 }
 
 /// Where the wave-combat HUD sits (a 180x320 portrait world): the hero's bar
@@ -70,6 +86,11 @@ class HudLayout {
     this.heroBar = const HudBarStyle(x: 5, y: 3, fillColorArgb: 0xFF2AA198),
     this.enemyBar = const HudBarStyle(x: 95, y: 3, fillColorArgb: 0xFFE0304C),
     this.bossBarColorArgb = 0xFFE65100,
+    this.ultBar,
+    this.ultText,
+    this.gearY = 74,
+    this.enemyOverhead,
+    this.overheadLift = 0.32,
   });
 
   final HudTextStyle status;
@@ -80,6 +101,23 @@ class HudLayout {
   final HudTextStyle description;
   final HudBarStyle heroBar;
   final HudBarStyle enemyBar;
+
+  /// The hero's ultimate meter: a second bar under the hero's and a label
+  /// ("ULT 60%") under that. Both null (the default) draw neither.
+  final HudBarStyle? ultBar;
+  final HudTextStyle? ultText;
+
+  /// A small plain bar floating above every living enemy (only [HudBarStyle]'s
+  /// `width`, `height` and `fillColorArgb` count; the position follows the
+  /// enemy). When set it replaces the single [enemyBar] at the top.
+  final HudBarStyle? enemyOverhead;
+
+  /// How far above an enemy's centre its overhead bar floats, as a fraction of
+  /// the enemy's drawn size (sprite cells carry empty padding above the head).
+  final double overheadLift;
+
+  /// Height of the worn-gear summary line.
+  final double gearY;
 
   /// Fill of the enemy bar during the boss encounter (plain-bar fallback).
   final int bossBarColorArgb;

@@ -125,7 +125,11 @@ void main() {
       layout: const UpgradeLayout(menu: true, y: 190, skillY: 140),
       progress: HeroProgress(),
     );
-    expect(_spritesIn(w, 'frame'), 10, reason: 'nine pieces and the veil');
+    expect(
+      _spritesIn(w, 'frame'),
+      11,
+      reason: 'nine pieces, the veil and the close button',
+    );
     expect(bar.dialogOpen, isFalse);
     expect(bar.hit(const Offset(90, 140)), isNull, reason: 'closed');
     bar.toggleMenu(w);
@@ -314,5 +318,91 @@ void main() {
     bar.syncSkills(w, SkillCooldowns(const [ult]), ultimate: 1);
     expect(texts(), isNot(contains('50%')));
     expect(texts(), contains(const WaveStrings().ready));
+  });
+
+  group('dock layout', () {
+    const skills = [
+      HeroSkill(
+        id: 'strike',
+        label: 'Strike',
+        kind: SkillKind.strike,
+        power: 2,
+        cooldown: 5,
+        icon: 0,
+      ),
+    ];
+    const layout = UpgradeLayout(
+      menu: true,
+      menuButton: false,
+      showCoins: false,
+      skillsOnDock: true,
+      darkDialog: true,
+      skillY: 250,
+    );
+
+    test('dock skills tap while the dialog is closed; no menu button', () {
+      final w = _world();
+      final bar = UpgradeBar.spawn(
+        w,
+        atlasId: 'btn',
+        iconAtlasId: 'icons',
+        frameAtlasId: 'panel',
+        upgrades: upgrades,
+        skills: skills,
+        layout: layout,
+        progress: HeroProgress(),
+      );
+      expect(bar.hit(const Offset(90, 250)), 'skill:strike');
+      expect(bar.hit(const Offset(90, 306)), isNull, reason: 'no menu button');
+      bar.toggleMenu(w);
+      expect(bar.dialogOpen, isTrue, reason: 'opens without a button');
+      expect(
+        bar.hit(const Offset(90, 250)),
+        UpgradeBar.menuAction,
+        reason: 'outside the dialog while open closes it',
+      );
+    });
+
+    test('no coins label and a bare dock icon (no button sprite)', () {
+      final w = _world();
+      UpgradeBar.spawn(
+        w,
+        atlasId: 'btn',
+        iconAtlasId: 'icons',
+        upgrades: const [],
+        skills: skills,
+        layout: layout,
+        progress: HeroProgress(coins: 77),
+      );
+      expect(_spritesIn(w, 'btn'), 0, reason: 'the skill is a bare icon');
+      expect(_spritesIn(w, 'icons'), 1);
+      final texts = w.componentsOf<eng.Text>();
+      for (var i = 0; i < texts.length; i++) {
+        expect(texts.denseAt(i).text, isNot(contains('77')));
+      }
+    });
+
+    test('a cooling-down dock skill dims its icon and shows the seconds', () {
+      final w = _world();
+      final bar = UpgradeBar.spawn(
+        w,
+        atlasId: 'btn',
+        iconAtlasId: 'icons',
+        upgrades: const [],
+        skills: skills,
+        layout: layout,
+        progress: HeroProgress(),
+      );
+      final cooldowns = SkillCooldowns(skills)..use(skills.first);
+      bar.syncSkills(w, cooldowns);
+      final sprites = w.componentsOf<eng.Sprite>();
+      final icon = [
+        for (var i = 0; i < sprites.length; i++)
+          if (sprites.denseAt(i).atlasId == 'icons') sprites.denseAt(i),
+      ].single;
+      expect(icon.tintArgb, isNotNull);
+      bar.syncSkills(w, SkillCooldowns(skills));
+      expect(icon.tintArgb, isNull);
+    });
   });
 }

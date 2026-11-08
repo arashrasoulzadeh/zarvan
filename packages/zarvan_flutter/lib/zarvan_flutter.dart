@@ -82,3 +82,7 @@ export 'src/ui/dialogue_box_scene.dart';
 export 'src/ui/credits_scene.dart';
 export 'src/ui/settings_menu.dart';
 export 'src/rendering/video_player.dart';
+export 'src/ui/modal_dialog.dart';
+export 'src/ui/panel_frame.dart';
+export 'src/ui/screen_chrome.dart';
+export 'src/ui/world_text.dart';

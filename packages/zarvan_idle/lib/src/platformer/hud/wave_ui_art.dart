@@ -1,3 +1,6 @@
+import 'result_popup.dart';
+import 'package:zarvan_flutter/zarvan_flutter.dart' show ScreenChromeStyle;
+
 import 'upgrade_bar.dart';
 
 /// The generated UI art a [WaveCombatScene] can dress itself in. Every part
@@ -18,6 +21,9 @@ class WaveUiArt {
     this.pathNodeSize = 7.4,
     this.captionBackdropWidth = 142,
     this.captionBackdropHeight = 62,
+    this.chrome,
+    this.currencyIconsStem,
+    this.popup,
   });
 
   /// `<stem>.png` is the `ui_bars` sheet (see `BarsArt`).
@@ -48,6 +54,19 @@ class WaveUiArt {
   /// `UpgradeLayout.frameInset` pixels is kept, the middle stretches. Draws
   /// the upgrades dialog (`UpgradeLayout.menu`); without it the dialog is bare.
   final String? panelImage;
+
+  /// The currency bar, skill dock and tab bar around the fight; null draws
+  /// none. Needs [panelImage] (its dark blocks are tinted pieces of it) and
+  /// [iconsStem] for the tab icons.
+  final ScreenChromeStyle? chrome;
+
+  /// `<stem>.png` + `.json` is the strip of currency icons (coin, gem...) the
+  /// chrome and the result popup draw.
+  final String? currencyIconsStem;
+
+  /// The dark end-of-run popup; null keeps the plain message and retry button.
+  /// Needs [panelImage].
+  final ResultPopupStyle? popup;
 
   /// Path height, left/right inset and node size, in world units.
   final double pathY;

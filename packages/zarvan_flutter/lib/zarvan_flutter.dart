@@ -86,3 +86,4 @@ export 'src/ui/modal_dialog.dart';
 export 'src/ui/panel_frame.dart';
 export 'src/ui/screen_chrome.dart';
 export 'src/ui/world_text.dart';
+export 'src/rendering/disintegration.dart';

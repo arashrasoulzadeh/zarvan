@@ -60,6 +60,7 @@ class WaveCombatConfig {
     this.hitBurst = 6,
     this.fighterSize = 80,
     this.enemyScale = 1,
+    this.disintegration,
     this.meleeLunge = false,
     this.fightDelaySeconds = 0,
     this.walkSpeed = 70,
@@ -121,6 +122,11 @@ class WaveCombatConfig {
   /// Multiplies every enemy's drawn size relative to the hero (1 = same
   /// size); bosses and elites keep their usual proportion on top of it.
   final double enemyScale;
+
+  /// When set, an enemy's body comes apart into floating dust
+  /// ([DisintegrationSystem]) [DisintegrationStyle.delay] seconds after it
+  /// dies, each enemy of a group on its own; null leaves the plain death clip.
+  final DisintegrationStyle? disintegration;
 
   /// Melee enemies run up to the hero as they wind up an attack and walk back
   /// after it (see `LungeSystem`); enemies with a volley power stay put. Needs
@@ -299,6 +305,9 @@ class WaveCombatScene extends Scene {
   ScreenChrome? _chrome;
   ResultPopup? _popup;
   ModalDialog? _info;
+  DisintegrationSystem? _dust;
+  AtlasRegistry? _registry;
+  final Map<EntityId, double> _dying = {};
   final Map<EntityId, ({EntityId bar, double drawn})> _overhead = {};
   double _currencyCell = 32;
   int _earnedCoins = 0;
@@ -363,6 +372,10 @@ class WaveCombatScene extends Scene {
       ..addSystem(DamageNumberSystem())
       ..addSystem(HitFeedbackSystem());
     if (config.meleeLunge) world.addSystem(LungeSystem());
+    final dust = config.disintegration;
+    if (dust != null) {
+      world.addSystem(_dust = DisintegrationSystem(style: dust));
+    }
 
     _camera = Camera(x: world.width / 2, y: world.height / 2);
     // Shake / particle cues authored in the level JSON fire from animation
@@ -400,6 +413,15 @@ class WaveCombatScene extends Scene {
         _camera,
         hitStop: _hitStop,
         warningStyle: numbers ?? const DamageNumberStyle(),
+        // With the panel art loaded the red flash is a game-layer sprite, so it
+        // never covers the HUD, tabs or dialogs.
+        flashAtlasId: config.ui.panelImage == null ? null : _uiPanel,
+        flashRegionSize: Size(
+          config.ui.upgradeLayout.frameSource.width -
+              2 * config.ui.upgradeLayout.frameInset,
+          config.ui.upgradeLayout.frameSource.height -
+              2 * config.ui.upgradeLayout.frameInset,
+        ),
       );
     }
     _combat.windupSeconds = config.windupSeconds;
@@ -636,7 +658,7 @@ class WaveCombatScene extends Scene {
 
   @override
   Future<AtlasRegistry> loadAssets() async {
-    final registry = AtlasRegistry();
+    final registry = _registry = AtlasRegistry();
     final ui = config.ui;
     final total =
         level.parallax.length +
@@ -664,6 +686,9 @@ class WaveCombatScene extends Scene {
       for (final state in meta.frames.keys) {
         final sheet = await loadSpriteSheet(meta.stem(state));
         registry.register(meta.atlasId(state), sheet.atlas);
+        if (config.disintegration != null && state == 'death') {
+          await DisintegrationSystem.prepare(sheet.atlas);
+        }
         _pivots.register(
           meta.atlasId(state),
           sheet.pivots,
@@ -824,6 +849,7 @@ class WaveCombatScene extends Scene {
   /// scrolls away with the ground.
   void _spawnEnemy(World world) {
     _clearOverhead(world);
+    _dying.clear();
     _rewarded.clear();
     _lastDead = null;
     _focus = null;
@@ -940,6 +966,25 @@ class WaveCombatScene extends Scene {
       world.componentsOf<Position>().get(e.value.bar)
         ?..x = pos.x - style.width / 2
         ..y = pos.y - e.value.drawn * config.hud.overheadLift - style.height;
+    }
+  }
+
+  /// Starts the dust of each enemy whose short post-death delay has run out.
+  void _tickDying(World world, double dt) {
+    final dust = _dust;
+    if (dust == null || _dying.isEmpty) return;
+    for (final id in _dying.keys.toList()) {
+      final left = _dying[id]! - dt;
+      if (left > 0) {
+        _dying[id] = left;
+        continue;
+      }
+      _dying.remove(id);
+      final sprite = world.componentsOf<Sprite>().get(id);
+      final atlas = sprite == null
+          ? null
+          : _registry?.tryResolve(sprite.atlasId);
+      if (atlas != null) dust.start(world, id, atlas);
     }
   }
 
@@ -1077,6 +1122,8 @@ class WaveCombatScene extends Scene {
       if (front) _rollLoot(world);
       _upgradeBar?.sync(world);
       _lastDead = id;
+      final style = config.disintegration;
+      if (style != null) _dying[id] = style.delay;
     }
     final living = [
       for (final id in _squad)
@@ -1256,6 +1303,7 @@ class WaveCombatScene extends Scene {
     _caption.update(world, dt);
     _heroBar?.sync();
     _followOverhead(world);
+    _tickDying(world, dt);
     _enemyBar?.sync();
     _ultBar?.sync();
     if (finished) return;
@@ -1287,6 +1335,14 @@ class WaveCombatScene extends Scene {
     if (_squad.any((id) => _alive(world, id))) return; // the fight goes on
     // The description stays up for the whole encounter and goes with the enemy.
     _caption.hide();
+    // The dust of a fallen body plays out before the next enemy walks in, and
+    // after the boss before the victory popup pauses the world.
+    final dust = _dust;
+    if (dust != null &&
+        (_dying.isNotEmpty ||
+            (waves.isBoss ? dust.isBusy : dust.activeCount > 0))) {
+      return;
+    }
     if (!_deathPlayed(world, _lastDead ?? e, dt)) return;
     if (waves.isBoss) {
       _heroWon = true;

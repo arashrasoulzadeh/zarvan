@@ -60,8 +60,11 @@ class HitFeedbackSystem extends System {
       f.age = math.min(f.age + dt, f.life);
       final alpha = f.peak * (1 - f.age / f.life);
       final tint = tints.get(id);
+      final argb = (f.rgb & 0xFFFFFF) | ((alpha * 255).round() << 24);
       if (tint != null) {
-        tint.colorArgb = (f.rgb & 0xFFFFFF) | ((alpha * 255).round() << 24);
+        tint.colorArgb = argb;
+      } else {
+        sprites.get(id)?.tintArgb = argb;
       }
     }
   }

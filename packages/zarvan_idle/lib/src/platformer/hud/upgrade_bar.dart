@@ -45,6 +45,8 @@ class UpgradeLayout {
     this.resultLift = 0,
     this.darkDialog = false,
     this.rtl = false,
+    this.dockColumnX,
+    this.dockStep = 28,
   });
 
   /// Centre line of the upgrade buttons, and the span they spread across.
@@ -130,6 +132,13 @@ class UpgradeLayout {
   /// by a tint) instead of the parchment look.
   final bool darkDialog;
 
+  /// With [skillsOnDock], set this to stack the skill icons in a column at this
+  /// x (world units) instead of a row: [skillY] is the first icon's y and
+  /// [dockStep] the gap to the next. A side strip of small icons rather than a
+  /// panel across the screen.
+  final double? dockColumnX;
+  final double dockStep;
+
   /// Mirrors the dialog's rows (icon and text on the right, buy button on the
   /// left, close button top-left) for a right-to-left language.
   final bool rtl;
@@ -206,12 +215,15 @@ class UpgradeBar {
     }
     for (var i = 0; i < skills.length; i++) {
       final cx = layout.left + span * (i + 0.5) / skills.length;
+      final column = layout.dockColumnX;
       final b = _dockSkills
           ? _spawnBare(
               world,
-              cx,
-              layout.skillY,
-              span / skills.length,
+              column ?? cx,
+              column == null
+                  ? layout.skillY
+                  : layout.skillY + i * layout.dockStep,
+              column == null ? span / skills.length : layout.dockIconSize * 1.5,
               skills[i].icon,
             )
           : _spawnButton(

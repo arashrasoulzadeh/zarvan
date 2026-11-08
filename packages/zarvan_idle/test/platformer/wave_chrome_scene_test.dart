@@ -87,6 +87,7 @@ WaveCombatConfig _config({bool popup = true, bool overhead = false}) =>
       bossCoins: 50,
       deathHoldSeconds: 0.1,
       waveSeed: 1,
+      hitFeedback: HitFeedback(),
       fightDelaySeconds: 0,
       hud: HudLayout(
         enemyOverhead: overhead
@@ -242,4 +243,23 @@ void main() {
       expect(small(r.world), isEmpty);
     });
   });
+
+  test(
+    'the red hit flash is a game-layer sprite, not a screen overlay',
+    () async {
+      final r = await _start(_Scene(level: _level(), config: _config()));
+      expect(
+        r.world.componentsOf<eng.ScreenTint>().length,
+        0,
+        reason: 'a ScreenTint would draw over the HUD, tabs and dialogs',
+      );
+      final sprites = r.world.componentsOf<eng.Sprite>();
+      final flash = [
+        for (var i = 0; i < sprites.length; i++)
+          if (sprites.denseAt(i).zIndex == 95) sprites.denseAt(i),
+      ];
+      expect(flash, hasLength(1));
+      expect(flash.single.zIndex, lessThan(100), reason: 'below the HUD');
+    },
+  );
 }

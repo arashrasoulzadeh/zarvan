@@ -1,3 +1,5 @@
+import 'dart:ui' show Size;
+
 import 'package:zarvan_core/zarvan_core.dart';
 import 'package:zarvan_flutter/zarvan_flutter.dart'
     show Camera, ScreenTint, Sprite;
@@ -69,9 +71,33 @@ void installHitFeedback(
   Camera camera, {
   HitStop? hitStop,
   DamageNumberStyle warningStyle = const DamageNumberStyle(),
+  String? flashAtlasId,
+  Size flashRegionSize = const Size(48, 27),
+  int flashZIndex = 95,
 }) {
   final flashEntity = world.spawn();
-  world.componentsOf<ScreenTint>().set(flashEntity, ScreenTint(0));
+  if (flashAtlasId == null) {
+    // A full-screen overlay: it lies over everything, UI included.
+    world.componentsOf<ScreenTint>().set(flashEntity, ScreenTint(0));
+  } else {
+    // A flat sprite in the game layer instead: it tints the fight but stays
+    // below the HUD, tab bar and dialogs (which draw at higher z).
+    world.componentsOf<Position>().set(
+      flashEntity,
+      Position(world.width / 2, world.height / 2),
+    );
+    world.componentsOf<Sprite>().set(
+      flashEntity,
+      Sprite(
+        flashAtlasId,
+        'f11',
+        scaleX: (world.width + 60) / flashRegionSize.width,
+        scaleY: (world.height + 60) / flashRegionSize.height,
+        zIndex: flashZIndex,
+        tintArgb: 0,
+      ),
+    );
+  }
   world.componentsOf<ScreenFlash>().set(
     flashEntity,
     ScreenFlash(

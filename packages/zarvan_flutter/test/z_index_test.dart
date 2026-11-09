@@ -155,7 +155,10 @@ void main() {
       // engine's original fixed order.
       final maskSprite = world.spawn();
       world.componentsOf<Position>().set(maskSprite, Position(10, 10));
-      world.componentsOf<Sprite>().set(maskSprite, Sprite('atlas', 'r', zIndex: -1));
+      world.componentsOf<Sprite>().set(
+        maskSprite,
+        Sprite('atlas', 'r', zIndex: -1),
+      );
 
       await tester.pumpWidget(
         MaterialApp(

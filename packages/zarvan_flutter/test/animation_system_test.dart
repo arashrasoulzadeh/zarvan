@@ -119,7 +119,10 @@ void main() {
   test('offsetX/offsetY default to 0 for a clip with no frameOffsets', () {
     final world = buildWorld();
     final id = world.spawn();
-    world.componentsOf<Sprite>().set(id, Sprite('atlas', 'frame0', offsetY: 99));
+    world.componentsOf<Sprite>().set(
+      id,
+      Sprite('atlas', 'frame0', offsetY: 99),
+    );
     world.componentsOf<AnimationState>().set(
       id,
       AnimationState(

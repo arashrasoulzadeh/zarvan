@@ -159,13 +159,16 @@ void main() {
     },
   );
 
-  test('ViewportConfig.fittingWorld matches the world aspect and scales it', () {
-    const c = ViewportConfig.fittingWorld(180, 320);
-    expect(c.targetAspectRatio, 180 / 320);
-    expect(c.fitWorld, isTrue);
-    expect(c.avoidSystemUi, isFalse);
-    expect(c.fit, ViewportFit.contain);
-  });
+  test(
+    'ViewportConfig.fittingWorld matches the world aspect and scales it',
+    () {
+      const c = ViewportConfig.fittingWorld(180, 320);
+      expect(c.targetAspectRatio, 180 / 320);
+      expect(c.fitWorld, isTrue);
+      expect(c.avoidSystemUi, isFalse);
+      expect(c.fit, ViewportFit.contain);
+    },
+  );
 
   testWidgets(
     'ViewportConfig.fitWorld zooms the camera so the world fills the drawn area',

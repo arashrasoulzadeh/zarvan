@@ -29,7 +29,8 @@ void main() {
       expect(c.handleTap(w, const Offset(200, 200)), GridTapResult.ignored);
       expect(c.handleTap(w, const Offset(48, 48)), GridTapResult.selected);
       expect(c.handleTap(w, const Offset(130, 40)), GridTapResult.commanded);
-      final order = w.componentsOf<OrderQueue>().get(a)!.orders.single as MoveOrder;
+      final order =
+          w.componentsOf<OrderQueue>().get(a)!.orders.single as MoveOrder;
       expect((order.col, order.row), (4, 1));
     },
   );

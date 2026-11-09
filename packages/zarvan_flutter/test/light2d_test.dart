@@ -221,7 +221,10 @@ void main() {
       world.addSystem(LightFlickerSystem());
 
       final id = world.spawn();
-      world.componentsOf<Light2D>().set(id, Light2D(radius: 100, intensity: 0.8));
+      world.componentsOf<Light2D>().set(
+        id,
+        Light2D(radius: 100, intensity: 0.8),
+      );
 
       world.step(0.5);
 
@@ -1900,7 +1903,10 @@ void main() {
               // into three. Positioned off-screen so its reveal never
               // reaches the sprite either.
               final light = world.spawn();
-              world.componentsOf<Position>().set(light, Position(-10000, -10000));
+              world.componentsOf<Position>().set(
+                light,
+                Position(-10000, -10000),
+              );
               world.componentsOf<Light2D>().set(
                 light,
                 Light2D(radius: 10, intensity: 1, minZIndex: 0, maxZIndex: 0),

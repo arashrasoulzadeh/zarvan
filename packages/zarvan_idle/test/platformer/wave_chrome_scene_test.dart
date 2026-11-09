@@ -226,6 +226,16 @@ void main() {
         final pos = r.world.componentsOf<Position>();
         r.run(0.5);
         final bar = small(r.world).single;
+        expect(pos.get(bar)!.y, lessThan(0), reason: 'hidden until it is hit');
+        final health = r.world.componentsOf<Health>().get(enemy)!
+          ..max = 1e9
+          ..current = 1e9;
+        r.run(0.05); // the bar takes the new health as its baseline
+        health.current -= 1;
+        r.run(0.1);
+        expect(pos.get(bar)!.y, greaterThan(0), reason: 'shown once hurt');
+        health.current -= 1;
+        r.run(0.1);
         expect(
           pos.get(bar)!.x,
           closeTo(pos.get(enemy)!.x - 10, 4),
@@ -260,6 +270,41 @@ void main() {
       ];
       expect(flash, hasLength(1));
       expect(flash.single.zIndex, lessThan(100), reason: 'below the HUD');
+    },
+  );
+
+  test(
+    'status badges show one badge per active condition, with seconds',
+    () async {
+      final w = World(width: 180, height: 320);
+      registerCoreComponents(w);
+      eng.registerFlutterComponents(w);
+      final badges = StatusBadges.spawn(
+        w,
+        style: const StatusBadgeStyle(x: 20, y: 100),
+        fillAtlasId: 'panel',
+      );
+      final sprites = w.componentsOf<eng.Sprite>();
+      int onScreen() => [
+        for (var i = 0; i < sprites.length; i++)
+          if (w.componentsOf<Position>().get(sprites.entityAt(i))!.y > 0) 1,
+      ].length;
+      badges.sync(w, null);
+      expect(onScreen(), 0);
+      badges.sync(
+        w,
+        Conditions([
+          StatusEffect(kind: ConditionKind.poison, remaining: 3.2, stacks: 2),
+          StatusEffect(kind: ConditionKind.bleed, remaining: 1.1),
+        ]),
+      );
+      expect(onScreen(), 2);
+      final texts = w.componentsOf<eng.Text>();
+      expect([
+        for (var i = 0; i < texts.length; i++) texts.denseAt(i).text,
+      ], containsAll(['2', '4×2']));
+      badges.sync(w, Conditions([]));
+      expect(onScreen(), 0, reason: 'ended conditions leave the screen');
     },
   );
 }

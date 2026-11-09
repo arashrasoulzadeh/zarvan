@@ -28,7 +28,10 @@ void main() {
     world.componentsOf<HitFlash>().set(id, HitFlash(remaining: 0.1));
 
     world.step(0.05);
-    expect(world.componentsOf<Sprite>().get(id)!.tintArgb, kDefaultHitFlashTint);
+    expect(
+      world.componentsOf<Sprite>().get(id)!.tintArgb,
+      kDefaultHitFlashTint,
+    );
     expect(world.componentsOf<HitFlash>().get(id)!.remaining, greaterThan(0));
 
     world.step(0.1);

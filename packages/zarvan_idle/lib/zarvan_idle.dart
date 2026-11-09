@@ -15,3 +15,6 @@ export 'src/http_cloud_save_store.dart';
 export 'src/session.dart';
 export 'src/ui/idle_lifecycle.dart';
 export 'src/platformer/platformer.dart';
+export 'src/menu/home_scene.dart';
+export 'src/menu/level_select_scene.dart';
+export 'src/menu/menu_button.dart';

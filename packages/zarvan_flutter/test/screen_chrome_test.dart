@@ -44,6 +44,18 @@ void main() {
       expect(chrome.hit(const Offset(15, 200)), isNull, reason: 'not the bar');
     });
 
+    test('safeInset keeps the tabs out of the cropped side margins', () {
+      final chrome = ScreenChrome.spawn(
+        _world(),
+        style: const ScreenChromeStyle(tabs: _tabs, safeInset: 20),
+        fillAtlasId: 'panel',
+      );
+      expect(chrome.hit(const Offset(10, 305)), isNull, reason: 'cropped edge');
+      expect(chrome.hit(const Offset(170, 305)), isNull);
+      expect(chrome.hit(const Offset(30, 305)), 'battle');
+      expect(chrome.hit(const Offset(150, 305)), 'shop');
+    });
+
     test('right to left mirrors the tab order', () {
       final chrome = _spawn(_world(), rtl: true);
       expect(chrome.hit(const Offset(165, 305)), 'battle');

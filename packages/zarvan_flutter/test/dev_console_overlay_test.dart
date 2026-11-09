@@ -7,7 +7,9 @@ void main() {
   testWidgets('typing a command runs it and shows the output', (t) async {
     final console = DevConsole(worldOf: () => null);
     await t.pumpWidget(
-      MaterialApp(home: Scaffold(body: DevConsoleOverlay(console: console))),
+      MaterialApp(
+        home: Scaffold(body: DevConsoleOverlay(console: console)),
+      ),
     );
     await t.enterText(find.byType(TextField), 'echo hello');
     await t.testTextInput.receiveAction(TextInputAction.done);
@@ -19,7 +21,9 @@ void main() {
   testWidgets('the complete button fills the only match', (t) async {
     final console = DevConsole(worldOf: () => null);
     await t.pumpWidget(
-      MaterialApp(home: Scaffold(body: DevConsoleOverlay(console: console))),
+      MaterialApp(
+        home: Scaffold(body: DevConsoleOverlay(console: console)),
+      ),
     );
     await t.enterText(find.byType(TextField), 'hitst');
     await t.tap(find.byIcon(Icons.keyboard_tab));

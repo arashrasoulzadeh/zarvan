@@ -24,6 +24,8 @@ class ScreenChromeStyle {
     required this.tabs,
     this.rtl = false,
     this.inset = 5,
+    this.safeInset = 0,
+    this.topPadding = 0,
     this.topHeight = 20,
     this.navHeight = 28,
     this.dockTop = 228,
@@ -39,6 +41,15 @@ class ScreenChromeStyle {
 
   /// Gap between the screen edge and the first block.
   final double inset;
+
+  /// Extra margin on both sides for the parts of the screen a tall phone
+  /// crops (a viewport that fits the world's height shows less of its width):
+  /// currency items and tabs stay inside it, the dark strips still run full
+  /// width.
+  final double safeInset;
+
+  /// Extra space above the currency row, so it clears a notch or rounded corner.
+  final double topPadding;
 
   /// Height of the currency strip and of the tab bar.
   final double topHeight;
@@ -208,16 +219,32 @@ class ScreenChrome {
       block(0, style.dockBottom - 1.2, w, 1.2, 0xFFB8893A, topZ - 1);
     }
 
-    final i = style.inset;
+    final i = style.inset + style.safeInset;
     final coinX = mx(i, 14);
     final gemX = mx(66, 14);
     if (currencyAtlasId != null) {
-      icon(currencyAtlasId, currencyCell, style.goldIcon, coinX, 2.5, 14, topZ);
-      icon(currencyAtlasId, currencyCell, style.gemIcon, gemX, 2.5, 14, topZ);
+      icon(
+        currencyAtlasId,
+        currencyCell,
+        style.goldIcon,
+        coinX,
+        2.5 + style.topPadding,
+        14,
+        topZ,
+      );
+      icon(
+        currencyAtlasId,
+        currencyCell,
+        style.gemIcon,
+        gemX,
+        2.5 + style.topPadding,
+        14,
+        topZ,
+      );
     }
     final gold = text(
       mx(i + 16, 44),
-      5.5,
+      5.5 + style.topPadding,
       44,
       8,
       0xFFFFE38A,
@@ -226,7 +253,7 @@ class ScreenChrome {
     );
     final gems = text(
       mx(68 + 14, 30),
-      5.5,
+      5.5 + style.topPadding,
       30,
       8,
       0xFF9FD4FF,
@@ -235,7 +262,7 @@ class ScreenChrome {
     );
     final title = text(
       mx(w - 78 - i, 78),
-      5.5,
+      5.5 + style.topPadding,
       78,
       6.6,
       0xFFF6E7B4,
@@ -248,11 +275,12 @@ class ScreenChrome {
     block(0, navTop, w, style.navHeight, 0xFA140A06, navZ - 2);
     block(0, navTop, w, 1.6, 0xFFB8893A, navZ - 1);
     final n = style.tabs.length;
-    final slot = (w - 6) / n;
+    final safe = style.safeInset;
+    final slot = (w - 6 - 2 * safe) / n;
     final rects = <Rect>[];
     final labelSize = style.rtl ? 5.0 : 4.2;
     for (var t = 0; t < n; t++) {
-      final x = mx(3 + t * slot, slot - 1);
+      final x = mx(3 + safe + t * slot, slot - 1);
       rects.add(Rect.fromLTWH(x, navTop, slot - 1, style.navHeight));
       if (iconAtlasId != null) {
         icon(

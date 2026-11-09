@@ -342,7 +342,10 @@ void main() {
 
       final light = world.spawn();
       world.componentsOf<Position>().set(light, Position(0, 0));
-      world.componentsOf<Light2D>().set(light, Light2D(radius: 100, intensity: 1));
+      world.componentsOf<Light2D>().set(
+        light,
+        Light2D(radius: 100, intensity: 1),
+      );
 
       await tester.pumpWidget(
         MaterialApp(

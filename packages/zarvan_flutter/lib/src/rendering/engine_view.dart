@@ -2345,7 +2345,12 @@ class _EnginePainter extends CustomPainter {
         );
         final screenPos = sprite.screenSpace
             ? anchorPos
-            : camera.worldToScreen(anchorPos.dx, anchorPos.dy, size);
+            : camera.worldToScreen(
+                anchorPos.dx,
+                anchorPos.dy,
+                size,
+                zIndex: sprite.zIndex,
+              );
         final zoom = sprite.screenSpace ? 1.0 : camera.zoom;
 
         final tint = sprite.tintArgb;
@@ -2444,7 +2449,12 @@ class _EnginePainter extends CustomPainter {
     );
     final screenPos = sprite.screenSpace
         ? anchorPos
-        : camera.worldToScreen(anchorPos.dx, anchorPos.dy, size);
+        : camera.worldToScreen(
+            anchorPos.dx,
+            anchorPos.dy,
+            size,
+            zIndex: sprite.zIndex,
+          );
     final zoom = sprite.screenSpace ? 1.0 : camera.zoom;
 
     canvas.save();
@@ -2515,7 +2525,12 @@ class _EnginePainter extends CustomPainter {
         );
         final screenPos = sprite.screenSpace
             ? anchorPos
-            : camera.worldToScreen(anchorPos.dx, anchorPos.dy, size);
+            : camera.worldToScreen(
+                anchorPos.dx,
+                anchorPos.dy,
+                size,
+                zIndex: sprite.zIndex,
+              );
         final zoom = sprite.screenSpace ? 1.0 : camera.zoom;
 
         // Find lights that affect this sprite (within radius of sprite bounds)
@@ -3377,7 +3392,7 @@ class _EnginePainter extends CustomPainter {
         _DrawItem(text.zIndex, order++, (canvas) {
           final screenPos = text.screenSpace
               ? Offset(pos.x, pos.y)
-              : camera.worldToScreen(pos.x, pos.y, size);
+              : camera.worldToScreen(pos.x, pos.y, size, zIndex: text.zIndex);
           final scale = text.screenSpace ? 1.0 : camera.zoom;
           final effectiveFontSize = text.fontSize * scale * text.textScale;
           final painter =
@@ -3461,7 +3476,12 @@ class _EnginePainter extends CustomPainter {
       final worldPos = _interpolated(entity, pos);
       final screenPos = bar.screenSpace
           ? worldPos
-          : camera.worldToScreen(worldPos.dx, worldPos.dy, size);
+          : camera.worldToScreen(
+              worldPos.dx,
+              worldPos.dy,
+              size,
+              zIndex: bar.zIndex,
+            );
       final zoom = bar.screenSpace ? 1.0 : camera.zoom;
 
       items.add(

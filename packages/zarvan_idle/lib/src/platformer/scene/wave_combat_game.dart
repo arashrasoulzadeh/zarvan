@@ -24,6 +24,7 @@ class WaveCombatGame extends Game {
     this.viewportFit = ViewportFit.contain,
     HeroProgress? progress,
     HeroProgressStore? progressStore,
+    this.initialScene,
   }) : progress = progress ?? HeroProgress(),
        _store = progressStore;
 
@@ -31,6 +32,10 @@ class WaveCombatGame extends Game {
   final GameConfig config;
   final LevelData level;
   final WaveCombatConfig combat;
+
+  /// Builds the scene the game opens with, given the game (for its `progress`);
+  /// null opens straight into the [level]'s battle. A home page goes here.
+  final Scene Function(WaveCombatGame game)? initialScene;
 
   /// Splash artwork; the default shows the ZARVAN logo.
   @override
@@ -52,6 +57,7 @@ class WaveCombatGame extends Game {
     ViewportFit viewportFit = ViewportFit.contain,
     SaveStore? saveStore,
     DateTime Function()? clock,
+    Scene Function(WaveCombatGame game)? initialScene,
   }) async {
     // With a save store, coins, upgrades, stars and gear persist, and the time
     // away is paid out by the config's `offline` rule.
@@ -69,6 +75,7 @@ class WaveCombatGame extends Game {
       viewportFit: viewportFit,
       progress: store?.load(rule: combat.offline),
       progressStore: store,
+      initialScene: initialScene,
     );
   }
 
@@ -83,6 +90,7 @@ class WaveCombatGame extends Game {
 
   @override
   Scene createInitialScene() =>
+      initialScene?.call(this) ??
       WaveCombatScene(level: level, config: combat, progress: progress);
 
   /// Coins, upgrades, stars and gear: kept across retries, and across launches

@@ -57,5 +57,14 @@ final session = IdleSession(
 )..load()..startAutosave();
 ```
 
+### Menu scenes and HUD badges
+
+`HomeScene` (background, logo, hero, a column of buttons and a language
+dialog) and `LevelSelectScene` (paged zone cards: locked / current /
+cleared) are driven purely by data (`HomeConfig`, `LevelSelectConfig`);
+the game decides where each button leads. `StatusBadges` shows one badge
+per active condition (with remaining seconds and `xN` stacks) in the wave
+HUD instead of a text line.
+
 Tests: `flutter test`; hot-path costs: `dart run benchmark/idle_bench.dart`; pacing of a definition:
 `dart run tool/simulate.dart example/cookie_clicker.json --days 2 --prestige-at 2`.

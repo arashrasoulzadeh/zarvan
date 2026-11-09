@@ -1,5 +1,7 @@
 import 'package:zarvan_flutter/zarvan_flutter.dart' show TextAlignment;
 
+import 'status_badges.dart';
+
 /// One label of the wave-combat HUD. All positions and sizes are world units
 /// (the text scales with the window like the rest of the scene).
 class HudTextStyle {
@@ -90,7 +92,7 @@ class HudLayout {
     this.ultText,
     this.gearY = 74,
     this.enemyOverhead,
-    this.overheadLift = 0.32,
+    this.statusBadges,
   });
 
   final HudTextStyle status;
@@ -112,9 +114,9 @@ class HudLayout {
   /// enemy). When set it replaces the single [enemyBar] at the top.
   final HudBarStyle? enemyOverhead;
 
-  /// How far above an enemy's centre its overhead bar floats, as a fraction of
-  /// the enemy's drawn size (sprite cells carry empty padding above the head).
-  final double overheadLift;
+  /// When set, the hero's conditions (bleed, poison, stun) show as a column of
+  /// small badges here instead of a text line over its head.
+  final StatusBadgeStyle? statusBadges;
 
   /// Height of the worn-gear summary line.
   final double gearY;

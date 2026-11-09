@@ -73,7 +73,10 @@ abstract class CreditsScene extends Scene {
     for (final entry in credits) {
       final style = entry.style ?? defaultStyle;
       final textEntity = world.spawn();
-      world.componentsOf<Position>().set(textEntity, Position(world.width / 2, y));
+      world.componentsOf<Position>().set(
+        textEntity,
+        Position(world.width / 2, y),
+      );
       world.componentsOf<Text>().set(
         textEntity,
         Text(

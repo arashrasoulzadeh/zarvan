@@ -238,10 +238,26 @@ class Camera {
     }
   }
 
-  Offset worldToScreen(double worldX, double worldY, Size viewportSize) {
+  /// Draw items (sprites, text, bars) with a `zIndex` at or above this stay
+  /// still while the camera shakes, so a HUD drawn in world units is not
+  /// jolted along with the game. `null` (default) shakes everything.
+  int? shakeFreeFromZ;
+
+  /// [zIndex] is the draw order of what is being placed; see [shakeFreeFromZ].
+  Offset worldToScreen(
+    double worldX,
+    double worldY,
+    Size viewportSize, {
+    int zIndex = 0,
+  }) {
+    final still = shakeFreeFromZ != null && zIndex >= shakeFreeFromZ!;
     return Offset(
-      (worldX - x) * zoom + viewportSize.width / 2 + _shakeOffsetX * zoom,
-      (worldY - y) * zoom + viewportSize.height / 2 + _shakeOffsetY * zoom,
+      (worldX - x) * zoom +
+          viewportSize.width / 2 +
+          (still ? 0 : _shakeOffsetX * zoom),
+      (worldY - y) * zoom +
+          viewportSize.height / 2 +
+          (still ? 0 : _shakeOffsetY * zoom),
     );
   }
 

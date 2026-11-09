@@ -218,7 +218,10 @@ void main() {
         entity,
         Particle(lifetime: 1, colorArgb: 0xFF00FF00),
       );
-      world.componentsOf<Sprite>().set(entity, Sprite('missing-atlas', 'spark'));
+      world.componentsOf<Sprite>().set(
+        entity,
+        Sprite('missing-atlas', 'spark'),
+      );
 
       await tester.pumpWidget(
         MaterialApp(

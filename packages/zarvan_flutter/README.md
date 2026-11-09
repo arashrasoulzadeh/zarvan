@@ -534,6 +534,10 @@ camera.follow(playerX, playerY, viewportSize: size, worldWidth: w, worldHeight: 
 `follow` clamps so the viewport never shows past world bounds (unless
 the world is smaller than the viewport, in which case it just centers).
 
+Set `camera.shakeFreeFromZ` to a z-index and anything drawn at or above it
+ignores camera shake, so a HUD placed in world units is not jolted along
+with the game (`null`, the default, shakes everything).
+
 ## Fixed timestep
 
 ```dart

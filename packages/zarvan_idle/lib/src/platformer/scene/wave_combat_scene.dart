@@ -38,6 +38,7 @@ import '../hud/dialogue_caption.dart';
 import '../hud/hud_layout.dart';
 import '../hud/result_popup.dart';
 import '../hud/scene_hud.dart';
+import '../hud/status_badges.dart';
 import '../hud/sprite_health_bar.dart';
 import '../hud/wave_path.dart';
 import '../hud/wave_ui_art.dart';
@@ -61,6 +62,9 @@ class WaveCombatConfig {
     this.fighterSize = 80,
     this.enemyScale = 1,
     this.disintegration,
+    this.fieldLift = 0,
+    this.onCleared,
+    this.openMap,
     this.meleeLunge = false,
     this.fightDelaySeconds = 0,
     this.walkSpeed = 70,
@@ -123,9 +127,21 @@ class WaveCombatConfig {
   /// size); bosses and elites keep their usual proportion on top of it.
   final double enemyScale;
 
+  /// Called once when the zone's boss falls, e.g. to unlock the next zone.
+  final void Function()? onCleared;
+
+  /// Builds the scene the Battle tab returns to (a world map); null makes the
+  /// tab only close dialogs.
+  final Scene Function()? openMap;
+
+  /// Raises the hero and the enemies by this many world units, leaving ground
+  /// under their feet before a bottom bar (the background itself fills the
+  /// screen and stays put).
+  final double fieldLift;
+
   /// When set, an enemy's body comes apart into floating dust
-  /// ([DisintegrationSystem]) [DisintegrationStyle.delay] seconds after it
-  /// dies, each enemy of a group on its own; null leaves the plain death clip.
+  /// ([DisintegrationSystem]) [DisintegrationStyle.delay] seconds after its
+  /// death animation has finished, each enemy of a group on its own; null leaves the plain death clip.
   final DisintegrationStyle? disintegration;
 
   /// Melee enemies run up to the hero as they wind up an attack and walk back
@@ -305,10 +321,11 @@ class WaveCombatScene extends Scene {
   ScreenChrome? _chrome;
   ResultPopup? _popup;
   ModalDialog? _info;
+  StatusBadges? _badges;
   DisintegrationSystem? _dust;
   AtlasRegistry? _registry;
   final Map<EntityId, double> _dying = {};
-  final Map<EntityId, ({EntityId bar, double drawn})> _overhead = {};
+  final Map<EntityId, _Overhead> _overhead = {};
   double _currencyCell = 32;
   int _earnedCoins = 0;
   WavePath? _path;
@@ -377,7 +394,9 @@ class WaveCombatScene extends Scene {
       world.addSystem(_dust = DisintegrationSystem(style: dust));
     }
 
-    _camera = Camera(x: world.width / 2, y: world.height / 2);
+    // The HUD (z 100 and up) stays still while the fight shakes.
+    _camera = Camera(x: world.width / 2, y: world.height / 2)
+      ..shakeFreeFromZ = 100;
     // Shake / particle cues authored in the level JSON fire from animation
     // frames through the engine's cue bridges.
     installAnimationCueSystems(world, camera: _camera);
@@ -563,6 +582,20 @@ class WaveCombatScene extends Scene {
         blurSigma: layout.blurSigma,
         rtl: chrome.rtl,
       )..addText(90, 156, config.strings.comingSoon, 7, 0xFFF6E7B4);
+    }
+    final badgeStyle = config.hud.statusBadges;
+    if (badgeStyle != null && config.ui.panelImage != null) {
+      _badges = StatusBadges.spawn(
+        world,
+        style: badgeStyle,
+        fillAtlasId: _uiPanel,
+        fillSize: Size(
+          config.ui.upgradeLayout.frameSource.width -
+              2 * config.ui.upgradeLayout.frameInset,
+          config.ui.upgradeLayout.frameSource.height -
+              2 * config.ui.upgradeLayout.frameInset,
+        ),
+      );
     }
     if (config.ui.popup != null && config.ui.panelImage != null) {
       _popup = ResultPopup(
@@ -787,7 +820,7 @@ class WaveCombatScene extends Scene {
       world,
       side: 'hero',
       x: level.hero.x + drawn / 2,
-      y: level.hero.y + drawn / 2,
+      y: level.hero.y + drawn / 2 - config.fieldLift,
       hp: _loadout.maxHp,
       attack: _loadout.attackNow,
       attackSpeed: _loadout.attackSpeedNow,
@@ -880,12 +913,16 @@ class WaveCombatScene extends Scene {
     final scale = _fitScale(stats.cell) * sizeKind * config.enemyScale;
     final drawn = stats.cell * scale;
     _enemyTargetX = level.enemyAnchor.x + drawn / 2;
-    _enemyBaseY = level.enemyAnchor.y + drawn / config.enemyScale - drawn / 2;
+    _enemyBaseY =
+        level.enemyAnchor.y +
+        drawn / config.enemyScale -
+        drawn / 2 -
+        config.fieldLift;
     enemyId = spawnFighter(
       world,
       side: 'enemy',
       x: _enemyTargetX + config.enterDistance,
-      y: _enemyBaseY,
+      y: _enemyBaseY + _bottomPadding(meta, scale),
       hp: waves.isBoss
           ? level.bossScaled('hp', stats.hp)
           : stats.hp * level.enemyRamp(waves.index) * kind.hpFactor(rw),
@@ -910,7 +947,7 @@ class WaveCombatScene extends Scene {
     _spawnExtras(world, meta, stats, kind, scale);
     _combat.focus = enemyId;
     _spawnEnemyBar(world);
-    _addOverhead(world, enemyId!, drawn);
+    _addOverhead(world, enemyId!, meta, scale);
     _path?.update(waves.index, config.ui.pathNodeSize);
     enemyLabel = switch (kind) {
       WaveKind.elite => config.strings.eliteName(meta.name),
@@ -930,12 +967,31 @@ class WaveCombatScene extends Scene {
     _syncHud(world);
   }
 
+  /// Empty rows under a fighter's feet in its sheet, in world units at
+  /// [scale]: sheets are cropped per creature, so one with space below its feet
+  /// would hover above the ground if drawn cell-aligned.
+  double _bottomPadding(FighterMeta meta, double scale) {
+    final body = _pivots.bodyOf(meta.atlasId('idle'));
+    return body == null ? 0 : math.max(0, body.cell - 1 - body.bottom) * scale;
+  }
+
   /// Puts a small plain health bar over [enemy] ([HudLayout.enemyOverhead]).
-  void _addOverhead(World world, EntityId enemy, double drawn) {
+  void _addOverhead(
+    World world,
+    EntityId enemy,
+    FighterMeta meta,
+    double scale,
+  ) {
     final style = config.hud.enemyOverhead;
     if (style == null) return;
-    _overhead[enemy] = (
-      bar: spawnHealthHudBar(
+    // The bar sits over the creature's own head and feet-centre, measured from
+    // its sprite, not over the middle of a cell that may be mostly empty.
+    final body = _pivots.bodyOf(meta.atlasId('idle'));
+    final half = meta.stats.cell / 2;
+    final dx = body == null ? 0.0 : (body.x - half) * scale;
+    final dy = (body == null ? -half : body.top - half) * scale;
+    _overhead[enemy] = _Overhead(
+      spawnHealthHudBar(
         world,
         source: enemy,
         x: -1000,
@@ -945,15 +1001,21 @@ class WaveCombatScene extends Scene {
         fillColorArgb: style.fillColorArgb,
         backgroundColorArgb: 0xB0000000,
         screenSpace: false,
-        zIndex: 115,
+        // Below the HUD's draw order, so it shakes with the game it floats in.
+        zIndex: 90,
       ),
-      drawn: drawn,
+      dx,
+      dy,
     );
   }
 
-  /// Moves every overhead bar to its enemy's head and drops those of dead or
-  /// removed enemies.
-  void _followOverhead(World world) {
+  /// Seconds an overhead bar stays up after the enemy last lost health.
+  static const _overheadShowSeconds = 2.5;
+
+  /// Moves every overhead bar to its enemy's head, shows it only while the
+  /// enemy is being hurt (and for a moment after), and drops the bars of dead
+  /// or removed enemies.
+  void _followOverhead(World world, double dt) {
     final style = config.hud.enemyOverhead;
     if (style == null || _overhead.isEmpty) return;
     for (final e in _overhead.entries.toList()) {
@@ -963,18 +1025,30 @@ class WaveCombatScene extends Scene {
         _overhead.remove(e.key);
         continue;
       }
-      world.componentsOf<Position>().get(e.value.bar)
-        ?..x = pos.x - style.width / 2
-        ..y = pos.y - e.value.drawn * config.hud.overheadLift - style.height;
+      final o = e.value;
+      final hp = world.componentsOf<Health>().get(e.key)?.current ?? 0;
+      if (o.hp != null && hp < o.hp!) o.shown = _overheadShowSeconds;
+      o.hp = hp;
+      o.shown = math.max(0, o.shown - dt);
+      world.componentsOf<Position>().get(o.bar)
+        ?..x = pos.x + o.feetDx - style.width / 2
+        ..y = o.shown > 0 ? pos.y + o.headDy - style.height - 1 : -1000;
     }
   }
 
-  /// Starts the dust of each enemy whose short post-death delay has run out.
+  /// Starts the dust of each enemy once its death clip has ended and the
+  /// short delay after it has run out.
   void _tickDying(World world, double dt) {
     final dust = _dust;
     if (dust == null || _dying.isEmpty) return;
     for (final id in _dying.keys.toList()) {
-      final left = _dying[id]! - dt;
+      var left = _dying[id]!;
+      if (left < 0) {
+        // Waiting for the death clip to end; the delay counts from then on.
+        if (!spriteStateFinished(world, id, 'death')) continue;
+        left = dust.style.delay;
+      }
+      left -= dt;
       if (left > 0) {
         _dying[id] = left;
         continue;
@@ -1049,7 +1123,7 @@ class WaveCombatScene extends Scene {
         world,
         side: 'enemy',
         x: _enemyTargetX + config.enterDistance + rule.rowOffsetX * i,
-        y: _enemyBaseY + rule.rowOffsetY * i,
+        y: _enemyBaseY + rule.rowOffsetY * i + _bottomPadding(meta, s),
         hp:
             stats.hp *
             level.enemyRamp(waves.index) *
@@ -1072,7 +1146,7 @@ class WaveCombatScene extends Scene {
         zIndex: 20 - i,
       );
       _squad.add(id);
-      _addOverhead(world, id, meta.stats.cell * s);
+      _addOverhead(world, id, meta, s);
     }
   }
 
@@ -1123,7 +1197,7 @@ class WaveCombatScene extends Scene {
       _upgradeBar?.sync(world);
       _lastDead = id;
       final style = config.disintegration;
-      if (style != null) _dying[id] = style.delay;
+      if (style != null) _dying[id] = -1;
     }
     final living = [
       for (final id in _squad)
@@ -1302,7 +1376,7 @@ class WaveCombatScene extends Scene {
     _updateConditionLabel(world);
     _caption.update(world, dt);
     _heroBar?.sync();
-    _followOverhead(world);
+    _followOverhead(world, dt);
     _tickDying(world, dt);
     _enemyBar?.sync();
     _ultBar?.sync();
@@ -1346,6 +1420,7 @@ class WaveCombatScene extends Scene {
     if (!_deathPlayed(world, _lastDead ?? e, dt)) return;
     if (waves.isBoss) {
       _heroWon = true;
+      config.onCleared?.call();
       return _finish(world, config.clearedMessage);
     }
     waves.advance();
@@ -1355,6 +1430,15 @@ class WaveCombatScene extends Scene {
 
   /// Keeps the hero's condition line (Bleed 2s...) over its head.
   void _updateConditionLabel(World world) {
+    final badges = _badges;
+    if (badges != null) {
+      final hero = heroId;
+      badges.sync(
+        world,
+        hero == null ? null : world.componentsOf<Conditions>().get(hero),
+      );
+      return;
+    }
     final label = _condLabel;
     final h = heroId;
     if (label == null || h == null) return;
@@ -1442,6 +1526,10 @@ class WaveCombatScene extends Scene {
     if (finished) return;
     switch (tab) {
       case 'battle':
+        if (!(bar?.dialogOpen ?? false) && config.openMap != null) {
+          _scenes?.loadScene(config.openMap!());
+          return;
+        }
         _closeTabs(bar);
       case 'hero' || 'upgrade' || 'skills':
         if (bar == null) return;
@@ -1460,4 +1548,18 @@ class WaveCombatScene extends Scene {
   void _restart(SceneController scenes) => (_scenes ?? scenes).loadScene(
     WaveCombatScene(level: level, config: config, progress: progress),
   );
+}
+
+/// An enemy's overhead health bar and when it last needed showing.
+class _Overhead {
+  _Overhead(this.bar, this.feetDx, this.headDy);
+
+  final EntityId bar;
+
+  /// Offset of the creature's feet-centre from its sprite centre, and of its
+  /// head top (negative: above), in world units.
+  final double feetDx;
+  final double headDy;
+  double? hp;
+  double shown = 0;
 }

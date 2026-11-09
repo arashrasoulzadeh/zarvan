@@ -100,4 +100,38 @@ void main() {
     world.componentsOf<eng.Sprite>().set(e, eng.Sprite('a', '0'));
     expect(system.start(world, e, atlas!), isFalse);
   });
+
+  testWidgets('grains travel with the body when it is moved', (tester) async {
+    final world = _world();
+    final system = eng.DisintegrationSystem(
+      style: const eng.DisintegrationStyle(
+        maxDust: 20,
+        sweepSeconds: 0.4,
+        rise: 0,
+        wind: 0,
+        spread: 0,
+      ),
+    );
+    final atlas = await tester.runAsync(() async {
+      final image = await _solid(4, 4, 9, 9, 9, 255);
+      final a = eng.SpriteAtlas(image, {
+        '0': const ui.Rect.fromLTWH(0, 0, 4, 4),
+      });
+      await eng.DisintegrationSystem.prepare(a);
+      return a;
+    });
+    final e = world.spawn();
+    world.componentsOf<Position>().set(e, Position(50, 60));
+    world.componentsOf<eng.Sprite>().set(e, eng.Sprite('a', '0'));
+    expect(system.start(world, e, atlas!), isTrue);
+    system.update(world, 0.2);
+    final grain = world.componentsOf<Particle>().entityAt(0);
+    final before = world.componentsOf<Position>().get(grain)!.x;
+    world.componentsOf<Position>().get(e)!.x -= 30; // the ground scrolls
+    system.update(world, 0.01);
+    expect(
+      world.componentsOf<Position>().get(grain)!.x,
+      closeTo(before - 30, 1e-9),
+    );
+  });
 }

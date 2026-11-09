@@ -24,6 +24,7 @@ export 'fx/hit_stop.dart';
 export 'hud/dialogue_caption.dart';
 export 'hud/result_popup.dart';
 export 'hud/sprite_health_bar.dart';
+export 'hud/status_badges.dart';
 export 'hud/wave_path.dart';
 export 'hud/wave_ui_art.dart';
 export 'hud/hud_layout.dart';

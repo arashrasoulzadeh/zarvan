@@ -169,9 +169,9 @@ void main() {
         restored.spawn();
         restored.applyPatch(json);
 
-        final restoredTransition = restored.componentsOf<SceneTransition>().denseAt(
-          0,
-        );
+        final restoredTransition = restored
+            .componentsOf<SceneTransition>()
+            .denseAt(0);
         expect(restoredTransition.covering, isTrue);
         expect(restoredTransition.isRunning, isTrue);
       },

@@ -34,7 +34,10 @@ void main() {
 
       final id = world.spawn();
       world.componentsOf<Position>().set(id, Position(10, 10));
-      world.componentsOf<Sprite>().set(id, Sprite('atlas', 'r', screenSpace: true));
+      world.componentsOf<Sprite>().set(
+        id,
+        Sprite('atlas', 'r', screenSpace: true),
+      );
 
       // A camera pointed far from the sprite's Position -- if this were
       // world-space it'd be nowhere near the viewport; screenSpace means

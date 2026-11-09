@@ -56,7 +56,10 @@ class SelectionMarkerSystem extends System {
       var marker = markerByOwner[owner];
       if (marker == null) {
         marker = world.spawn();
-        world.componentsOf<SelectionMarker>().set(marker, SelectionMarker(owner));
+        world.componentsOf<SelectionMarker>().set(
+          marker,
+          SelectionMarker(owner),
+        );
         world.componentsOf<Position>().set(marker, Position(0, 0));
         world.componentsOf<HudBar>().set(
           marker,

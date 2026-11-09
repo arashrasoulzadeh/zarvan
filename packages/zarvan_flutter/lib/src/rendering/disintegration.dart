@@ -11,19 +11,20 @@ import 'sprite_atlas.dart';
 /// How a [DisintegrationSystem] turns a sprite into dust.
 class DisintegrationStyle {
   const DisintegrationStyle({
-    this.delay = 0.1,
+    this.delay = 0.2,
     this.sweepSeconds = 0.9,
     this.dustLifeMin = 0.9,
     this.dustLifeMax = 1.7,
-    this.maxDust = 320,
-    this.dustSize = 0.7,
+    this.maxDust = 1400,
+    this.dustSize = 0.4,
     this.rise = 14,
     this.wind = 10,
     this.spread = 6,
   });
 
-  /// Seconds between the death and the first grain leaving the body; the game
-  /// that triggers the effect honours it (the system itself starts at once).
+  /// Seconds between the end of the death animation and the first grain leaving
+  /// the body; the game that triggers the effect honours it (the system itself
+  /// starts at once).
   final double delay;
 
   /// How long the body takes to come apart. Grains leave in a sweep from one
@@ -86,13 +87,11 @@ class DisintegrationSystem implements System {
   static bool isPrepared(SpriteAtlas atlas) => _pixels[atlas.image] != null;
 
   /// Number of bodies still coming apart.
-  int get activeCount => _jobs.length;
-
-  double _tail = 0;
+  int get activeCount => _jobs.where((j) => j.coming).length;
 
   /// True while a body is coming apart or its last grains are still floating;
   /// a game can hold a pause or a popup back until this is false.
-  bool get isBusy => _jobs.isNotEmpty || _tail > 0;
+  bool get isBusy => _jobs.isNotEmpty;
 
   final _opaque = <ui.Image, Map<String, List<_Grain>>>{};
 
@@ -132,7 +131,7 @@ class DisintegrationSystem implements System {
         }
       }
       out.shuffle(_random);
-      if (out.length > 1200) out.removeRange(1200, out.length);
+      if (out.length > 2500) out.removeRange(2500, out.length);
     }
     return perImage[region] = out;
   }
@@ -151,53 +150,76 @@ class DisintegrationSystem implements System {
       return false;
     }
     world.componentsOf<HitFlash>().remove(entity);
-    _jobs.add(_Job(entity, atlas, sprite.zIndex + 1));
+    final pos = world.componentsOf<Position>().get(entity)!;
+    _jobs.add(_Job(entity, atlas, sprite.zIndex + 1)..last = (pos.x, pos.y));
     return true;
   }
 
   @override
   void update(World world, double dt) {
-    if (_tail > 0) _tail -= dt;
+    final particles = world.componentsOf<Particle>();
+    final positions = world.componentsOf<Position>();
     for (var j = _jobs.length - 1; j >= 0; j--) {
       final job = _jobs[j];
-      job.age += dt;
       final sprite = world.componentsOf<Sprite>().get(job.entity);
-      final pos = world.componentsOf<Position>().get(job.entity);
+      final pos = positions.get(job.entity);
       if (sprite == null || pos == null) {
-        _jobs.removeAt(j);
-        continue;
-      }
-      final p = (job.age / style.sweepSeconds).clamp(0.0, 1.0);
-      final target = (style.maxDust * p).round();
-      final grains = _grainsOf(job.atlas, sprite.region);
-      final dir = sprite.scaleX < 0 ? -1.0 : 1.0;
-      while (job.released < target && grains.isNotEmpty) {
-        job.released++;
-        // Prefer pixels inside the sweep window, which moves across the body.
-        _Grain g = grains[_random.nextInt(grains.length)];
-        for (var t = 0; t < 8; t++) {
-          final u = dir > 0 ? g.u : 1 - g.u;
-          if (u >= p - 0.3 && u <= p + 0.12) break;
-          g = grains[_random.nextInt(grains.length)];
+        job.coming = false;
+      } else {
+        // Grains travel with the body: when the ground scrolls past (or the
+        // body is pushed) the dust in the air moves along with it.
+        final dx = pos.x - job.last.$1, dy = pos.y - job.last.$2;
+        job.last = (pos.x, pos.y);
+        if (dx != 0 || dy != 0) {
+          for (final g in job.grains) {
+            final gp = positions.get(g.id);
+            if (gp != null && identical(particles.get(g.id), g.particle)) {
+              gp.x += dx;
+              gp.y += dy;
+            }
+          }
         }
+        job.age += dt;
+        _releaseSome(world, job, sprite, pos);
+        final fade =
+            1 - (job.age / (style.sweepSeconds + 0.15)).clamp(0.0, 1.0);
+        sprite.tintArgb = (fade * 255).round() << 24 | 0xFFFFFF;
+        if (fade == 0 && job.released >= style.maxDust) job.coming = false;
+      }
+      job.grains.removeWhere(
+        (g) => !identical(particles.get(g.id), g.particle),
+      );
+      if (!job.coming && job.grains.isEmpty) _jobs.removeAt(j);
+    }
+  }
+
+  void _releaseSome(World world, _Job job, Sprite sprite, Position pos) {
+    final p = (job.age / style.sweepSeconds).clamp(0.0, 1.0);
+    final target = (style.maxDust * p).round();
+    final grains = _grainsOf(job.atlas, sprite.region);
+    final dir = sprite.scaleX < 0 ? -1.0 : 1.0;
+    while (job.released < target && grains.isNotEmpty) {
+      job.released++;
+      // Prefer pixels inside the sweep window, which moves across the body.
+      var g = grains[_random.nextInt(grains.length)];
+      for (var t = 0; t < 8; t++) {
+        final u = dir > 0 ? g.u : 1 - g.u;
+        if (u >= p - 0.3 && u <= p + 0.12) break;
+        g = grains[_random.nextInt(grains.length)];
+      }
+      job.grains.add(
         _release(
           world,
           g,
           pos.x + sprite.offsetX + (g.u - 0.5) * g.w * sprite.scaleX,
           pos.y + sprite.offsetY + (g.v - 0.5) * g.h * sprite.scaleY,
           job.z,
-        );
-      }
-      final fade = 1 - (job.age / (style.sweepSeconds + 0.15)).clamp(0.0, 1.0);
-      sprite.tintArgb = (fade * 255).round() << 24 | 0xFFFFFF;
-      if (fade == 0 && job.released >= style.maxDust) {
-        _jobs.removeAt(j);
-        _tail = style.dustLifeMax;
-      }
+        ),
+      );
     }
   }
 
-  void _release(World world, _Grain g, double x, double y, int z) {
+  _Flying _release(World world, _Grain g, double x, double y, int z) {
     final id = world.spawn();
     world.componentsOf<Position>().set(id, Position(x, y));
     final a = _random.nextDouble() * 2 * math.pi;
@@ -212,19 +234,18 @@ class DisintegrationSystem implements System {
     final life =
         style.dustLifeMin +
         _random.nextDouble() * (style.dustLifeMax - style.dustLifeMin);
-    world.componentsOf<Particle>().set(
-      id,
-      Particle(
-        lifetime: life,
-        // The renderer draws a grain 4 * scale pixels wide per zoom unit.
-        startScale: style.dustSize / 4,
-        endScale: style.dustSize / 16,
-        startAlpha: 1,
-        endAlpha: 0,
-        colorArgb: g.argb,
-        zIndex: z,
-      ),
+    final particle = Particle(
+      lifetime: life,
+      // The renderer draws a grain 4 * scale pixels wide per zoom unit.
+      startScale: style.dustSize / 4,
+      endScale: style.dustSize / 16,
+      startAlpha: 1,
+      endAlpha: 0,
+      colorArgb: g.argb,
+      zIndex: z,
     );
+    world.componentsOf<Particle>().set(id, particle);
+    return _Flying(id, particle);
   }
 }
 
@@ -235,11 +256,22 @@ class _Grain {
   final double w, h;
 }
 
+class _Flying {
+  _Flying(this.id, this.particle);
+  final EntityId id;
+  final Particle particle;
+}
+
 class _Job {
   _Job(this.entity, this.atlas, this.z);
   final EntityId entity;
   final SpriteAtlas atlas;
   final int z;
+  final grains = <_Flying>[];
+  (double, double) last = (0, 0);
   double age = 0;
   int released = 0;
+
+  /// Still releasing grains (the sprite has not finished fading).
+  bool coming = true;
 }

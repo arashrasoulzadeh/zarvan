@@ -234,7 +234,10 @@ void main() {
 
         final spriteEntity = world.spawn();
         world.componentsOf<Position>().set(spriteEntity, Position(10, 10));
-        world.componentsOf<Sprite>().set(spriteEntity, Sprite('atlas', 'region'));
+        world.componentsOf<Sprite>().set(
+          spriteEntity,
+          Sprite('atlas', 'region'),
+        );
 
         final stats = FrameStats();
         await tester.pumpWidget(
@@ -390,7 +393,10 @@ void main() {
         registerFlutterComponents(world);
 
         final player = world.spawn();
-        world.componentsOf<Position>().set(player, Position(0, 0)); // no Velocity
+        world.componentsOf<Position>().set(
+          player,
+          Position(0, 0),
+        ); // no Velocity
 
         final stats = FrameStats();
         await tester.pumpWidget(

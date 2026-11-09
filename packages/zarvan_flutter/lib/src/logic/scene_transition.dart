@@ -209,7 +209,8 @@ class SceneTransition {
       case SceneTransitionType.iris:
         if (_clipShapeEntity != null) {
           final radius = _maxRadius(world) * (1 - coverAmount);
-          world.componentsOf<ClipShape>().get(_clipShapeEntity!)?.radius = radius;
+          world.componentsOf<ClipShape>().get(_clipShapeEntity!)?.radius =
+              radius;
         }
         break;
       default:

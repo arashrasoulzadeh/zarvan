@@ -71,7 +71,10 @@ void main() {
   test('clip frame events reach the AnimationSystem as cue events', () {
     final cues = <AnimationFrameEvent>[];
     world.events.on<AnimationFrameEvent>(cues.add);
-    world.componentsOf<SpriteStates>().get(e)!.clips['attack'] = const SpriteClip(
+    world
+        .componentsOf<SpriteStates>()
+        .get(e)!
+        .clips['attack'] = const SpriteClip(
       atlasId: 'a_attack',
       frames: 3,
       frameEvents: [

@@ -1,0 +1,25 @@
+name: zarvan_ads
+description: >
+  Ads for ZARVAN games: banner, interstitial and rewarded ads behind one small
+  AdService interface (AdMob implementation included), with frequency pacing so
+  interstitials never nag. Independent of the engine packages, so any game or
+  the idle layer's "watch an ad for 2x" reward can plug it in.
+version: 0.1.0
+homepage: https://github.com/arashrasoulzadeh/zarvan
+repository: https://github.com/arashrasoulzadeh/zarvan
+publish_to: none
+
+environment:
+  sdk: ^3.9.0
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  google_mobile_ads: ^5.1.0
+  tapsell_plus: ^2.1.7
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0

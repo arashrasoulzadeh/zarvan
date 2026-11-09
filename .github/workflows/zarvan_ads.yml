@@ -1,0 +1,27 @@
+name: zarvan_ads
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/zarvan_ads/**'
+      - '.github/workflows/zarvan_ads.yml'
+  pull_request:
+    paths:
+      - 'packages/zarvan_ads/**'
+      - '.github/workflows/zarvan_ads.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/zarvan_ads
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter analyze --fatal-infos
+      - run: flutter test

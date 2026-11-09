@@ -55,7 +55,8 @@ What `zarvan_idle` and the wave-combat layer still lack for a full idle game, mo
 - [ ] **Offline that includes combat.** Offline pays coins only; simulate waves cleared and loot, and show a
       "welcome back" breakdown.
 - [ ] Big-number formatting (1.2K, 3.4aa) and values beyond double range; a multi-currency HUD.
-- [ ] A rewarded-boost extension point (for example "double offline earnings") that works with any ads or purchase SDK.
+- [x] A rewarded-boost extension point (for example "double offline earnings") that works with any ads or purchase SDK: `zarvan_ads` `AdService.showRewarded()` (true = reward earned) drives `IdleSession.doubleOffline`.
+- [ ] Ads follow-ups: consent (UMP/ATT) helper, wire a rewarded button into the idle welcome-back dialog, a `remove ads` purchase hook.
 - [ ] Live events: remote config or an event calendar, server-time anti-cheat, leaderboards.
 - [ ] A visual balance-curve viewer on top of the existing simulator.
 - [ ] **Snapshot-free shader path.** Run the same `post_fx` shader through `ImageFilter.shader` on Impeller platforms, so

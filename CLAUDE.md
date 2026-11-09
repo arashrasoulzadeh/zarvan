@@ -28,6 +28,7 @@ made explicitly (see the "Remove root sample app" commit).
 | `packages/zarvan_platformer` | Platformer-genre gameplay: gravity, jump, tile/platform collision, spawn helpers, patrol/follow behaviors, movement animation. | `zarvan_core`, `zarvan_flutter` |
 | `packages/zarvan_strategy` | Turn-based strategy assembly: `installStrategySystems`, `spawnStrategyUnit`. Rules/data live in `zarvan_core/lib/src/turn/`. | `zarvan_core`, `zarvan_flutter` |
 | `packages/zarvan_idle` | Idle / incremental-game layer: widgets, `IdleController`, `IdleSession` (lifecycle/saving). The Flutter-free idle rules live in `zarvan_core` (`zarvan_core_idle.dart`) so the CLI can use them; see the idle section of `TODO.md`. | `zarvan_core`, `zarvan_flutter` |
+| `packages/zarvan_ads` | Ads: `AdService` over AdMob (banner, interstitial, rewarded), `InterstitialPacing`, `NoAdsService`/`FakeAdService`. Leaf package, depends on no engine package; the game wires rewards (e.g. `IdleSession.doubleOffline`) itself. | `google_mobile_ads` |
 | `packages/zarvan_api` | MCP server + HTTP/JSON-RPC API over the operation registry in `zarvan_core` (spec: `engine_mcp.md`; adding an operation: see the checklist in `TODO.md`'s agent-API section and regenerate `docs/reference/operations.md`). Every operation also exists as a `zarvan` command (1:1 rule). | `zarvan_core` |
 | `packages/zarvan_cli` | `zarvan` CLI: `create`/`upgrade`/`lint`. | `zarvan_core` (for `lint`) |
 

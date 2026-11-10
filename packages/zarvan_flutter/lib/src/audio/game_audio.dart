@@ -15,6 +15,13 @@ abstract class AudioOutput {
 
   /// Stops the background music.
   Future<void> stopMusic();
+
+  /// Pauses the background music in place, for when the app loses focus.
+  /// Defaults to nothing so existing outputs keep compiling.
+  Future<void> pauseMusic() async {}
+
+  /// Continues music paused by [pauseMusic] from where it stopped.
+  Future<void> resumeMusic() async {}
 }
 
 /// Plays sounds and music by short name: `audio.sfx('jump')`,
@@ -46,6 +53,7 @@ class GameAudio {
   double musicVolume = 1.0;
 
   String? _currentTrack;
+  Future<void> _musicQueue = Future<void>.value();
 
   /// Plays through [output] using the given name -> asset path maps.
   GameAudio(
@@ -79,13 +87,39 @@ class GameAudio {
     final path = _lookup(tracks, name, 'track');
     if (_currentTrack == name) return;
     _currentTrack = name;
-    await _output?.playMusic(path, volume: volume * musicVolume, loop: loop);
+    _musicQueue = _musicQueue.then((_) async {
+      if (_currentTrack != name) return;
+      try {
+        await _output?.playMusic(
+          path,
+          volume: volume * musicVolume,
+          loop: loop,
+        );
+      } catch (_) {
+        if (_currentTrack == name) _currentTrack = null;
+        rethrow;
+      }
+    });
+    await _musicQueue;
   }
 
   /// Stops the music and forgets the current track.
   Future<void> stopMusic() async {
-    _currentTrack = null;
-    await _output?.stopMusic();
+    _musicQueue = _musicQueue.then((_) async {
+      await _output?.stopMusic();
+      _currentTrack = null;
+    });
+    await _musicQueue;
+  }
+
+  /// Pauses the current music without forgetting it, so [resumeMusic]
+  /// continues the same track (an app losing focus must not restart the
+  /// theme, nor leave it playing in the background).
+  Future<void> pauseMusic() async => _output?.pauseMusic();
+
+  /// Continues music paused by [pauseMusic].
+  Future<void> resumeMusic() async {
+    if (_currentTrack != null) await _output?.resumeMusic();
   }
 
   static String _lookup(Map<String, String> map, String name, String kind) {

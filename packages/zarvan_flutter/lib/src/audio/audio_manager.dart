@@ -308,6 +308,9 @@ class AudioManager implements AudioOutput {
   /// guess at "more concurrent one-shot SFX than a typical 2D game
   /// actually overlaps at once," not a measured/tuned value.
   static const _maxPoolSize = 8;
+  static const _maxConcurrentSounds = 12;
+  int _activeSounds = 0;
+  bool _disposed = false;
 
   @override
   Future<void> playSound(String assetPath, {double volume = 1.0}) =>
@@ -387,17 +390,36 @@ class AudioManager implements AudioOutput {
     double lowPassFrequency = 0.0,
     double reverbSend = 0.0,
   }) async {
+    if (_disposed || _activeSounds >= _maxConcurrentSounds) return;
     final player = _pool.isNotEmpty ? _pool.removeLast() : AudioPlayer();
+    _activeSounds++;
+    var returned = false;
     late final StreamSubscription<void> subscription;
     subscription = player.onPlayerComplete.listen((_) {
+      if (returned) return;
+      returned = true;
+      _activeSounds = math.max(0, _activeSounds - 1);
       subscription.cancel();
-      if (_pool.length < _maxPoolSize) {
+      if (!_disposed && _pool.length < _maxPoolSize) {
         _pool.add(player);
       } else {
-        player.dispose();
+        unawaited(player.dispose());
       }
     });
-    await player.play(AssetSource(assetPath), volume: volume, balance: balance);
+    try {
+      await player.stop();
+      await player.setReleaseMode(ReleaseMode.release);
+      await player.setVolume(volume.clamp(0.0, 1.0));
+      await player.setBalance(balance.clamp(-1.0, 1.0));
+      await player.play(AssetSource(assetPath));
+    } catch (_) {
+      if (!returned) {
+        returned = true;
+        _activeSounds = math.max(0, _activeSounds - 1);
+        await subscription.cancel();
+        await player.dispose();
+      }
+    }
   }
 
   @override
@@ -406,16 +428,25 @@ class AudioManager implements AudioOutput {
     double volume = 1.0,
     bool loop = true,
   }) async {
+    await _music.stop();
     await _music.setReleaseMode(loop ? ReleaseMode.loop : ReleaseMode.release);
-    await _music.play(AssetSource(assetPath), volume: volume);
+    await _music.setVolume(volume.clamp(0.0, 1.0));
+    await _music.play(AssetSource(assetPath));
   }
 
   @override
   Future<void> stopMusic() => _music.stop();
 
+  @override
+  Future<void> pauseMusic() => _music.pause();
+
+  @override
+  Future<void> resumeMusic() => _music.resume();
+
   Future<void> setMusicVolume(double volume) => _music.setVolume(volume);
 
   void dispose() {
+    _disposed = true;
     _music.dispose();
     for (final player in _pool) {
       player.dispose();

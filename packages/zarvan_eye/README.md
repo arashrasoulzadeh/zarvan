@@ -2,6 +2,78 @@
 
 Flutter-free Dart integration for the [Eye analytics collector](https://github.com/arashrasoulzadeh/eye).
 
+## Initialize in a game
+
+Initialize Eye once during game startup, before creating the first scene. The
+async initializer creates the first session before it returns:
+
+```dart
+Future<EyeClient> initAnalytics() {
+  return EyeClient.init(EyeOptions(
+    endpoint: const String.fromEnvironment('EYE_ENDPOINT'),
+    apiKey: const String.fromEnvironment('EYE_API_KEY'),
+    tenantId: 'my-game',
+    installationStore: myInstallationStore,
+    queueStore: myQueueStore,
+    metadata: {
+      'app_version': '1.0.0',
+      'build': '42',
+      'platform': 'android',
+    },
+    redactKeys: {'email', 'token', 'password'},
+  ));
+}
+
+Future<void> main() async {
+  final eye = await initAnalytics();
+  final activity = GameActivity(eye);
+
+  runGame(
+    onInput: activity.activity,
+    onFocusChanged: activity.setFocused,
+  );
+
+  // On the game's final shutdown callback:
+  activity.close();
+  await eye.flush();
+  eye.close();
+}
+```
+
+`EyeClient.init()` performs three startup tasks: it loads or creates the
+installation-wide anonymous ID, creates the current Eye session, and restores
+any events saved by the offline queue. Do not create a new client per scene;
+keep one client for the lifetime of the game process.
+
+The package does not choose a storage library. Implement the two small storage
+interfaces with the persistence system used by the game:
+
+```dart
+class MyInstallationStore implements EyeInstallationStore {
+  @override
+  Future<String?> readAnonymousUserId() => storage.read('eye_anonymous_id');
+
+  @override
+  Future<void> writeAnonymousUserId(String id) =>
+      storage.write('eye_anonymous_id', id);
+}
+
+class MyQueueStore implements EyeQueueStore {
+  @override
+  Future<List<Map<String, Object?>>> readEvents() async =>
+      (await storage.readJsonList('eye_event_queue'));
+
+  @override
+  Future<void> writeEvents(List<Map<String, Object?>> events) =>
+      storage.writeJsonList('eye_event_queue', events);
+}
+```
+
+For Flutter, `storage` can be backed by `shared_preferences`; for a pure Dart
+game it can be backed by a local JSON file. The anonymous ID must be stored
+durably if it is intended to remain stable across app launches and upgrades.
+Most mobile platforms clear this storage when the app is uninstalled.
+
 ```dart
 final eye = EyeClient(const EyeOptions(
   endpoint: 'https://analytics.example.com',

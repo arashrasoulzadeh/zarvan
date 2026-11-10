@@ -5,6 +5,8 @@
 library;
 
 export 'src/ad_service.dart';
+export 'src/consent.dart';
+export 'src/ump_consent_source.dart';
 export 'src/ad_unit_ids.dart';
 export 'src/admob_ad_service.dart';
 export 'src/fake_ad_service.dart';

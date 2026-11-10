@@ -4,6 +4,8 @@ import 'package:flutter/widgets.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart' as gma;
 
 import 'ad_service.dart';
+import 'consent.dart';
+import 'ump_consent_source.dart';
 import 'ad_unit_ids.dart';
 import 'interstitial_pacing.dart';
 
@@ -12,21 +14,34 @@ import 'interstitial_pacing.dart';
 /// Full-screen ads are preloaded and reloaded right after each use, because AdMob ads are single-shot
 /// and loading on demand would make the player wait at the exact moment the ad is wanted.
 class AdMobAdService implements AdService {
-  AdMobAdService({AdUnitIds? ids, InterstitialPacing? pacing})
-    : ids = ids ?? AdUnitIds.test,
-      pacing = pacing ?? InterstitialPacing();
+  AdMobAdService({
+    AdUnitIds? ids,
+    InterstitialPacing? pacing,
+    ConsentSource consentSource = const UmpConsentSource(),
+  }) : ids = ids ?? AdUnitIds.test,
+       pacing = pacing ?? InterstitialPacing(),
+       _gate = ConsentGate(consentSource);
 
   final AdUnitIds ids;
   final InterstitialPacing pacing;
 
+  final ConsentGate _gate;
   gma.InterstitialAd? _interstitial;
   gma.RewardedAd? _rewarded;
   bool _initialized = false;
 
   @override
+  AdConsent get consent => _gate.state;
+
+  @override
+  Future<AdConsent> requestConsent() => _gate.resolve();
+
+  @override
   Future<void> initialize() async {
     if (_initialized) return;
     _initialized = true;
+    // The SDK is not started, and no ad requested, before consent resolves.
+    if (!(await requestConsent()).allowsAds) return;
     await gma.MobileAds.instance.initialize();
     _loadInterstitial();
     _loadRewarded();
@@ -104,7 +119,9 @@ class AdMobAdService implements AdService {
   }
 
   @override
-  Widget buildBanner() => _BannerSlot(unitId: ids.banner);
+  Widget buildBanner() => _gate.allowsAds
+      ? _BannerSlot(unitId: ids.banner)
+      : const SizedBox.shrink();
 
   @override
   void dispose() {

@@ -40,6 +40,23 @@ ADMOB_BANNER_IOS=...
 
 Unit ids are not secrets. A missing file or key falls back to Google's sample ids.
 
+## Consent
+
+`AdService.initialize()` first runs `requestConsent()` and waits for it: no ad
+SDK starts and no ad is requested before the answer. `AdMobAdService` uses
+Google's UMP (`UmpConsentSource`); on iOS the same UMP message drives the ATT
+prompt once an IDFA message is set up in the AdMob console. Tapsell and
+`NoAdsService` report `AdConsent.notRequired`.
+
+A player who declines (or whose consent check fails) still plays: `consent` is
+`AdConsent.denied`, `isRewardedReady` is false and the show methods return false.
+`requestConsent()` returns the cached answer; for a settings "privacy" button
+use a `ConsentGate.reset()`-style re-ask through your own source. Tests script it:
+
+```dart
+final ads = FakeAdService(consentSource: myManualSource);
+```
+
 ## Platform setup (the app, not this package)
 
 Add your AdMob app id to `AndroidManifest.xml` (`com.google.android.gms.ads.APPLICATION_ID`) and

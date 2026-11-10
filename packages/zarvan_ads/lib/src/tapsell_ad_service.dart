@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 
 import 'ad_service.dart';
+import 'consent.dart';
 import 'interstitial_pacing.dart';
 import 'tapsell_client.dart';
 import 'tapsell_ids.dart';
@@ -27,6 +28,12 @@ class TapsellAdService implements AdService {
   String _interstitial = '';
   String _rewarded = '';
   bool _initialized = false;
+
+  @override
+  AdConsent get consent => AdConsent.notRequired;
+
+  @override
+  Future<AdConsent> requestConsent() async => AdConsent.notRequired;
 
   @override
   Future<void> initialize() async {

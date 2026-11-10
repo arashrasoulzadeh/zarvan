@@ -1,7 +1,17 @@
 import 'package:flutter/widgets.dart';
 
+import 'consent.dart';
+
 /// What a game needs from an ad network, and nothing else, so the network can be swapped or faked.
 abstract class AdService {
+  /// Where the player stands on consent. Ads are only requested once this
+  /// [AdConsent.allowsAds]; a declined player still plays, with ads unavailable.
+  AdConsent get consent;
+
+  /// Runs the consent flow (once; later calls return the same answer) and
+  /// completes with the result. `initialize` calls this first and waits for it.
+  Future<AdConsent> requestConsent();
+
   /// Starts the SDK and preloads the first full-screen ads. Safe to call more than once.
   Future<void> initialize();
 

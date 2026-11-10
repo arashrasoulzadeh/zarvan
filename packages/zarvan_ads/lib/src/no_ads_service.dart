@@ -1,11 +1,18 @@
 import 'package:flutter/widgets.dart';
 
 import 'ad_service.dart';
+import 'consent.dart';
 
 /// An [AdService] that never shows anything: for web and desktop, where AdMob does not run, and for
 /// players who bought "remove ads".
 class NoAdsService implements AdService {
   const NoAdsService();
+
+  @override
+  AdConsent get consent => AdConsent.notRequired;
+
+  @override
+  Future<AdConsent> requestConsent() async => AdConsent.notRequired;
 
   @override
   Future<void> initialize() async {}

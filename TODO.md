@@ -39,6 +39,7 @@ ship, with a test and docs.
 
 - [x] **Flat shape primitives** (`Shape`: circle, rounded rect, ring, dashes, screen space) for art-free games such as Adad Bazi; tests in `shape_test.dart`, benchmark in `benchmark/`.
 - [x] **Render a world to PNG** (`captureWorldToPng`) for share cards; tests in `capture_world_test.dart`.
+- [x] **Key-value store for save blobs** (`KeyValueStore`, `MemoryKeyValueStore`, `PreferencesKeyValueStore`) so a game keeps plain data without a platform import; tests in `key_value_store_test.dart`.
 - [ ] **UI toolkit: Flutter widgets for the new models.** `layoutStack`, `anchorRect`, `ScrollListModel` and
       `TextInputModel` exist as pure models; scenes still need widgets that render and drive them.
 

@@ -14,6 +14,7 @@ export 'src/rendering/animation.dart';
 export 'src/rendering/animation_transition.dart';
 export 'src/rendering/hud_bar.dart';
 export 'src/logic/json_asset.dart';
+export 'src/logic/preferences_key_value_store.dart';
 export 'src/rendering/shape.dart';
 export 'src/rendering/frame_stats.dart';
 export 'src/rendering/frame_timing_monitor.dart';

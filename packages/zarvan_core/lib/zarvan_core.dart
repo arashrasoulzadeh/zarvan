@@ -11,6 +11,7 @@ export 'src/ai/hearing.dart';
 export 'src/ecs/behavior.dart';
 export 'src/ui/button_hit_test.dart';
 export 'src/content/cinematic.dart';
+export 'src/content/key_value_store.dart';
 export 'src/content/inventory.dart';
 export 'src/content/dialogue.dart';
 export 'src/content/play_sound_event.dart';

@@ -39,6 +39,12 @@ abstract class AudioPreloadOutput {
   Future<void> preloadSounds(Iterable<String> assetPaths);
 }
 
+/// Optional playback state exposed by a platform audio output.
+abstract class AudioStateOutput {
+  /// Whether the music player is currently playing.
+  bool get musicPlaying;
+}
+
 /// Plays sounds and music by short name: `audio.sfx('jump')`,
 /// `audio.music('theme')`, instead of passing asset paths through game code.
 ///
@@ -101,7 +107,10 @@ class GameAudio {
     bool loop = true,
   }) async {
     final path = _lookup(tracks, name, 'track');
-    if (_currentTrack == name) return;
+    final state = _output is AudioStateOutput
+        ? _output as AudioStateOutput
+        : null;
+    if (_currentTrack == name && (state == null || state.musicPlaying)) return;
     _currentTrack = name;
     _musicQueue = _musicQueue.then((_) async {
       if (_currentTrack != name) return;

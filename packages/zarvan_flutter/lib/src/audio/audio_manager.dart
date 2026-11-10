@@ -6,7 +6,11 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:zarvan_core/zarvan_core.dart';
 
 import 'game_audio.dart'
-    show AudioLifecycleOutput, AudioOutput, AudioPreloadOutput;
+    show
+        AudioLifecycleOutput,
+        AudioOutput,
+        AudioPreloadOutput,
+        AudioStateOutput;
 
 /// Volume/stereo-balance for a sound at [sourceX]/[sourceY] as heard from
 /// [listenerX]/[listenerY] (typically the camera's world position) —
@@ -294,8 +298,21 @@ bool checkLineOfSightSync({
 /// still uses a single persistent player since a game typically has
 /// one music track playing at a time.
 class AudioManager
-    implements AudioOutput, AudioLifecycleOutput, AudioPreloadOutput {
+    implements
+        AudioOutput,
+        AudioLifecycleOutput,
+        AudioPreloadOutput,
+        AudioStateOutput {
   final AudioPlayer _music = AudioPlayer();
+  late final StreamSubscription<PlayerState> _musicStateSubscription = _music
+      .onPlayerStateChanged
+      .listen((state) {
+        _musicPlaying = state == PlayerState.playing;
+      });
+  bool _musicPlaying = false;
+
+  @override
+  bool get musicPlaying => _musicPlaying;
 
   /// Idle, ready-to-reuse `AudioPlayer`s — populated as sounds finish
   /// playing (see [playSound]), drained (LIFO, so the most recently
@@ -479,6 +496,7 @@ class AudioManager
 
   void dispose() {
     _disposed = true;
+    unawaited(_musicStateSubscription.cancel());
     _music.dispose();
     for (final player in _pool) {
       player.dispose();

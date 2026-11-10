@@ -138,7 +138,8 @@ abstract class Scene {
   void handleTap(World world, SceneController scenes, Offset worldPosition) {}
 
   /// Called the instant a pointer touches down (before it lifts), with its
-  /// world position. For timer-driven UI that must react without waiting
+  /// world position as plain `x`/`y` (so a scene needs no `dart:ui` import).
+  /// For timer-driven UI that must react without waiting
   /// for a tap to complete, such as picking a card. Does nothing by default.
   void handlePointerDown(
     World world,

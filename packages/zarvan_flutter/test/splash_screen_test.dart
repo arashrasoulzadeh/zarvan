@@ -60,17 +60,21 @@ void main() {
     );
   });
 
-  testWidgets('showEngineVersion: false hides the footer', (tester) async {
-    await tester.pumpWidget(
-      _host(
-        SplashScreen(
-          config: const SplashConfig(showEngineVersion: false),
-          progress: LoadingProgress(),
+  testWidgets(
+    'showEngineVersion: false still credits the engine, minus the commit',
+    (tester) async {
+      await tester.pumpWidget(
+        _host(
+          SplashScreen(
+            config: const SplashConfig(showEngineVersion: false),
+            progress: LoadingProgress(),
+          ),
         ),
-      ),
-    );
-    expect(find.textContaining('ZARVAN engine'), findsNothing);
-  });
+      );
+      expect(find.text('ZARVAN engine'), findsOneWidget);
+      expect(find.textContaining('·'), findsNothing);
+    },
+  );
 
   test('footerFor falls back to dev without a commit', () {
     expect(SplashScreen.footerFor(''), 'ZARVAN engine · dev');
@@ -90,7 +94,9 @@ void main() {
         ),
       ),
     );
-    expect(tester.widget<Image>(find.byType(Image)).image, same(logo));
+    final images = tester.widgetList<Image>(find.byType(Image)).toList();
+    expect(images.first.image, same(logo));
+    expect(images, hasLength(2), reason: 'the engine credit logo stays too');
   });
 }
 

@@ -50,7 +50,9 @@ class SplashConfig {
   /// Progress bar and label accent colour.
   final Color accentColor;
 
-  /// Whether the footer shows the engine commit this build used.
+  /// Whether the footer credit also shows the engine commit this build used.
+  /// The credit itself (the ZARVAN logo and name) is always shown: every game
+  /// built on the engine says so.
   final bool showEngineVersion;
 
   /// Keeps the splash up at least this long, so a fast load does not flash
@@ -113,6 +115,9 @@ class SplashScreen extends StatelessWidget {
   /// Footer text for [commit] (`dev` when empty).
   static String footerFor(String commit) =>
       'ZARVAN engine · ${commit.isEmpty ? 'dev' : commit}';
+
+  /// The credit without a commit, for builds that hide the version.
+  static const creditOnly = 'ZARVAN engine';
 
   @override
   Widget build(BuildContext context) {
@@ -178,14 +183,26 @@ class SplashScreen extends StatelessWidget {
                 ),
               ),
             ),
-            if (config.showEngineVersion)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Text(
-                  footer ?? footerFor(kEngineCommit),
-                  style: text.copyWith(fontSize: 11, color: config.accentColor),
-                ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Image(image: _logoAsset, width: 18, height: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    footer ??
+                        (config.showEngineVersion
+                            ? footerFor(kEngineCommit)
+                            : creditOnly),
+                    style: text.copyWith(
+                      fontSize: 11,
+                      color: config.accentColor,
+                    ),
+                  ),
+                ],
               ),
+            ),
           ],
         ),
       ),

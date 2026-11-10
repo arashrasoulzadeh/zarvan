@@ -66,6 +66,22 @@ class SplashConfig {
     this.showEngineVersion = true,
     this.minDuration = Duration.zero,
   });
+
+  /// A splash described with plain `0xAARRGGBB` integers and a title, so a
+  /// game whose code never touches `dart:ui` can still brand its splash.
+  factory SplashConfig.fromArgb({
+    String? title,
+    int? backgroundArgb,
+    int accentArgb = 0xFFC8A66A,
+    bool showEngineVersion = true,
+    Duration minDuration = Duration.zero,
+  }) => SplashConfig(
+    title: title,
+    backgroundColor: backgroundArgb == null ? null : Color(backgroundArgb),
+    accentColor: Color(accentArgb),
+    showEngineVersion: showEngineVersion,
+    minDuration: minDuration,
+  );
 }
 
 /// The loading screen every game gets by default: logo, optional title, a

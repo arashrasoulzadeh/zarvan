@@ -2,6 +2,7 @@ import 'package:test/test.dart';
 import 'package:zarvan_core/zarvan_core.dart';
 
 void main() {
+  uiRectGeometryTests();
   group('layoutStack', () {
     test('flexible children share what fixed ones and gaps leave', () {
       final r = layoutStack(
@@ -144,6 +145,19 @@ void main() {
       expect(t.caret, 2);
       t.moveCaret(-99);
       expect(t.caret, 0);
+    });
+  });
+}
+
+void uiRectGeometryTests() {
+  group('UiRect geometry', () {
+    test('centre, edges and inflate', () {
+      const r = UiRect(10, 20, 100, 40);
+      expect(r.centerX, 60);
+      expect(r.centerY, 40);
+      expect((r.left, r.top), (10, 20));
+      expect(r.inflate(8), const UiRect(2, 12, 116, 56));
+      expect(r.inflate(-5), const UiRect(15, 25, 90, 30));
     });
   });
 }

@@ -11,9 +11,18 @@ class UiRect {
 
   double get right => x + width;
   double get bottom => y + height;
+  double get left => x;
+  double get top => y;
+  double get centerX => x + width / 2;
+  double get centerY => y + height / 2;
 
   bool contains(double px, double py) =>
       px >= x && px < right && py >= y && py < bottom;
+
+  /// This rect grown by [by] on every side (negative shrinks it), e.g. to make
+  /// a small button easier to hit than it looks.
+  UiRect inflate(double by) =>
+      UiRect(x - by, y - by, width + 2 * by, height + 2 * by);
 
   @override
   bool operator ==(Object other) =>

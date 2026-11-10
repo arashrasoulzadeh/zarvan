@@ -31,6 +31,7 @@ made explicitly (see the "Remove root sample app" commit).
 | `packages/zarvan_ads` | Ads: `AdService` over AdMob (banner, interstitial, rewarded), `InterstitialPacing`, `NoAdsService`/`FakeAdService`. Leaf package, depends on no engine package; the game wires rewards (e.g. `IdleSession.doubleOffline`) itself. | `google_mobile_ads` |
 | `packages/zarvan_api` | MCP server + HTTP/JSON-RPC API over the operation registry in `zarvan_core` (spec: `engine_mcp.md`; adding an operation: see the checklist in `TODO.md`'s agent-API section and regenerate `docs/reference/operations.md`). Every operation also exists as a `zarvan` command (1:1 rule). | `zarvan_core` |
 | `packages/zarvan_cli` | `zarvan` CLI: `create`/`upgrade`/`lint`. | `zarvan_core` (for `lint`) |
+| `packages/zarvan_eye` | Flutter-free Dart client for Eye analytics: sessions, identity, batching and retries. | none |
 
 **Dependency direction is a one-way DAG: `zarvan_core` → `zarvan_flutter`
 → `zarvan_platformer`.** Nothing may depend "backward" up this chain.

@@ -17,6 +17,7 @@ It does not by itself imply an integrated hosted AI model or service.
 | [zarvan_platformer](packages/zarvan_platformer/README.md) | Gravity, jumping, platform/tile resolution, combat, character helpers and animation | `zarvan_core`, `zarvan_flutter` |
 | [zarvan_strategy](packages/zarvan_strategy/README.md) | One-call wiring and unit spawning for turn-based strategy (rules live in `zarvan_core/lib/src/turn/`) | `zarvan_core`, `zarvan_flutter` |
 | [zarvan_cli](packages/zarvan_cli/README.md) | Game scaffolding, dependency upgrades, content validation and asset packing | `zarvan_core` |
+| [zarvan_eye](packages/zarvan_eye/README.md) | Dart client for the Eye analytics collector | None |
 
 Core has no Flutter dependency. The shell must not depend on platformer
 gameplay. For example, `TileMap` data lives in core so the shell can draw

@@ -1,0 +1,16 @@
+name: zarvan_eye
+description: A Flutter-free Dart client for the Eye analytics collector used by ZARVAN games.
+version: 0.1.0
+homepage: https://github.com/arashrasoulzadeh/zarvan
+repository: https://github.com/arashrasoulzadeh/zarvan
+publish_to: none
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  http: ^1.2.2
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0

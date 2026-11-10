@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:http/http.dart' as http;
 
@@ -15,6 +16,28 @@ class EyeRequestException implements Exception {
   String toString() => message;
 }
 
+/// Persistence used to keep the anonymous installation id across launches.
+abstract interface class EyeInstallationStore {
+  /// Reads the previously saved value, or null when this is a new install.
+  Future<String?> readAnonymousUserId();
+
+  /// Persists the installation-wide anonymous user id.
+  Future<void> writeAnonymousUserId(String id);
+}
+
+/// A non-persistent store useful for tests and short-lived processes.
+class MemoryEyeInstallationStore implements EyeInstallationStore {
+  String? _id;
+
+  @override
+  Future<String?> readAnonymousUserId() async => _id;
+
+  @override
+  Future<void> writeAnonymousUserId(String id) async {
+    _id = id;
+  }
+}
+
 /// Configuration for an [EyeClient].
 class EyeOptions {
   /// Creates client options for an Eye tenant.
@@ -27,6 +50,7 @@ class EyeOptions {
     this.flushInterval = const Duration(seconds: 5),
     this.httpClient,
     this.debug = false,
+    this.installationStore,
   });
 
   /// Base URL of the Eye collector, without a trailing slash.
@@ -52,6 +76,9 @@ class EyeOptions {
 
   /// Enables validation and diagnostic logging.
   final bool debug;
+
+  /// Store for the anonymous id shared by every session on this installation.
+  final EyeInstallationStore? installationStore;
 }
 
 /// A serializable event queued for Eye ingestion.
@@ -90,6 +117,7 @@ class EyeClient {
   static Future<EyeClient> init(EyeOptions options) async {
     final client = EyeClient(options);
     try {
+      await client._ensureAnonymousUserId();
       await client.ensureSession();
       return client;
     } catch (_) {
@@ -121,12 +149,16 @@ class EyeClient {
   final List<EyeEvent> _buffer = [];
   Timer? _timer;
   String? _sessionId;
+  String? _anonymousUserId;
   String? _userId;
   Map<String, Object?> _traits = const {};
   bool _closed = false;
 
   /// The current session, or null until [ensureSession] succeeds.
   String? get sessionId => _sessionId;
+
+  /// The anonymous id shared across sessions for this installation.
+  String? get anonymousUserId => _anonymousUserId;
 
   /// A snapshot of events currently waiting to be sent.
   List<EyeEvent> get bufferedEvents => List.unmodifiable(_buffer);
@@ -163,7 +195,11 @@ class EyeClient {
     if (session == null) throw StateError('Call ensureSession before track');
     if (options.debug && name.isEmpty) throw ArgumentError.value(name, 'name');
     if (options.debug && payload != null) jsonEncode(payload);
-    final merged = <String, Object?>{...?(dims), ..._traits};
+    final merged = <String, Object?>{
+      if (_anonymousUserId != null) 'anonymous_user_id': _anonymousUserId,
+      ...?(dims),
+      ..._traits,
+    };
     if (_userId != null) merged['user_id'] = _userId;
     if (_buffer.length >= options.maxBufferSize) _buffer.removeAt(0);
     _buffer.add(
@@ -235,4 +271,18 @@ class EyeClient {
   String _eventId() =>
       '${DateTime.now().microsecondsSinceEpoch}-${_buffer.length}';
   Map<String, Object?> _deviceInfo() => {'runtime': 'dart'};
+
+  Future<void> _ensureAnonymousUserId() async {
+    if (_anonymousUserId != null) return;
+    final store = options.installationStore;
+    final existing = await store?.readAnonymousUserId();
+    _anonymousUserId = existing ?? _newAnonymousUserId();
+    if (existing == null) await store?.writeAnonymousUserId(_anonymousUserId!);
+  }
+
+  String _newAnonymousUserId() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    return bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
+  }
 }

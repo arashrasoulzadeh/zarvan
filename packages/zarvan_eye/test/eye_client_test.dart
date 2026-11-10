@@ -20,6 +20,16 @@ class _Client extends http.BaseClient {
   }
 }
 
+class _Store implements EyeInstallationStore {
+  String? id;
+
+  @override
+  Future<String?> readAnonymousUserId() async => id;
+
+  @override
+  Future<void> writeAnonymousUserId(String value) async => id = value;
+}
+
 void main() {
   test(
     'creates a session, enriches events, and flushes Eye wire format',
@@ -135,6 +145,40 @@ void main() {
     expect(client.sessionId, 'session-1');
     expect(transport.requests, hasLength(1));
     client.close();
+  });
+
+  test('init creates and restores an installation-wide anonymous id', () async {
+    final store = _Store();
+    final firstTransport = _Client();
+    final first = await EyeClient.init(
+      EyeOptions(
+        endpoint: 'https://eye.test',
+        apiKey: 'key',
+        tenantId: 'game',
+        httpClient: firstTransport,
+        installationStore: store,
+        flushInterval: Duration.zero,
+        batchSize: 0,
+      ),
+    );
+    expect(store.id, isNotEmpty);
+    first.track('launch');
+    expect(first.bufferedEvents.single.dims['anonymous_user_id'], store.id);
+    first.close();
+
+    final second = await EyeClient.init(
+      EyeOptions(
+        endpoint: 'https://eye.test',
+        apiKey: 'key',
+        tenantId: 'game',
+        httpClient: _Client(),
+        installationStore: store,
+        flushInterval: Duration.zero,
+        batchSize: 0,
+      ),
+    );
+    expect(second.anonymousUserId, store.id);
+    second.close();
   });
 
   test('activity records focus, idle and game time events', () async {

@@ -443,6 +443,13 @@ whole shape. `screenSpace: true` ignores the camera (like `Text.screenSpace`).
 200 shapes cost about 0.5 ms of paint per frame
 (`benchmark/shape_benchmark_test.dart`).
 
+## Instant touches (`Scene.handlePointerDown`)
+
+`Scene.handleTap` fires when the finger lifts. For timer-driven UI (picking a
+card before an enemy arrives) override `handlePointerDown`, which fires the
+instant the pointer touches, with the world position. `EngineView` exposes it
+as `onWorldPointerDown`.
+
 ## Capturing an image
 
 `captureWorldToPng` renders a world once, off screen, to PNG bytes of an exact

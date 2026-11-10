@@ -652,6 +652,13 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
                     worldPosition,
                   )
                 : null,
+            onWorldPointerDown: overlay == null
+                ? (worldPosition) => loaded.scene.handlePointerDown(
+                    loaded.world,
+                    _sceneController,
+                    worldPosition,
+                  )
+                : null,
             onWorldDrag: overlay == null
                 ? (start, delta, ended) => loaded.scene.handleDrag(
                     loaded.world,
@@ -718,6 +725,12 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
                 _sceneController,
                 worldPosition,
               ),
+              onWorldPointerDown: (worldPosition) =>
+                  overlay.scene.handlePointerDown(
+                    overlay.world,
+                    _sceneController,
+                    worldPosition,
+                  ),
               onWorldDrag: (start, delta, ended) => overlay.scene.handleDrag(
                 overlay.world,
                 _sceneController,

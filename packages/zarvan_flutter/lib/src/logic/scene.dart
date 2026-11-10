@@ -137,6 +137,15 @@ abstract class Scene {
   /// common "which button did they tap" case.
   void handleTap(World world, SceneController scenes, Offset worldPosition) {}
 
+  /// Called the instant a pointer touches down (before it lifts), with its
+  /// world position. For timer-driven UI that must react without waiting
+  /// for a tap to complete, such as picking a card. Does nothing by default.
+  void handlePointerDown(
+    World world,
+    SceneController scenes,
+    Offset worldPosition,
+  ) {}
+
   /// Called while a finger drags across the scene, on every move with [ended]
   /// false and once more with [ended] true when it lifts. [worldStart] is
   /// where the drag began and [worldDelta] how far it has gone, both in

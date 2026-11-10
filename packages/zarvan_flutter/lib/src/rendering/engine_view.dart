@@ -107,6 +107,13 @@ class EngineView extends StatefulWidget {
   /// tap-driven UI pays nothing for it.
   final void Function(Offset worldPosition)? onWorldTap;
 
+  /// Called the instant a pointer touches down, with its world position.
+  /// Unlike [onWorldTap] (which waits for the finger to lift, and drops the
+  /// tap if the finger drifts), this fires immediately -- what a fast,
+  /// timer-driven UI such as a card bar needs. Null (default) adds no
+  /// listener.
+  final void Function(Offset worldPosition)? onWorldPointerDown;
+
   /// Called as a finger drags across the view: on every move with `ended`
   /// false, then once more with `ended` true when it lifts. [worldStart] is
   /// where the drag began and [worldDelta] how far it has gone since, both in
@@ -265,6 +272,7 @@ class EngineView extends StatefulWidget {
     this.showColliderDebug = false,
     this.showPerformanceOverlay = false,
     this.onWorldTap,
+    this.onWorldPointerDown,
     this.onWorldDrag,
     this.fixedTimestepSeconds,
     this.ambientBrightness = 1.0,
@@ -711,7 +719,10 @@ class _EngineViewState extends State<EngineView>
 
     final onWorldTap = widget.onWorldTap;
     final onWorldDrag = widget.onWorldDrag;
-    if (onWorldTap != null || onWorldDrag != null) {
+    final onWorldPointerDown = widget.onWorldPointerDown;
+    if (onWorldTap != null ||
+        onWorldDrag != null ||
+        onWorldPointerDown != null) {
       Offset toWorld(Offset local) {
         final box = context.findRenderObject() as RenderBox?;
         final layout = _viewportLayout;
@@ -721,6 +732,15 @@ class _EngineViewState extends State<EngineView>
                 layout.screenToContent(local),
                 layout.contentRect.size,
               );
+      }
+
+      if (onWorldPointerDown != null) {
+        child = Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (event) =>
+              onWorldPointerDown(toWorld(event.localPosition)),
+          child: child,
+        );
       }
 
       child = GestureDetector(

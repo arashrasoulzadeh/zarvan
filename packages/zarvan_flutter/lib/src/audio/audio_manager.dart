@@ -5,7 +5,7 @@ import 'package:audioplayers/audioplayers.dart';
 
 import 'package:zarvan_core/zarvan_core.dart';
 
-import 'game_audio.dart' show AudioOutput;
+import 'game_audio.dart' show AudioLifecycleOutput, AudioOutput;
 
 /// Volume/stereo-balance for a sound at [sourceX]/[sourceY] as heard from
 /// [listenerX]/[listenerY] (typically the camera's world position) —
@@ -292,7 +292,7 @@ bool checkLineOfSightSync({
 /// the pooling benefit past [_maxPoolSize] of them at once. Music
 /// still uses a single persistent player since a game typically has
 /// one music track playing at a time.
-class AudioManager implements AudioOutput {
+class AudioManager implements AudioOutput, AudioLifecycleOutput {
   final AudioPlayer _music = AudioPlayer();
 
   /// Idle, ready-to-reuse `AudioPlayer`s — populated as sounds finish
@@ -311,6 +311,8 @@ class AudioManager implements AudioOutput {
   static const _maxConcurrentSounds = 12;
   int _activeSounds = 0;
   bool _disposed = false;
+  bool _soundsPaused = false;
+  final Set<AudioPlayer> _activePlayers = <AudioPlayer>{};
 
   @override
   Future<void> playSound(String assetPath, {double volume = 1.0}) =>
@@ -390,15 +392,19 @@ class AudioManager implements AudioOutput {
     double lowPassFrequency = 0.0,
     double reverbSend = 0.0,
   }) async {
-    if (_disposed || _activeSounds >= _maxConcurrentSounds) return;
+    if (_disposed || _soundsPaused || _activeSounds >= _maxConcurrentSounds) {
+      return;
+    }
     final player = _pool.isNotEmpty ? _pool.removeLast() : AudioPlayer();
     _activeSounds++;
+    _activePlayers.add(player);
     var returned = false;
     late final StreamSubscription<void> subscription;
     subscription = player.onPlayerComplete.listen((_) {
       if (returned) return;
       returned = true;
       _activeSounds = math.max(0, _activeSounds - 1);
+      _activePlayers.remove(player);
       subscription.cancel();
       if (!_disposed && _pool.length < _maxPoolSize) {
         _pool.add(player);
@@ -416,6 +422,7 @@ class AudioManager implements AudioOutput {
       if (!returned) {
         returned = true;
         _activeSounds = math.max(0, _activeSounds - 1);
+        _activePlayers.remove(player);
         await subscription.cancel();
         await player.dispose();
       }
@@ -442,6 +449,18 @@ class AudioManager implements AudioOutput {
 
   @override
   Future<void> resumeMusic() => _music.resume();
+
+  @override
+  Future<void> pauseSounds() async {
+    _soundsPaused = true;
+    await Future.wait([for (final player in _activePlayers) player.pause()]);
+  }
+
+  @override
+  Future<void> resumeSounds() async {
+    _soundsPaused = false;
+    await Future.wait([for (final player in _activePlayers) player.resume()]);
+  }
 
   Future<void> setMusicVolume(double volume) => _music.setVolume(volume);
 

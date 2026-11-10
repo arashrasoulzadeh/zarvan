@@ -24,6 +24,15 @@ abstract class AudioOutput {
   Future<void> resumeMusic() async {}
 }
 
+/// Optional lifecycle controls for outputs that can suspend active effects.
+abstract class AudioLifecycleOutput {
+  /// Pauses active one-shot effects.
+  Future<void> pauseSounds();
+
+  /// Resumes effects paused by [pauseSounds].
+  Future<void> resumeSounds();
+}
+
 /// Plays sounds and music by short name: `audio.sfx('jump')`,
 /// `audio.music('theme')`, instead of passing asset paths through game code.
 ///
@@ -54,6 +63,7 @@ class GameAudio {
 
   String? _currentTrack;
   Future<void> _musicQueue = Future<void>.value();
+  bool _musicPaused = false;
 
   /// Plays through [output] using the given name -> asset path maps.
   GameAudio(
@@ -120,6 +130,34 @@ class GameAudio {
   /// Continues music paused by [pauseMusic].
   Future<void> resumeMusic() async {
     if (_currentTrack != null) await _output?.resumeMusic();
+  }
+
+  /// Pauses music and active effects as one ordered lifecycle transition.
+  Future<void> pauseAll() async {
+    _musicPaused = true;
+    _musicQueue = _musicQueue.then((_) async {
+      await _output?.pauseMusic();
+      final lifecycle = _output is AudioLifecycleOutput
+          ? _output as AudioLifecycleOutput
+          : null;
+      await lifecycle?.pauseSounds();
+    });
+    await _musicQueue;
+  }
+
+  /// Resumes audio only after the app is active again.
+  Future<void> resumeAll() async {
+    _musicPaused = false;
+    _musicQueue = _musicQueue.then((_) async {
+      if (!_musicPaused) {
+        await _output?.resumeMusic();
+        final lifecycle = _output is AudioLifecycleOutput
+            ? _output as AudioLifecycleOutput
+            : null;
+        await lifecycle?.resumeSounds();
+      }
+    });
+    await _musicQueue;
   }
 
   static String _lookup(Map<String, String> map, String name, String kind) {

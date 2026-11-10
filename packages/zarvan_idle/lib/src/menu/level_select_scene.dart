@@ -8,6 +8,7 @@ import 'package:zarvan_flutter/zarvan_flutter.dart'
         Scene,
         SceneController,
         Sprite,
+        ShaderEffect,
         SpriteAtlas,
         Text,
         TextAlignment,
@@ -63,7 +64,9 @@ class LevelSelectConfig {
   final String buttonImage;
   final String panelImage;
 
-  /// Ribbon drawn behind the title; null draws the title on the map.
+  /// Banner drawn behind the title, fitted to 140 world units wide at any
+  /// pixel size (a wide, high-resolution one such as a winged plaque looks
+  /// best); null draws the title on the map.
   final String? titleBannerImage;
 
   /// Opacity (0-255) of the dark wash over the map, so the art still shows.
@@ -116,18 +119,46 @@ class LevelSelectScene extends eng.Scene {
   static String _thumb(String zone, int layer) => 'map_t_${zone}_$layer';
 
   // Hero card geometry in world units (the world is 180 x 320).
-  static const _frameW = 132.0, _frameH = 112.0;
+  static const _frameW = 128.0, _frameH = 108.0;
   static const _artW = 120.0, _artH = 100.0;
   static const _centerY = 108.0;
   static const _sideScale = 0.72, _spacing = 100.0;
   static const _slideSpeed = 520.0;
+
+  // Title banner: width and centre height in world units, and the pixel width
+  // its art was authored at (used until the real size is measured).
+  static const _bannerW = 140.0, _titleY = 25.0, _bannerNominal = 560.0;
+
+  /// Softness of the picture inside the portal (fraction of the image): low,
+  /// so the zone's scenery stays recognisable.
+  static const _portalBlur = 0.006;
+
+  /// Pixels across the portal: far finer than the default chunky 30, so the
+  /// zone's art is sharp (a little pixel grain stays).
+  static const _portalDetail = 110.0;
+
+  /// A calm rim: the default glow along the edges is too bright on a card.
+  static const _portalRimGlow = 0.4;
+
+  /// Width of the gold-and-lapis border, as a fraction of the card's art.
+  static const _portalBorder = 0.045;
+
+  /// How far, in world units, a drag must carry the row to turn the carousel
+  /// when released; less than that and the row springs back.
+  static const _dragCommit = 28.0;
 
   /// The current zone, so the map opens on where the player left off.
   static int _startIndex(LevelSelectConfig c) =>
       (c.unlocked() - 1).clamp(0, c.zones.isEmpty ? 0 : c.zones.length - 1);
 
   int _index;
+
+  /// How far the cards are still displaced from their resting places, easing
+  /// back to 0 (after a move or a released drag).
   double _slide = 0;
+
+  /// How far the finger currently holds the row from where it rests.
+  double _dragged = 0;
   final _fit = ArtFitter();
   final _cardEntities = <EntityId>[];
   final _infoEntities = <EntityId>[];
@@ -160,7 +191,12 @@ class LevelSelectScene extends eng.Scene {
     r.register(_btn, UpgradeBar.atlasFor(await full(config.buttonImage)));
     r.register(_panel, eng.panelFrameAtlas(await full(config.panelImage), 24));
     if (config.titleBannerImage != null) {
-      r.register(_banner, await full(config.titleBannerImage!));
+      final banner = await full(config.titleBannerImage!);
+      artSizes[config.titleBannerImage!] = Size(
+        banner.image.width.toDouble(),
+        banner.image.height.toDouble(),
+      );
+      r.register(_banner, banner);
     }
     r.register(
       _nodes,
@@ -213,18 +249,20 @@ class LevelSelectScene extends eng.Scene {
       tint: config.washAlpha << 24,
     );
     if (config.titleBannerImage != null) {
-      // 78x37 art, drawn 104 wide.
-      sprite(_banner, 'full', w / 2, 19, 104 / 78, 104 / 78, 5);
+      // Drawn _bannerW wide whatever the art's pixel size, and kept inside the
+      // screen: the sprite starts at the nominal art width until measured.
+      final bannerE = sprite(_banner, 'full', w / 2, _titleY, 1, 1, 5);
+      _fit.add(bannerE, config.titleBannerImage!, _bannerW, _bannerNominal);
     }
     eng.spawnWorldText(
       world,
       w / 2,
-      19,
+      _titleY,
       config.title,
-      fontSize: 9,
+      fontSize: 8,
       colorArgb: 0xFFFFE38A,
       zIndex: 6,
-      maxWidth: 140,
+      maxWidth: _bannerW * 0.55,
       rtl: config.rtl ? true : null,
     );
     const rowY = 250.0;
@@ -281,7 +319,7 @@ class LevelSelectScene extends eng.Scene {
       w / 2 + (config.rtl ? -offset : offset) * _spacing;
 
   /// Redraws the cards, dots and captions for [_index].
-  void _build(World world, {int slideFrom = 0}) {
+  void _build(World world, {double slide = 0}) {
     for (final e in [..._cardEntities, ..._infoEntities]) {
       world.destroy(e);
     }
@@ -295,8 +333,9 @@ class LevelSelectScene extends eng.Scene {
       if (i < 0 || i >= config.zones.length) continue;
       _spawnCard(world, w, i, off, locked: i >= unlocked, unlocked: unlocked);
     }
-    // The row starts displaced by the move that just happened and eases home.
-    _slide = slideFrom * _spacing;
+    // The row starts where the old one was, so it carries on from there.
+    _dragged = 0;
+    _slide = slide;
     _shiftCards(world, _slide);
 
     final zone = config.zones[_index];
@@ -360,11 +399,53 @@ class LevelSelectScene extends eng.Scene {
       zIndex: 10 + lift,
     )) {
       world.componentsOf<eng.Sprite>().get(e)?.tintArgb = locked
-          ? 0xCC0A0A14
-          : 0xE0140A06;
+          ? 0xFF6A6460
+          : null;
       _cardEntities.add(e);
     }
     final dim = off == 0 ? null : 0xFF8A8A98;
+    if (z.thumbImages.isNotEmpty) {
+      // Every zone is a portal onto its own backdrop: a nearly sharp picture
+      // (blur kept small so the scenery stays readable) inside a calm rim and
+      // an ornate border. A zone that is still locked is the same doorway
+      // drained to grey, darker and slower, so it reads as shut.
+      final e = world.spawn();
+      world.componentsOf<Position>().set(e, Position(cx, cy));
+      world.componentsOf<eng.ShaderEffect>().set(
+        e,
+        eng.ShaderEffect(
+          width: _artW * s,
+          height: _artH * s,
+          zIndex: 12 + lift,
+          images: [
+            for (var l = 0; l < z.thumbImages.length && l < 2; l++)
+              _thumb(z.key, l),
+          ],
+          blur: _portalBlur,
+          detail: _portalDetail,
+          rimGlow: _portalRimGlow,
+          border: _portalBorder,
+          saturation: locked ? 0 : (off == 0 ? 1 : 0.8),
+          speed: locked ? 0.4 : 1,
+        ),
+      );
+      _cardEntities.add(e);
+    } else {
+      _spawnArt(world, z, cx, cy, s, lift, locked, dim);
+    }
+    _spawnMark(world, i, cx, cy, s, lift, locked, unlocked);
+  }
+
+  void _spawnArt(
+    World world,
+    ZoneCard z,
+    double cx,
+    double cy,
+    double s,
+    int lift,
+    bool locked,
+    int? dim,
+  ) {
     for (var l = 0; l < z.thumbImages.length; l++) {
       final e = world.spawn();
       world.componentsOf<Position>().set(e, Position(cx, cy));
@@ -381,6 +462,18 @@ class LevelSelectScene extends eng.Scene {
       );
       _cardEntities.add(e);
     }
+  }
+
+  void _spawnMark(
+    World world,
+    int i,
+    double cx,
+    double cy,
+    double s,
+    int lift,
+    bool locked,
+    int unlocked,
+  ) {
     final node = locked ? '0' : (i == unlocked - 1 ? '1' : '2');
     final mark = world.spawn();
     world.componentsOf<Position>().set(
@@ -449,7 +542,12 @@ class LevelSelectScene extends eng.Scene {
     if (to == _index) return;
     final dir = to > _index ? 1 : -1;
     _index = to;
-    _build(world, slideFrom: config.rtl ? -dir : dir);
+    // The new cards start exactly where the old ones are on screen: wherever
+    // they were displaced to, plus the one-card step the focus just made.
+    _build(
+      world,
+      slide: _slide + _dragged + (config.rtl ? -dir : dir) * _spacing,
+    );
   }
 
   @override
@@ -460,6 +558,38 @@ class LevelSelectScene extends eng.Scene {
     final next = _slide.abs() <= step ? 0.0 : _slide - step * _slide.sign;
     _shiftCards(world, next - _slide);
     _slide = next;
+  }
+
+  /// The row follows the finger while it drags and, on lift, turns to the
+  /// next or previous zone if it was carried far enough (dragging left brings
+  /// the card on its right to the middle; mirrored in Persian), otherwise
+  /// springs back. Mostly-vertical drags are ignored, and past either end the
+  /// row only gives a little, so the first and last zone feel like ends.
+  @override
+  void handleDrag(
+    World world,
+    eng.SceneController scenes,
+    Offset worldStart,
+    Offset worldDelta,
+    bool ended,
+  ) {
+    final horizontal = worldDelta.dx.abs() >= worldDelta.dy.abs() * 1.5;
+    final dx = horizontal ? worldDelta.dx : 0.0;
+    final towardNext = (dx < 0) != config.rtl;
+    final next = _index + (towardNext ? 1 : -1);
+    final atEnd = next < 0 || next >= config.zones.length;
+    final held = (atEnd ? dx * 0.25 : dx).clamp(-_spacing, _spacing);
+    if (!ended) {
+      _shiftCards(world, held - _dragged);
+      _dragged = held;
+      return;
+    }
+    if (dx.abs() >= _dragCommit && !atEnd) {
+      _focus(world, next);
+    } else {
+      _slide += _dragged;
+      _dragged = 0;
+    }
   }
 
   @override

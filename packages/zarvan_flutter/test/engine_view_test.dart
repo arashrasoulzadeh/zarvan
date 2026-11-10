@@ -231,4 +231,61 @@ void main() {
     await tester.tapAt(const Offset(400, 300));
     await tester.pump();
   });
+
+  group('onWorldDrag', () {
+    testWidgets('follows a drag live, then reports the lift', (tester) async {
+      final world = World(width: 400, height: 300);
+      registerCoreComponents(world);
+      registerFlutterComponents(world);
+      final events = <(Offset, bool)>[];
+      await tester.pumpWidget(
+        MaterialApp(
+          home: EngineView(
+            world: world,
+            atlasRegistry: AtlasRegistry(),
+            camera: Camera(x: 0, y: 0, zoom: 1),
+            onWorldDrag: (start, delta, ended) => events.add((delta, ended)),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.dragFrom(const Offset(400, 300), const Offset(-120, 0));
+      await tester.pump();
+
+      expect(events.length, greaterThan(1), reason: 'moves, then the lift');
+      expect(events.where((e) => e.$2), hasLength(1));
+      expect(events.last.$2, isTrue);
+      expect(events.last.$1.dx, closeTo(-120, 0.5));
+      expect(events.first.$1.dx.abs(), lessThan(events.last.$1.dx.abs()));
+    });
+
+    testWidgets('keeps following when the view rebuilds mid-drag', (
+      tester,
+    ) async {
+      final world = World(width: 400, height: 300);
+      registerCoreComponents(world);
+      registerFlutterComponents(world);
+      final events = <(Offset, bool)>[];
+      Widget view() => MaterialApp(
+        home: EngineView(
+          world: world,
+          atlasRegistry: AtlasRegistry(),
+          camera: Camera(x: 0, y: 0, zoom: 1),
+          onWorldDrag: (start, delta, ended) => events.add((delta, ended)),
+        ),
+      );
+      await tester.pumpWidget(view());
+      final g = await tester.startGesture(const Offset(400, 300));
+      await g.moveBy(const Offset(-40, 0));
+      // The game rebuilds the view every frame, with fresh callbacks.
+      await tester.pumpWidget(view());
+      await g.moveBy(const Offset(-40, 0));
+      await tester.pumpWidget(view());
+      await g.up();
+      await tester.pump();
+
+      expect(events.last.$2, isTrue);
+      expect(events.last.$1.dx, closeTo(-80, 1));
+    });
+  });
 }

@@ -681,6 +681,10 @@ A marker: present or absent, no fields.
 | `speed` | `double` | 0 to ∞; default `1` |
 | `images` | `list` |  |
 | `blur` | `double` | 0 to ∞; default `0.03` |
+| `detail` | `double` | 1 to ∞; default `30` |
+| `rimGlow` | `double` | 0 to ∞; default `1` |
+| `saturation` | `double` | 0 to ∞; default `1` |
+| `border` | `double` | 0 to ∞; default `0` |
 | `intensity` | `double` | 0 to ∞; default `0.5` |
 | `period` | `double` | 0 to ∞; default `5` |
 | `rimArgb` | `int` | default `4290068492` |

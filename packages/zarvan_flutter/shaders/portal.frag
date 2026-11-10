@@ -23,6 +23,11 @@ uniform vec3 uPic;
 uniform vec4 uRim;
 uniform vec4 uArm;
 uniform vec4 uCore;
+// x: pixels across the rect (~30 is chunky pixel art, higher is finer);
+// y: strength of the glow hugging the frame (1 normal, 0 none);
+// z: colour saturation (1 full, 0 grey; below 1 also darkens);
+// w: width of a gold-and-lapis border as a fraction of the width (0 none).
+uniform vec4 uStyle;
 uniform sampler2D uImg0;
 uniform sampler2D uImg1;
 
@@ -70,7 +75,7 @@ vec3 picture(vec2 uv) {
 
 void main() {
   float t = uTime;
-  vec2 cells = vec2(30.0, 30.0 * uSize.y / uSize.x);
+  vec2 cells = vec2(uStyle.x, uStyle.x * uSize.y / uSize.x);
   vec2 uv = (FlutterFragCoord().xy - uOrigin) / uSize;
   vec2 px = (floor(uv * cells) + 0.5) / cells;
 
@@ -90,7 +95,7 @@ void main() {
     // Show where the portal leads, warmed and dimmed a little, and let the
     // spiral clouds drift over it.
     vec3 pic = picture(px) * vec3(1.05, 0.95, 0.85) * 0.85;
-    col = mix(pic, mix(pic, uArm.rgb, 0.6), cloud * 0.55);
+    col = mix(pic, mix(pic, uArm.rgb, 0.6), cloud * (0.25 + 0.3 * uStyle.y));
   }
 
   // Glowing core.
@@ -100,10 +105,10 @@ void main() {
   float edge = min(min(px.x, 1.0 - px.x) * uSize.x,
                    min(px.y, 1.0 - px.y) * uSize.y) / uSize.x;
   float rimN = 0.75 + 0.25 * noise(vec2(ang * 3.0 + t * 0.8, r * 4.0));
-  float rim = smoothstep(0.22, 0.0, edge) * rimN;
+  float rim = smoothstep(0.22, 0.0, edge) * rimN * uStyle.y;
   col = mix(col, mix(uArm.rgb, uCore.rgb, 0.55), rim);
   float pool = smoothstep(0.82, 1.0, px.y) * (0.65 + 0.35 * noise(vec2(px.x * 8.0, t)));
-  col = mix(col, uCore.rgb, pool * 0.85);
+  col = mix(col, uCore.rgb, pool * 0.85 * uStyle.y);
 
   // Light streaks falling down the opening.
   float colId = floor(uv.x * cells.x);
@@ -115,8 +120,42 @@ void main() {
   // Sparks rising, one pixel each.
   float rise = floor(uv.y * cells.y + t * (3.0 + 5.0 * hc));
   float hs = hash(vec2(colId, rise));
-  col += uCore.rgb * step(0.978, hs) * 0.9;
+  col += uCore.rgb * step(1.0 - 0.022 * uStyle.y, hs) * 0.9;
 
   col *= 0.94 + 0.06 * sin(t * 1.7);
+
+  // Border: a dark line, a bevelled gold band (lit from the top left), a thin
+  // lapis line and a dark inner line, with a diamond stud in each corner.
+  if (uStyle.w > 0.0) {
+    float bw = uStyle.w * cells.x;
+    vec2 e = vec2(min(px.x, 1.0 - px.x) * cells.x, min(px.y, 1.0 - px.y) * cells.y);
+    float d = min(e.x, e.y);
+    bool lit = (px.x < 0.5 && e.x <= e.y) || (px.y < 0.5 && e.y < e.x);
+    vec3 gold = lit ? vec3(1.0, 0.86, 0.48) : vec3(0.66, 0.42, 0.1);
+    float tb = d / bw;
+    vec3 b = vec3(0.0);
+    float inB = 0.0;
+    if (tb < 1.0) {
+      inB = 1.0;
+      b = tb < 0.16 ? vec3(0.13, 0.07, 0.02)
+        : tb < 0.7 ? mix(vec3(0.9, 0.66, 0.2), gold, 0.7)
+        : tb < 0.86 ? vec3(0.12, 0.26, 0.64)
+        : vec3(0.13, 0.07, 0.02);
+    }
+    float m = abs(e.x - 1.25 * bw) + abs(e.y - 1.25 * bw);
+    if (e.x < 2.5 * bw && e.y < 2.5 * bw && m < 1.2 * bw) {
+      inB = 1.0;
+      b = m > 1.02 * bw ? vec3(0.13, 0.07, 0.02)
+        : m > 0.62 * bw ? vec3(0.95, 0.72, 0.24)
+        : m > 0.3 * bw ? vec3(0.12, 0.26, 0.64)
+        : vec3(1.0, 0.92, 0.6);
+    }
+    col = mix(col, b, inB);
+  }
+
+  // Locked look: drain the colour and darken it.
+  float grey = dot(col, vec3(0.299, 0.587, 0.114));
+  col = mix(vec3(grey), col, clamp(uStyle.z, 0.0, 1.0));
+  col *= mix(0.62, 1.0, clamp(uStyle.z, 0.0, 1.0));
   fragColor = vec4(min(col, vec3(1.0)), 1.0);
 }

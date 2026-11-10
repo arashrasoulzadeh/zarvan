@@ -117,6 +117,7 @@ void main() {
     Future<(World, _Map, List<String>, List<String>)> start({
       int unlocked = 2,
       bool rtl = false,
+      List<String> thumbs = const [],
     }) async {
       final opened = <String>[];
       final events = <String>[];
@@ -134,7 +135,7 @@ void main() {
                 key: 'z$i',
                 title: 'Zone $i',
                 subtitle: 'Stages $i',
-                thumbImages: const [],
+                thumbImages: thumbs,
               ),
           ],
           onOpen: (z, _) => opened.add(z.key),
@@ -186,9 +187,10 @@ void main() {
     });
 
     test('arrows and the peeking neighbours move the focus, clamped', () async {
-      final (w, scene, _, _) = await start(unlocked: 7);
+      final (w, scene, _, _) = await start(unlocked: 1);
       tapAt(w, scene, peekNext);
-      expect(scene.focusedIndex, 2);
+      expect(scene.focusedIndex, 1);
+      tapAt(w, scene, peekNext);
       tapAt(w, scene, peekPrev);
       tapAt(w, scene, prevBtn);
       expect(scene.focusedIndex, 0);
@@ -204,21 +206,21 @@ void main() {
     test(
       'in Persian next is on the left and the arrows point inward',
       () async {
-        final (w, scene, _, _) = await start(unlocked: 7, rtl: true);
+        final (w, scene, _, _) = await start(unlocked: 1, rtl: true);
         expect(_texts(w), containsAll(['‹', '›']));
         tapAt(w, scene, prevBtn); // the left button is "next" in RTL
-        expect(scene.focusedIndex, 2);
-        tapAt(w, scene, nextBtn);
         expect(scene.focusedIndex, 1);
+        tapAt(w, scene, nextBtn);
+        expect(scene.focusedIndex, 0);
         tapAt(w, scene, peekPrev); // the left neighbour is the next zone
-        expect(scene.focusedIndex, 2);
+        expect(scene.focusedIndex, 1);
       },
     );
 
     test(
       'the row slides in after a move and settles where it started',
       () async {
-        final (w, scene, _, _) = await start(unlocked: 7);
+        final (w, scene, _, _) = await start(unlocked: 1);
         double sumX() {
           final p = w.componentsOf<Position>();
           var total = 0.0;
@@ -238,6 +240,236 @@ void main() {
         final settled = sumX();
         scene.update(1, w);
         expect(sumX(), settled, reason: 'done: nothing keeps moving');
+      },
+    );
+
+    test(
+      'dragging the row left shows the next zone, right the previous',
+      () async {
+        final (w, scene, _, _) = await start(unlocked: 1);
+        void drag(double dx, [double dy = 0]) {
+          scene.handleDrag(
+            w,
+            eng.SceneController(),
+            const Offset(90, 108),
+            Offset(dx, dy),
+            false,
+          );
+          scene.handleDrag(
+            w,
+            eng.SceneController(),
+            const Offset(90, 108),
+            Offset(dx, dy),
+            true,
+          );
+        }
+
+        drag(-60);
+        expect(scene.focusedIndex, 1);
+        drag(-60);
+        drag(60);
+        expect(scene.focusedIndex, 1);
+        drag(60);
+        drag(60);
+        expect(scene.focusedIndex, 0, reason: 'clamped at the first zone');
+      },
+    );
+
+    test(
+      'the row follows the finger and springs back when released short',
+      () async {
+        final (w, scene, _, _) = await start(unlocked: 1);
+        double sumX() {
+          final p = w.componentsOf<Position>();
+          var total = 0.0;
+          for (var i = 0; i < p.length; i++) {
+            total += p.denseAt(i).x;
+          }
+          return total;
+        }
+
+        final rest = sumX();
+        const at = Offset(90, 108);
+        scene.handleDrag(
+          w,
+          eng.SceneController(),
+          at,
+          const Offset(-20, 0),
+          false,
+        );
+        final held = sumX();
+        expect(
+          held,
+          lessThan(rest),
+          reason: 'cards moved left with the finger',
+        );
+        scene.handleDrag(
+          w,
+          eng.SceneController(),
+          at,
+          const Offset(-20, 0),
+          true,
+        );
+        expect(scene.focusedIndex, 0, reason: '20 units is short of a turn');
+        expect(sumX(), held, reason: 'nothing jumps on release');
+        scene.update(2, w);
+        expect(sumX(), rest, reason: 'it eased back to where it rested');
+      },
+    );
+
+    test(
+      'a committed drag carries on from where the finger left the row',
+      () async {
+        final (w, scene, _, _) = await start(unlocked: 1);
+        // x of each card's centre piece, as the player sees it.
+        Map<String, int> centres() {
+          final counts = <String, int>{};
+          final sprites = w.componentsOf<eng.Sprite>();
+          for (var i = 0; i < sprites.length; i++) {
+            if (sprites.denseAt(i).region != 'f11') continue;
+            final pos = w.componentsOf<Position>().get(sprites.entityAt(i));
+            if (pos == null || (pos.y - 108).abs() > 0.01) continue;
+            final k = pos.x.toStringAsFixed(2);
+            counts[k] = (counts[k] ?? 0) + 1;
+          }
+          return counts;
+        }
+
+        const at = Offset(90, 108);
+        scene.handleDrag(
+          w,
+          eng.SceneController(),
+          at,
+          const Offset(-50, 0),
+          false,
+        );
+        final before = centres();
+        scene.handleDrag(
+          w,
+          eng.SceneController(),
+          at,
+          const Offset(-50, 0),
+          true,
+        );
+        expect(scene.focusedIndex, 1);
+        final after = centres();
+        for (final e in before.entries) {
+          expect(
+            after[e.key] ?? 0,
+            greaterThanOrEqualTo(e.value),
+            reason: 'the card at x=${e.key} did not jump when the zone changed',
+          );
+        }
+      },
+    );
+
+    test(
+      'mostly vertical drags do nothing; Persian mirrors; ends resist',
+      () async {
+        final (w, scene, _, _) = await start(unlocked: 1);
+        const at = Offset(90, 108);
+        scene.handleDrag(
+          w,
+          eng.SceneController(),
+          at,
+          const Offset(-40, 80),
+          true,
+        );
+        expect(scene.focusedIndex, 0);
+        scene.handleDrag(
+          w,
+          eng.SceneController(),
+          at,
+          const Offset(60, 0),
+          true,
+        );
+        expect(scene.focusedIndex, 0, reason: 'nothing before the first zone');
+        final (w2, rtl, _, _) = await start(unlocked: 1, rtl: true);
+        rtl.handleDrag(
+          w2,
+          eng.SceneController(),
+          at,
+          const Offset(60, 0),
+          true,
+        );
+        expect(rtl.focusedIndex, 1, reason: 'right drag is "next" in Persian');
+      },
+    );
+
+    test(
+      'every zone is a portal; locked ones are the same one in grey',
+      () async {
+        final (w, scene, _, _) = await start(thumbs: ['sky.png', 'far.png']);
+        List<eng.ShaderEffect> portals() {
+          final fx = w.componentsOf<eng.ShaderEffect>();
+          return [for (var i = 0; i < fx.length; i++) fx.denseAt(i)];
+        }
+
+        // Zones 0..3 are on show around zone 1; zone 2 and up are locked.
+        expect(portals(), hasLength(4));
+        final focused = portals().firstWhere((p) => p.width == 120);
+        expect(focused.images, ['map_t_z1_0', 'map_t_z1_1']);
+        expect(focused.saturation, 1, reason: 'the open zone in full colour');
+        expect(
+          focused.detail,
+          greaterThan(60),
+          reason: 'finer than the default',
+        );
+        expect(focused.blur, lessThan(0.02), reason: 'readable, not hazy');
+        expect(focused.rimGlow, lessThan(1), reason: 'a calmer rim');
+        expect(focused.border, greaterThan(0), reason: 'framed');
+        final locked = portals().where((p) => p.saturation == 0);
+        expect(locked, hasLength(2), reason: 'zones 2 and 3 are shut');
+        for (final p in locked) {
+          expect(p.speed, lessThan(1), reason: 'a shut doorway barely stirs');
+          expect(
+            p.images,
+            isNotEmpty,
+            reason: 'still the shader, not flat art',
+          );
+        }
+        tapAt(w, scene, nextBtn);
+        expect(scene.focusedIndex, 2);
+        expect(
+          portals().firstWhere((p) => p.width == 120).saturation,
+          0,
+          reason: 'the focused locked zone is grey too',
+        );
+      },
+    );
+
+    test(
+      'the title banner is drawn 140 wide at any art size, on screen',
+      () async {
+        artSizes['banner.png'] = const Size(560, 134);
+        final scene = _Map(
+          LevelSelectConfig(
+            backgroundImage: 'bg',
+            buttonImage: 'btn',
+            panelImage: 'panel',
+            nodesStem: 'nodes',
+            titleBannerImage: 'banner.png',
+            unlocked: () => 1,
+            zones: const [
+              ZoneCard(key: 'z', title: 'Z', subtitle: 's', thumbImages: []),
+            ],
+            onOpen: (_, _) {},
+            onBack: (_) {},
+          ),
+        );
+        final w = _world();
+        await scene.populate(w, eng.SceneController(), GameState());
+        scene.update(0.016, w);
+        final sprites = w.componentsOf<eng.Sprite>();
+        final banner = [
+          for (var i = 0; i < sprites.length; i++)
+            if (sprites.denseAt(i).atlasId == 'map_banner') i,
+        ].single;
+        final width = sprites.denseAt(banner).scaleX * 560;
+        expect(width, closeTo(140, 0.01));
+        final pos = w.componentsOf<Position>().get(sprites.entityAt(banner))!;
+        expect(pos.x - width / 2, greaterThanOrEqualTo(0));
+        expect(pos.x + width / 2, lessThanOrEqualTo(180));
       },
     );
 

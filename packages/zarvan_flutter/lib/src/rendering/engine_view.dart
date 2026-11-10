@@ -105,6 +105,16 @@ class EngineView extends StatefulWidget {
   /// tap-driven UI pays nothing for it.
   final void Function(Offset worldPosition)? onWorldTap;
 
+  /// Called as a finger drags across the view: on every move with `ended`
+  /// false, then once more with `ended` true when it lifts. [worldStart] is
+  /// where the drag began and [worldDelta] how far it has gone since, both in
+  /// world units, so a carousel can follow the finger live and decide on lift
+  /// whether to commit or spring back. A tap is not a drag (Flutter only
+  /// starts one after a small slop), and the direction is left to the scene.
+  /// Null (the default) leaves drags unhandled, at no cost.
+  final void Function(Offset worldStart, Offset worldDelta, bool ended)?
+  onWorldDrag;
+
   /// When set, decouples simulation from display refresh rate: instead
   /// of calling `world.step(dt)` once per rendered frame with whatever
   /// `dt` that frame happened to take (so physics behavior subtly
@@ -253,6 +263,7 @@ class EngineView extends StatefulWidget {
     this.showColliderDebug = false,
     this.showPerformanceOverlay = false,
     this.onWorldTap,
+    this.onWorldDrag,
     this.fixedTimestepSeconds,
     this.ambientBrightness = 1.0,
     this.dayNightCycle,
@@ -273,6 +284,11 @@ class EngineView extends StatefulWidget {
 
 class _EngineViewState extends State<EngineView>
     with SingleTickerProviderStateMixin {
+  // State, not build locals: the view rebuilds every frame, and a drag spans
+  // many of them.
+  Offset? _dragStart;
+  Offset? _dragEnd;
+
   late final Ticker _ticker;
   Duration _lastTick = Duration.zero;
   Duration? _nextTickDue;
@@ -692,24 +708,45 @@ class _EngineViewState extends State<EngineView>
     }
 
     final onWorldTap = widget.onWorldTap;
-    if (onWorldTap != null) {
+    final onWorldDrag = widget.onWorldDrag;
+    if (onWorldTap != null || onWorldDrag != null) {
+      Offset toWorld(Offset local) {
+        final box = context.findRenderObject() as RenderBox?;
+        final layout = _viewportLayout;
+        return layout == null
+            ? widget.camera.screenToWorld(local, box?.size ?? Size.zero)
+            : widget.camera.screenToWorld(
+                layout.screenToContent(local),
+                layout.contentRect.size,
+              );
+      }
+
       child = GestureDetector(
         behavior: HitTestBehavior.translucent,
-        onTapUp: (details) {
-          final box = context.findRenderObject() as RenderBox?;
-          final layout = _viewportLayout;
-          onWorldTap(
-            layout == null
-                ? widget.camera.screenToWorld(
-                    details.localPosition,
-                    box?.size ?? Size.zero,
-                  )
-                : widget.camera.screenToWorld(
-                    layout.screenToContent(details.localPosition),
-                    layout.contentRect.size,
-                  ),
-          );
-        },
+        onTapUp: onWorldTap == null
+            ? null
+            : (details) => onWorldTap(toWorld(details.localPosition)),
+        onPanStart: onWorldDrag == null
+            ? null
+            : (details) => _dragStart = _dragEnd = details.localPosition,
+        onPanUpdate: onWorldDrag == null
+            ? null
+            : (details) {
+                final start = _dragStart;
+                if (start == null) return;
+                _dragEnd = details.localPosition;
+                final from = toWorld(start);
+                onWorldDrag(from, toWorld(_dragEnd!) - from, false);
+              },
+        onPanEnd: onWorldDrag == null
+            ? null
+            : (_) {
+                final start = _dragStart, end = _dragEnd;
+                _dragStart = _dragEnd = null;
+                if (start == null || end == null) return;
+                final from = toWorld(start);
+                onWorldDrag(from, toWorld(end) - from, true);
+              },
         child: child,
       );
     }
@@ -3606,6 +3643,13 @@ class _EnginePainter extends CustomPainter {
                 ..setFloat(k++, col.g)
                 ..setFloat(k++, col.b)
                 ..setFloat(k++, col.a);
+            }
+            if (!isOrb && !isShine) {
+              shader
+                ..setFloat(k++, fx.detail)
+                ..setFloat(k++, fx.rimGlow)
+                ..setFloat(k++, fx.saturation)
+                ..setFloat(k++, fx.border);
             }
           }
           shader

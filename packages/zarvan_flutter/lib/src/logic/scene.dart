@@ -137,6 +137,19 @@ abstract class Scene {
   /// common "which button did they tap" case.
   void handleTap(World world, SceneController scenes, Offset worldPosition) {}
 
+  /// Called while a finger drags across the scene, on every move with [ended]
+  /// false and once more with [ended] true when it lifts. [worldStart] is
+  /// where the drag began and [worldDelta] how far it has gone, both in
+  /// world units. Does nothing by default; a carousel or paged menu
+  /// overrides it to follow the finger and decide on lift.
+  void handleDrag(
+    World world,
+    SceneController scenes,
+    Offset worldStart,
+    Offset worldDelta,
+    bool ended,
+  ) {}
+
   /// Optional per-frame update for scene-specific logic (e.g. dialogue typewriter).
   /// Called once per frame with the time delta and current world.
   /// Default implementation does nothing.

@@ -60,8 +60,8 @@ final session = IdleSession(
 ### Menu scenes and HUD badges
 
 `HomeScene` (background, logo, hero, a column of buttons and a language
-dialog) and `LevelSelectScene` (paged zone cards: locked / current /
-cleared) are driven purely by data (`HomeConfig`, `LevelSelectConfig`);
+dialog) and `LevelSelectScene` (a zone carousel: one hero card, peeking
+neighbours, Enter button; locked / current / cleared) are driven purely by data (`HomeConfig`, `LevelSelectConfig`);
 the game decides where each button leads. `StatusBadges` shows one badge
 per active condition (with remaining seconds and `xN` stacks) in the wave
 HUD instead of a text line.

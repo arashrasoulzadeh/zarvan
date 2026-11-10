@@ -12,6 +12,10 @@ void main() {
       speed: 2,
       images: const ['sky', 'far'],
       blur: 0.05,
+      detail: 96,
+      rimGlow: 0.4,
+      saturation: 0,
+      border: 0.04,
       intensity: 0.8,
       period: 7,
       rimArgb: 0xFF112233,
@@ -24,6 +28,20 @@ void main() {
     expect(back.speed, 2);
     expect(back.images, ['sky', 'far']);
     expect(back.blur, 0.05);
+    expect(back.detail, 96);
+    expect(back.rimGlow, 0.4);
+    expect(back.saturation, 0);
+    expect(back.border, 0.04);
+    expect(
+      ShaderEffect(width: 1, height: 1).border,
+      0,
+      reason: 'no frame unless asked for',
+    );
+    expect(
+      ShaderEffect(width: 1, height: 1).detail,
+      30,
+      reason: 'chunky by default',
+    );
     expect(back.intensity, 0.8);
     expect(back.period, 7);
     expect(back.rimArgb, 0xFF112233);
@@ -111,9 +129,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('an EngineView with an orb paints without error', (
-    tester,
-  ) async {
+  testWidgets('an EngineView with an orb paints without error', (tester) async {
     final w = World(width: 180, height: 320);
     registerCoreComponents(w);
     registerFlutterComponents(w);

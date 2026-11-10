@@ -652,6 +652,15 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
                     worldPosition,
                   )
                 : null,
+            onWorldDrag: overlay == null
+                ? (start, delta, ended) => loaded.scene.handleDrag(
+                    loaded.world,
+                    _sceneController,
+                    start,
+                    delta,
+                    ended,
+                  )
+                : null,
             // Call scene's update method after each world step for per-frame logic
             onPostTick: (dt, world) => loaded.scene.update(dt, world),
           ),
@@ -708,6 +717,13 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
                 overlay.world,
                 _sceneController,
                 worldPosition,
+              ),
+              onWorldDrag: (start, delta, ended) => overlay.scene.handleDrag(
+                overlay.world,
+                _sceneController,
+                start,
+                delta,
+                ended,
               ),
               onPostTick: (dt, world) => overlay.scene.update(dt, world),
             ),

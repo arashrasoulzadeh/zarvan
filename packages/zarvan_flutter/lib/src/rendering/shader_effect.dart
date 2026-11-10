@@ -37,6 +37,23 @@ class ShaderEffect {
   /// soft haze).
   double blur;
 
+  /// How many pixels the portal is drawn in across its width: ~30 is chunky
+  /// pixel art, higher gives a finer, sharper picture (and spiral). Only the
+  /// portal uses it.
+  double detail;
+
+  /// Strength of the glow along the portal's rim and floor: 1 as designed,
+  /// lower is calmer, 0 none. Only the portal uses it.
+  double rimGlow;
+
+  /// Colour saturation of the whole portal: 1 full colour, 0 grey. Anything
+  /// below 1 also darkens it, so a locked doorway reads as shut. Portal only.
+  double saturation;
+
+  /// Width of a gold-and-lapis frame drawn round the portal, as a fraction of
+  /// its width (~0.04 is a slim ornate border); 0 draws none. Portal only.
+  double border;
+
   /// How strong an additive `'glow'` or `'shine'` is (the portal ignores it).
   double intensity;
 
@@ -56,6 +73,10 @@ class ShaderEffect {
     this.speed = 1,
     this.images = const [],
     this.blur = 0.03,
+    this.detail = 30,
+    this.rimGlow = 1,
+    this.saturation = 1,
+    this.border = 0,
     this.intensity = 0.5,
     this.period = 5,
     this.rimArgb = 0xFFB5400C,
@@ -87,6 +108,10 @@ class ShaderEffect {
     'speed': speed,
     'images': images,
     'blur': blur,
+    'detail': detail,
+    'rimGlow': rimGlow,
+    'saturation': saturation,
+    'border': border,
     'intensity': intensity,
     'period': period,
     'rimArgb': rimArgb,
@@ -102,6 +127,10 @@ class ShaderEffect {
     speed: (json['speed'] as num?)?.toDouble() ?? 1,
     images: ((json['images'] as List?) ?? const []).cast<String>(),
     blur: (json['blur'] as num?)?.toDouble() ?? 0.03,
+    detail: (json['detail'] as num?)?.toDouble() ?? 30,
+    rimGlow: (json['rimGlow'] as num?)?.toDouble() ?? 1,
+    saturation: (json['saturation'] as num?)?.toDouble() ?? 1,
+    border: (json['border'] as num?)?.toDouble() ?? 0,
     intensity: (json['intensity'] as num?)?.toDouble() ?? 0.5,
     period: (json['period'] as num?)?.toDouble() ?? 5,
     rimArgb: (json['rimArgb'] as num?)?.toInt() ?? 0xFFB5400C,

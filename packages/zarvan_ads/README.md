@@ -61,4 +61,4 @@ final ads = FakeAdService(consentSource: myManualSource);
 
 Add your AdMob app id to `AndroidManifest.xml` (`com.google.android.gms.ads.APPLICATION_ID`) and
 `Info.plist` (`GADApplicationIdentifier`). Until you ship, keep the default `AdUnitIds.test` ids.
-Gate on consent (UMP / ATT) before `initialize()` where your audience requires it.
+Consent (UMP / ATT) is handled by `initialize()`; see Consent above.

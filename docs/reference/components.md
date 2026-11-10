@@ -4,7 +4,7 @@
 
 Every built-in component and the exact JSON shape it serializes to — what you see in `World.toJson()` and what `applyPatch` / `Level.loadInto` accept. This page is generated from `zarvan_schema`, the same schemas the studio and `zarvan lint` validate against, so it is always current.
 
-**105 components** across 4 packages. Jump to: [zarvan_core](#zarvan_core) · [zarvan_flutter](#zarvan_flutter) · [zarvan_platformer](#zarvan_platformer) · [zarvan_idle](#zarvan_idle)
+**106 components** across 4 packages. Jump to: [zarvan_core](#zarvan_core) · [zarvan_flutter](#zarvan_flutter) · [zarvan_platformer](#zarvan_platformer) · [zarvan_idle](#zarvan_idle)
 
 ## zarvan_core
 
@@ -607,6 +607,22 @@ A marker: present or absent, no fields.
 | `fillColorArgb` | `int` | default `4283300428` |
 | `backgroundColorArgb` | `int` | default `2147483648` |
 | `screenSpace` | `bool` | default `true` |
+| `zIndex` | `int` | default `0` |
+
+### `shape`
+
+| Field | Type | Notes |
+|---|---|---|
+| `kind` | `enumeration` | one of `circle`, `roundedRect`, `ring`; default `circle` |
+| `width` | `double` | 0 to ∞; default `40` |
+| `height` | `double` | 0 to ∞; default `40` |
+| `cornerRadius` | `double` | 0 to ∞; default `0` |
+| `strokeWidth` | `double` | 0 to ∞; default `0` |
+| `colorArgb` | `int` | default `4294967295` |
+| `dashLength` | `double` | 0 to ∞; default `0` |
+| `gapLength` | `double` | 0 to ∞; default `0` |
+| `screenSpace` | `bool` | default `false` |
+| `alpha` | `double` | 0 to 1; default `1` |
 | `zIndex` | `int` | default `0` |
 
 ### `nineSliceSprite`

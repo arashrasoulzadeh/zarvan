@@ -85,6 +85,25 @@ const hudBarSchema = ComponentSchema('hudBar', [
   FieldSchema('zIndex', FieldType.int, defaultValue: 0),
 ]);
 
+const shapeSchema = ComponentSchema('shape', [
+  FieldSchema(
+    'kind',
+    FieldType.enumeration,
+    options: ['circle', 'roundedRect', 'ring'],
+    defaultValue: 'circle',
+  ),
+  FieldSchema('width', FieldType.double, min: 0, defaultValue: 40),
+  FieldSchema('height', FieldType.double, min: 0, defaultValue: 40),
+  FieldSchema('cornerRadius', FieldType.double, min: 0, defaultValue: 0),
+  FieldSchema('strokeWidth', FieldType.double, min: 0, defaultValue: 0),
+  FieldSchema('colorArgb', FieldType.int, defaultValue: 4294967295),
+  FieldSchema('dashLength', FieldType.double, min: 0, defaultValue: 0),
+  FieldSchema('gapLength', FieldType.double, min: 0, defaultValue: 0),
+  FieldSchema('screenSpace', FieldType.bool, defaultValue: false),
+  FieldSchema('alpha', FieldType.double, min: 0, max: 1, defaultValue: 1),
+  FieldSchema('zIndex', FieldType.int, defaultValue: 0),
+]);
+
 const nineSliceSpriteSchema = ComponentSchema('nineSliceSprite', [
   FieldSchema('atlasId', FieldType.string, required: true),
   FieldSchema('region', FieldType.string, required: true),

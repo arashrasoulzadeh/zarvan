@@ -24,6 +24,8 @@ import 'frame_stats.dart';
 import 'gpu_light_shader.dart';
 import 'ambient_lighting_shader.dart';
 import 'hud_bar.dart';
+import 'shape.dart';
+import 'shape_painter.dart';
 import 'light2d.dart';
 import 'nine_slice_sprite.dart';
 import 'normal_mapping_combined_shader.dart';
@@ -1014,6 +1016,7 @@ class _EnginePainter extends CustomPainter {
     order = _collectParticleItems(items, order, size, positions);
     order = _collectTextItems(items, order, size, positions);
     order = _collectHudBarItems(items, order, size, positions);
+    order = _collectShapeItems(items, order, size, positions);
     order = _collectShaderEffectItems(items, order, size, positions);
     _collectNineSliceItems(items, order, positions);
 
@@ -3556,6 +3559,41 @@ class _EnginePainter extends CustomPainter {
           );
           canvas.drawRect(fillRect, Paint()..color = Color(bar.fillColorArgb));
         }),
+      );
+    }
+    return order;
+  }
+
+  /// Collects one `_DrawItem` per `Shape`, centred on its `Position`;
+  /// `screenSpace` ignores the camera, otherwise `camera.zoom` scales it.
+  int _collectShapeItems(
+    List<_DrawItem> items,
+    int order,
+    Size size,
+    ComponentStore<Position> positions,
+  ) {
+    final shapes = world.componentsOf<Shape>();
+    for (var i = 0; i < shapes.length; i++) {
+      final entity = shapes.entityAt(i);
+      final shape = shapes.denseAt(i);
+      final pos = positions.get(entity);
+      if (pos == null) continue;
+      final worldPos = _interpolated(entity, pos);
+      final center = shape.screenSpace
+          ? worldPos
+          : camera.worldToScreen(
+              worldPos.dx,
+              worldPos.dy,
+              size,
+              zIndex: shape.zIndex,
+            );
+      final zoom = shape.screenSpace ? 1.0 : camera.zoom;
+      items.add(
+        _DrawItem(
+          shape.zIndex,
+          order++,
+          (canvas) => paintShape(canvas, shape, center, zoom),
+        ),
       );
     }
     return order;

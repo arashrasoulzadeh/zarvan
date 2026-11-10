@@ -88,6 +88,7 @@ const allComponentSchemas = <String, ComponentSchema>{
   'parallaxLayer': parallaxLayerSchema,
   'text': textSchema,
   'hudBar': hudBarSchema,
+  'shape': shapeSchema,
   'selectionMarker': selectionMarkerSchema,
   'nineSliceSprite': nineSliceSpriteSchema,
   'animationTransition': animationTransitionSchema,

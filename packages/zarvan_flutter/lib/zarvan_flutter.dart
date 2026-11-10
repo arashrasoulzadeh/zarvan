@@ -13,6 +13,7 @@ export 'src/rendering/viewport.dart';
 export 'src/rendering/animation.dart';
 export 'src/rendering/animation_transition.dart';
 export 'src/rendering/hud_bar.dart';
+export 'src/rendering/shape.dart';
 export 'src/rendering/frame_stats.dart';
 export 'src/rendering/frame_timing_monitor.dart';
 export 'src/rendering/debug_overlay.dart';

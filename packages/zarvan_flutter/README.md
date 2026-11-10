@@ -19,6 +19,7 @@ content) lives in `zarvan_core`, which stays Flutter-free.
 - [Particle effects](#particle-effects)
 - [Draw order (z-index)](#draw-order-z-index)
 - [Masking/clipping (`ClipShape`)](#maskingclipping-clipshape)
+- [Flat shapes (`Shape`)](#flat-shapes-shape)
 - [Lighting (`Light2D`)](#lighting-light2d)
 - [Audio](#audio)
 - [Save/load](#saveload)
@@ -419,6 +420,27 @@ sized to the screen's edges with the visible area left uncovered in
 the middle. `softness` (`0` default, hard edge) blurs the shape's
 boundary, same convention as `Light2D.shadowEdgeSoftness` below. Zero
 cost when no `ClipShape` of a given mode exists in the world.
+
+## Flat shapes (`Shape`)
+
+Circles, rounded rectangles and rings drawn from code -- no atlas needed.
+Centred on the entity's `Position`.
+
+```dart
+final dot = world.spawn();
+world.componentsOf<Position>().set(dot, Position(0, 0));
+world.componentsOf<Shape>().set(
+  dot,
+  Shape(kind: ShapeKind.ring, width: 80, strokeWidth: 4,
+      colorArgb: 0xFFFF8800, dashLength: 8, gapLength: 6),
+);
+```
+
+`strokeWidth: 0` fills a circle or rounded rect, `> 0` outlines it; a ring is
+always an outline. `dashLength`/`gapLength` dash an outline. `alpha` fades the
+whole shape. `screenSpace: true` ignores the camera (like `Text.screenSpace`).
+200 shapes cost about 0.5 ms of paint per frame
+(`benchmark/shape_benchmark_test.dart`).
 
 ## Lighting (`Light2D`)
 

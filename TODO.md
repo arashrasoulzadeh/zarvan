@@ -37,6 +37,7 @@ hit-stop, pooling, spawners, camera rig, joints, developer console, post-process
 semantics, level mechanics, UI toolkit models); see the changelog. One follow-up remains. Tick items off as they
 ship, with a test and docs.
 
+- [x] **Flat shape primitives** (`Shape`: circle, rounded rect, ring, dashes, screen space) for art-free games such as Adad Bazi; tests in `shape_test.dart`, benchmark in `benchmark/`.
 - [ ] **UI toolkit: Flutter widgets for the new models.** `layoutStack`, `anchorRect`, `ScrollListModel` and
       `TextInputModel` exist as pure models; scenes still need widgets that render and drive them.
 

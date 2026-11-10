@@ -9,6 +9,7 @@ import 'rendering/light2d.dart';
 import 'rendering/nine_slice_sprite.dart';
 import 'rendering/one_shot_fx.dart';
 import 'rendering/parallax_layer.dart';
+import 'rendering/shape.dart';
 import 'rendering/sprite_states.dart';
 import 'rendering/backdrop_blur.dart';
 import 'rendering/shader_effect.dart';
@@ -65,6 +66,12 @@ void registerFlutterComponents(World world) {
     (t) => t.toJson(),
     Text.fromJson,
     schema: textSchema,
+  );
+  world.components.register<Shape>(
+    'shape',
+    (s) => s.toJson(),
+    Shape.fromJson,
+    schema: shapeSchema,
   );
   world.components.register<SelectionMarker>(
     'selectionMarker',

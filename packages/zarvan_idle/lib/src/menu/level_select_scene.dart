@@ -17,7 +17,9 @@ import 'package:zarvan_flutter/zarvan_flutter.dart'
         spawnWorldText;
 
 import '../platformer/hud/upgrade_bar.dart' show UpgradeBar;
+import 'art_sizes.dart';
 import 'menu_button.dart';
+import 'menu_music.dart';
 
 /// One zone of the level list: a card with a thumbnail, a name and a line
 /// under it. [thumbImages] are stacked full-image layers (sky, then hills...).
@@ -46,16 +48,26 @@ class LevelSelectConfig {
     required this.unlocked,
     required this.onOpen,
     required this.onBack,
+    this.titleBannerImage,
+    this.washAlpha = 0x55,
     this.title = 'World map',
     this.backLabel = 'Back',
     this.rtl = false,
-    this.perPage = 5,
+    this.enterLabel = 'Enter',
+    this.lockedLabel = 'Locked',
     this.safeInset = 20,
+    this.music,
   });
 
   final String backgroundImage;
   final String buttonImage;
   final String panelImage;
+
+  /// Ribbon drawn behind the title; null draws the title on the map.
+  final String? titleBannerImage;
+
+  /// Opacity (0-255) of the dark wash over the map, so the art still shows.
+  final int washAlpha;
 
   /// `ui_level_node` strip: 0 locked, 1 current, 2 cleared, 3 boss.
   final String nodesStem;
@@ -71,17 +83,28 @@ class LevelSelectConfig {
   final String title;
   final String backLabel;
   final bool rtl;
-  final int perPage;
+
+  /// Label of the button under the focused zone when it can be entered.
+  final String enterLabel;
+
+  /// Label of that button while the focused zone is still locked.
+  final String lockedLabel;
 
   /// Margin kept clear on both sides for the part a tall phone crops.
   final double safeInset;
+
+  /// The menu theme, kept playing while this screen shows.
+  final MenuMusic? music;
 }
 
-/// The world map as a paged list of zone cards: thumbnail, name, stage range,
-/// and a lock, a "current" marker or a "cleared" mark. Locked cards do nothing.
-/// Built from [LevelSelectConfig] only, so any idle game can drive it.
+/// The world map as a carousel: the focused zone is one large framed card with
+/// its name, stage range and a status mark, its neighbours peek in from the
+/// sides, and a row of dots shows the position. Arrow buttons or a tap on a
+/// neighbour move the focus (the row slides); "Enter" opens an unlocked zone,
+/// and stays disabled on a locked one. Built from [LevelSelectConfig] only, so
+/// any idle game can drive it.
 class LevelSelectScene extends eng.Scene {
-  LevelSelectScene(this.config);
+  LevelSelectScene(this.config) : _index = _startIndex(config);
 
   final LevelSelectConfig config;
 
@@ -89,15 +112,29 @@ class LevelSelectScene extends eng.Scene {
   static const _btn = 'map_btn';
   static const _panel = 'map_panel';
   static const _nodes = 'map_nodes';
+  static const _banner = 'map_banner';
   static String _thumb(String zone, int layer) => 'map_t_${zone}_$layer';
 
-  int _page = 0;
-  final _pageEntities = <EntityId>[];
-  final _cardRects = <Rect, ZoneCard>{};
-  late MenuButton _prev, _next, _back;
-  late EntityId _pageLabel;
+  // Hero card geometry in world units (the world is 180 x 320).
+  static const _frameW = 132.0, _frameH = 112.0;
+  static const _artW = 120.0, _artH = 100.0;
+  static const _centerY = 108.0;
+  static const _sideScale = 0.72, _spacing = 100.0;
+  static const _slideSpeed = 520.0;
 
-  int get _pages => (config.zones.length / config.perPage).ceil();
+  /// The current zone, so the map opens on where the player left off.
+  static int _startIndex(LevelSelectConfig c) =>
+      (c.unlocked() - 1).clamp(0, c.zones.isEmpty ? 0 : c.zones.length - 1);
+
+  int _index;
+  double _slide = 0;
+  final _fit = ArtFitter();
+  final _cardEntities = <EntityId>[];
+  final _infoEntities = <EntityId>[];
+  late MenuButton _prev, _next, _back, _enter;
+
+  /// Where each visible card is, for taps: the zone index it stands for.
+  final _cardRects = <Rect, int>{};
 
   @override
   bool get showOnScreenControls => false;
@@ -105,14 +142,26 @@ class LevelSelectScene extends eng.Scene {
   @override
   double? get ambientBrightness => 1;
 
+  /// The zone in focus; exposed so a game (and tests) can read where the
+  /// carousel stands.
+  int get focusedIndex => _index;
+
   @override
   Future<eng.AtlasRegistry> loadAssets() async {
     final r = eng.AtlasRegistry();
     Future<eng.SpriteAtlas> full(String p) =>
         eng.SpriteAtlas.loadFullImageFromAssets(p);
-    r.register(_bg, await full(config.backgroundImage));
+    final bg = await full(config.backgroundImage);
+    artSizes[config.backgroundImage] = Size(
+      bg.image.width.toDouble(),
+      bg.image.height.toDouble(),
+    );
+    r.register(_bg, bg);
     r.register(_btn, UpgradeBar.atlasFor(await full(config.buttonImage)));
     r.register(_panel, eng.panelFrameAtlas(await full(config.panelImage), 24));
+    if (config.titleBannerImage != null) {
+      r.register(_banner, await full(config.titleBannerImage!));
+    }
     r.register(
       _nodes,
       (await eng.loadSpriteSheet(config.nodesStem, measurePivots: false)).atlas,
@@ -132,7 +181,7 @@ class LevelSelectScene extends eng.Scene {
     GameState state,
   ) async {
     final w = world.width.toDouble(), h = world.height.toDouble();
-    void sprite(
+    EntityId sprite(
       String a,
       String reg,
       double x,
@@ -148,9 +197,11 @@ class LevelSelectScene extends eng.Scene {
         e,
         eng.Sprite(a, reg, scaleX: sx, scaleY: sy, zIndex: z, tintArgb: tint),
       );
+      return e;
     }
 
-    sprite(_bg, 'full', w / 2, h / 2, w / 180, h / 320, 0);
+    final bgE = sprite(_bg, 'full', w / 2, h / 2, w / 180, h / 320, 0);
+    _fit.addStretch(bgE, config.backgroundImage, w, h, 180, 320);
     sprite(
       _panel,
       'f11',
@@ -159,12 +210,16 @@ class LevelSelectScene extends eng.Scene {
       (w + 20) / 48,
       (h + 20) / 27,
       1,
-      tint: 0x88000000,
+      tint: config.washAlpha << 24,
     );
+    if (config.titleBannerImage != null) {
+      // 78x37 art, drawn 104 wide.
+      sprite(_banner, 'full', w / 2, 19, 104 / 78, 104 / 78, 5);
+    }
     eng.spawnWorldText(
       world,
       w / 2,
-      17,
+      19,
       config.title,
       fontSize: 9,
       colorArgb: 0xFFFFE38A,
@@ -172,14 +227,14 @@ class LevelSelectScene extends eng.Scene {
       maxWidth: 140,
       rtl: config.rtl ? true : null,
     );
-    final y = h - 22;
+    const rowY = 250.0;
     _prev = MenuButton.spawn(
       world,
       atlasId: _btn,
       id: 'prev',
       label: config.rtl ? '›' : '‹',
-      cx: config.safeInset + 16,
-      cy: y,
+      cx: config.rtl ? w - config.safeInset - 16 : config.safeInset + 16,
+      cy: rowY,
       width: 34,
       fontSize: 9,
     );
@@ -188,10 +243,22 @@ class LevelSelectScene extends eng.Scene {
       atlasId: _btn,
       id: 'next',
       label: config.rtl ? '‹' : '›',
-      cx: w - config.safeInset - 16,
-      cy: y,
+      cx: config.rtl ? config.safeInset + 16 : w - config.safeInset - 16,
+      cy: rowY,
       width: 34,
       fontSize: 9,
+    );
+    _enter = MenuButton.spawn(
+      world,
+      atlasId: _btn,
+      id: 'enter',
+      label: config.enterLabel,
+      cx: w / 2,
+      cy: rowY,
+      width: 64,
+      style: 'primary',
+      fontSize: 8,
+      rtl: config.rtl,
     );
     _back = MenuButton.spawn(
       world,
@@ -199,121 +266,200 @@ class LevelSelectScene extends eng.Scene {
       id: 'back',
       label: config.backLabel,
       cx: w / 2,
-      cy: y,
+      cy: h - 22,
       width: 60,
-      style: 'primary',
       fontSize: 7.5,
       rtl: config.rtl,
     );
-    _pageLabel = eng.spawnWorldText(
-      world,
-      w / 2,
-      y - 18,
-      '',
-      fontSize: 5.5,
-      colorArgb: 0xFFD8C48A,
-      zIndex: 6,
-    );
-    _buildPage(world);
+    _build(world);
+    config.music?.enter();
   }
 
-  void _buildPage(World world) {
-    for (final e in _pageEntities) {
+  /// Horizontal centre of the card [offset] places from the focused one;
+  /// mirrored in Persian, where "next" is on the left.
+  double _cardX(double w, int offset) =>
+      w / 2 + (config.rtl ? -offset : offset) * _spacing;
+
+  /// Redraws the cards, dots and captions for [_index].
+  void _build(World world, {int slideFrom = 0}) {
+    for (final e in [..._cardEntities, ..._infoEntities]) {
       world.destroy(e);
     }
-    _pageEntities.clear();
+    _cardEntities.clear();
+    _infoEntities.clear();
     _cardRects.clear();
     final unlocked = config.unlocked();
     final w = world.width.toDouble();
-    final left = config.safeInset, right = w - config.safeInset;
-    const cardH = 40.0, step = 46.0;
-    final from = _page * config.perPage;
-    final to = (from + config.perPage).clamp(0, config.zones.length);
-    double mx(double x, double width) => config.rtl ? w - x - width : x;
-    for (var i = from; i < to; i++) {
-      final z = config.zones[i];
-      final top = 32 + (i - from) * step;
-      final rect = Rect.fromLTWH(left, top, right - left, cardH);
-      _cardRects[rect] = z;
-      final locked = i >= unlocked;
-      for (final e in eng.spawnPanelFrame(
-        world,
-        atlasId: _panel,
-        rect: rect,
-        source: const Size(96, 75),
-        inset: 24,
-        corner: 7,
-        zIndex: 10,
-      )) {
-        world.componentsOf<eng.Sprite>().get(e)?.tintArgb = locked
-            ? 0xCC0A0A14
-            : 0xE0140A06;
-        _pageEntities.add(e);
-      }
-      // Thumbnail on the leading side.
-      const tw = 44.0, th = 29.0;
-      final tx = mx(left + 4, tw);
-      for (var l = 0; l < z.thumbImages.length; l++) {
-        final e = world.spawn();
-        world.componentsOf<Position>().set(
-          e,
-          Position(tx + tw / 2, top + cardH / 2),
-        );
-        world.componentsOf<eng.Sprite>().set(
-          e,
-          eng.Sprite(
-            _thumb(z.key, l),
-            'full',
-            scaleX: tw / 480,
-            scaleY: th / 320,
-            zIndex: 12 + l,
-            tintArgb: locked ? 0xFF606070 : null,
-          ),
-        );
-        _pageEntities.add(e);
-      }
-      final textX = config.rtl ? tx - 5 : tx + tw + 5;
-      final textW = right - left - tw - 34;
-      final align = config.rtl
-          ? eng.TextAlignment.right
-          : eng.TextAlignment.left;
-      for (final (text, dy, size, color) in [
-        (z.title, 13.0, 7.5, locked ? 0xFF9A9078 : 0xFFFFE38A),
-        (z.subtitle, 27.0, 5.2, 0xFFD8C48A),
-      ]) {
-        _pageEntities.add(
-          eng.spawnWorldText(
-            world,
-            config.rtl ? textX - textW : textX,
-            top + dy,
-            text,
-            fontSize: size.toDouble(),
-            colorArgb: color,
-            zIndex: 14,
-            maxWidth: textW,
-            rtl: config.rtl ? true : null,
-            align: align,
-          ),
-        );
-      }
-      // Status mark on the trailing side: lock / current / cleared.
-      final node = locked ? '0' : (i == unlocked - 1 ? '1' : '2');
-      final nx = mx(right - 16, 12) + 6;
+    for (var off = -2; off <= 2; off++) {
+      final i = _index + off;
+      if (i < 0 || i >= config.zones.length) continue;
+      _spawnCard(world, w, i, off, locked: i >= unlocked, unlocked: unlocked);
+    }
+    // The row starts displaced by the move that just happened and eases home.
+    _slide = slideFrom * _spacing;
+    _shiftCards(world, _slide);
+
+    final zone = config.zones[_index];
+    final locked = _index >= unlocked;
+    for (final (text, dy, size, color) in [
+      (zone.title, 184.0, 8.5, locked ? 0xFF9A9078 : 0xFFFFE38A),
+      (zone.subtitle, 198.0, 5.6, 0xFFD8C48A),
+    ]) {
+      _infoEntities.add(
+        eng.spawnWorldText(
+          world,
+          w / 2,
+          dy,
+          text,
+          fontSize: size,
+          colorArgb: color,
+          zIndex: 14,
+          maxWidth: 150,
+          rtl: config.rtl ? true : null,
+          align: eng.TextAlignment.center,
+        ),
+      );
+    }
+    _spawnDots(world, w);
+    _enter.setStyle(world, locked ? 'disabled' : 'primary');
+    world.componentsOf<eng.Text>().get(_enter.text)?.text = locked
+        ? config.lockedLabel
+        : config.enterLabel;
+    _prev.setStyle(world, _index > 0 ? 'secondary' : 'disabled');
+    _next.setStyle(
+      world,
+      _index < config.zones.length - 1 ? 'secondary' : 'disabled',
+    );
+  }
+
+  void _spawnCard(
+    World world,
+    double w,
+    int i,
+    int off, {
+    required bool locked,
+    required int unlocked,
+  }) {
+    final z = config.zones[i];
+    final s = off == 0 ? 1.0 : _sideScale;
+    final lift = off == 0 ? 10 : 0;
+    final cx = _cardX(w, off), cy = _centerY;
+    final rect = Rect.fromCenter(
+      center: Offset(cx, cy),
+      width: _frameW * s,
+      height: _frameH * s,
+    );
+    if (off.abs() <= 1) _cardRects[rect] = i;
+    for (final e in eng.spawnPanelFrame(
+      world,
+      atlasId: _panel,
+      rect: rect,
+      source: const Size(96, 75),
+      inset: 24,
+      corner: 7 * s,
+      zIndex: 10 + lift,
+    )) {
+      world.componentsOf<eng.Sprite>().get(e)?.tintArgb = locked
+          ? 0xCC0A0A14
+          : 0xE0140A06;
+      _cardEntities.add(e);
+    }
+    final dim = off == 0 ? null : 0xFF8A8A98;
+    for (var l = 0; l < z.thumbImages.length; l++) {
       final e = world.spawn();
+      world.componentsOf<Position>().set(e, Position(cx, cy));
+      world.componentsOf<eng.Sprite>().set(
+        e,
+        eng.Sprite(
+          _thumb(z.key, l),
+          'full',
+          scaleX: _artW * s / 480,
+          scaleY: _artH * s / 320,
+          zIndex: 12 + lift + l,
+          tintArgb: locked ? 0xFF606070 : dim,
+        ),
+      );
+      _cardEntities.add(e);
+    }
+    final node = locked ? '0' : (i == unlocked - 1 ? '1' : '2');
+    final mark = world.spawn();
+    world.componentsOf<Position>().set(
+      mark,
+      Position(
+        cx + (config.rtl ? -1 : 1) * (_frameW / 2 - 12) * s,
+        cy - (_frameH / 2 - 12) * s,
+      ),
+    );
+    world.componentsOf<eng.Sprite>().set(
+      mark,
+      eng.Sprite(
+        _nodes,
+        node,
+        scaleX: 14 * s / 32,
+        scaleY: 14 * s / 32,
+        zIndex: 20 + lift,
+      ),
+    );
+    _cardEntities.add(mark);
+  }
+
+  /// One square per zone under the captions; the focused one is wider and gold.
+  void _spawnDots(World world, double w) {
+    const dot = 4.0, gap = 4.0, wide = 9.0;
+    final n = config.zones.length;
+    final total = (n - 1) * (dot + gap) + wide;
+    var x = w / 2 - total / 2;
+    for (var i = 0; i < n; i++) {
+      final width = i == _index ? wide : dot;
+      final cx = x + width / 2;
+      x += width + gap;
+      final e = world.spawn();
+      // Mirrored in Persian: the first zone is the rightmost dot.
       world.componentsOf<Position>().set(
         e,
-        Position(config.rtl ? left + 16 : nx, top + cardH / 2),
+        Position(config.rtl ? w - cx : cx, 214),
       );
       world.componentsOf<eng.Sprite>().set(
         e,
-        eng.Sprite(_nodes, node, scaleX: 12 / 32, scaleY: 12 / 32, zIndex: 14),
+        eng.Sprite(
+          _panel,
+          'f11',
+          scaleX: width / 48,
+          scaleY: dot / 27,
+          zIndex: 14,
+          tintArgb: i == _index ? 0xFFFFE38A : 0xFF6A5A40,
+        ),
       );
-      _pageEntities.add(e);
+      _infoEntities.add(e);
     }
-    _prev.setStyle(world, _page > 0 ? 'secondary' : 'disabled');
-    _next.setStyle(world, _page < _pages - 1 ? 'secondary' : 'disabled');
-    world.componentsOf<eng.Text>().get(_pageLabel)?.text =
-        '${_page + 1} / $_pages';
+  }
+
+  void _shiftCards(World world, double dx) {
+    if (dx == 0) return;
+    final pos = world.componentsOf<Position>();
+    for (final e in _cardEntities) {
+      final p = pos.get(e);
+      if (p != null) p.x += dx;
+    }
+  }
+
+  /// Moves the focus to [i] (clamped) and slides the row in from that side.
+  void _focus(World world, int i) {
+    final to = i.clamp(0, config.zones.length - 1);
+    if (to == _index) return;
+    final dir = to > _index ? 1 : -1;
+    _index = to;
+    _build(world, slideFrom: config.rtl ? -dir : dir);
+  }
+
+  @override
+  void update(double dt, World world) {
+    _fit.apply(world);
+    if (_slide == 0) return;
+    final step = _slideSpeed * dt;
+    final next = _slide.abs() <= step ? 0.0 : _slide - step * _slide.sign;
+    _shiftCards(world, next - _slide);
+    _slide = next;
   }
 
   @override
@@ -323,21 +469,24 @@ class LevelSelectScene extends eng.Scene {
     Offset worldPosition,
   ) {
     if (_back.rect.contains(worldPosition)) return config.onBack(scenes);
-    if (_prev.rect.contains(worldPosition) && _page > 0) {
-      _page--;
-      return _buildPage(world);
-    }
-    if (_next.rect.contains(worldPosition) && _page < _pages - 1) {
-      _page++;
-      return _buildPage(world);
-    }
-    final unlocked = config.unlocked();
-    for (final e in _cardRects.entries) {
-      if (!e.key.contains(worldPosition)) continue;
-      if (config.zones.indexOf(e.value) < unlocked) {
-        config.onOpen(e.value, scenes);
+    if (_prev.rect.contains(worldPosition)) return _focus(world, _index - 1);
+    if (_next.rect.contains(worldPosition)) return _focus(world, _index + 1);
+    if (_enter.rect.contains(worldPosition)) {
+      if (_index < config.unlocked()) {
+        config.onOpen(config.zones[_index], scenes);
       }
       return;
+    }
+    // The focused card overlaps its neighbours' edges and wins the tap.
+    for (final e in _cardRects.entries) {
+      if (e.value != _index || !e.key.contains(worldPosition)) continue;
+      if (_index < config.unlocked()) {
+        config.onOpen(config.zones[_index], scenes);
+      }
+      return;
+    }
+    for (final e in _cardRects.entries) {
+      if (e.key.contains(worldPosition)) return _focus(world, e.value);
     }
   }
 }

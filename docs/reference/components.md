@@ -4,7 +4,7 @@
 
 Every built-in component and the exact JSON shape it serializes to — what you see in `World.toJson()` and what `applyPatch` / `Level.loadInto` accept. This page is generated from `zarvan_schema`, the same schemas the studio and `zarvan lint` validate against, so it is always current.
 
-**104 components** across 4 packages. Jump to: [zarvan_core](#zarvan_core) · [zarvan_flutter](#zarvan_flutter) · [zarvan_platformer](#zarvan_platformer) · [zarvan_idle](#zarvan_idle)
+**105 components** across 4 packages. Jump to: [zarvan_core](#zarvan_core) · [zarvan_flutter](#zarvan_flutter) · [zarvan_platformer](#zarvan_platformer) · [zarvan_idle](#zarvan_idle)
 
 ## zarvan_core
 
@@ -593,6 +593,8 @@ A marker: present or absent, no fields.
 | `maxWidth` | `double` | may be null; 0 to ∞ |
 | `textScale` | `double` | 0 to ∞; default `1` |
 | `rtl` | `bool` | may be null |
+| `fontFamily` | `string` | may be null |
+| `shadowArgb` | `int` | may be null |
 
 ### `hudBar`
 
@@ -667,6 +669,23 @@ A marker: present or absent, no fields.
 |---|---|---|
 | `sigma` | `double` | 0 to ∞; default `0` |
 | `belowZIndex` | `int` | required |
+
+### `shaderEffect`
+
+| Field | Type | Notes |
+|---|---|---|
+| `kind` | `enumeration` | one of `portal`, `glow`, `shine`; default `portal` |
+| `width` | `double` | required; 0 to ∞ |
+| `height` | `double` | required; 0 to ∞ |
+| `zIndex` | `int` | default `0` |
+| `speed` | `double` | 0 to ∞; default `1` |
+| `images` | `list` |  |
+| `blur` | `double` | 0 to ∞; default `0.03` |
+| `intensity` | `double` | 0 to ∞; default `0.5` |
+| `period` | `double` | 0 to ∞; default `5` |
+| `rimArgb` | `int` | default `4290068492` |
+| `armArgb` | `int` | default `4294952253` |
+| `coreArgb` | `int` | default `4294963640` |
 
 ### `screenTint`
 

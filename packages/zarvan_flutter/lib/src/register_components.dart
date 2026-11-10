@@ -11,6 +11,7 @@ import 'rendering/one_shot_fx.dart';
 import 'rendering/parallax_layer.dart';
 import 'rendering/sprite_states.dart';
 import 'rendering/backdrop_blur.dart';
+import 'rendering/shader_effect.dart';
 import 'rendering/screen_tint.dart';
 import 'rendering/sprite.dart';
 import 'rendering/text.dart';
@@ -100,6 +101,12 @@ void registerFlutterComponents(World world) {
     (b) => b.toJson(),
     BackdropBlur.fromJson,
     schema: backdropBlurSchema,
+  );
+  world.components.register<ShaderEffect>(
+    'shaderEffect',
+    (e) => e.toJson(),
+    ShaderEffect.fromJson,
+    schema: shaderEffectSchema,
   );
   world.components.register<ScreenTint>(
     'screenTint',

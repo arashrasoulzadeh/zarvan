@@ -70,6 +70,8 @@ const textSchema = ComponentSchema('text', [
   FieldSchema('maxWidth', FieldType.double, min: 0, optional: true),
   FieldSchema('textScale', FieldType.double, min: 0, defaultValue: 1),
   FieldSchema('rtl', FieldType.bool, optional: true),
+  FieldSchema('fontFamily', FieldType.string, optional: true),
+  FieldSchema('shadowArgb', FieldType.int, optional: true),
 ]);
 
 const hudBarSchema = ComponentSchema('hudBar', [
@@ -139,6 +141,26 @@ const light2dSchema = ComponentSchema('light2d', [
 const backdropBlurSchema = ComponentSchema('backdropBlur', [
   FieldSchema('sigma', FieldType.double, min: 0, defaultValue: 0),
   FieldSchema('belowZIndex', FieldType.int, required: true),
+]);
+
+const shaderEffectSchema = ComponentSchema('shaderEffect', [
+  FieldSchema(
+    'kind',
+    FieldType.enumeration,
+    options: ['portal', 'glow', 'shine'],
+    defaultValue: 'portal',
+  ),
+  FieldSchema('width', FieldType.double, min: 0, required: true),
+  FieldSchema('height', FieldType.double, min: 0, required: true),
+  FieldSchema('zIndex', FieldType.int, defaultValue: 0),
+  FieldSchema('speed', FieldType.double, min: 0, defaultValue: 1),
+  FieldSchema('images', FieldType.list),
+  FieldSchema('blur', FieldType.double, min: 0, defaultValue: 0.03),
+  FieldSchema('intensity', FieldType.double, min: 0, defaultValue: 0.5),
+  FieldSchema('period', FieldType.double, min: 0, defaultValue: 5),
+  FieldSchema('rimArgb', FieldType.int, defaultValue: 0xFFB5400C),
+  FieldSchema('armArgb', FieldType.int, defaultValue: 0xFFFFC53D),
+  FieldSchema('coreArgb', FieldType.int, defaultValue: 0xFFFFF1B8),
 ]);
 
 const screenTintSchema = ComponentSchema('screenTint', [

@@ -29,6 +29,7 @@ import 'nine_slice_sprite.dart';
 import 'normal_mapping_combined_shader.dart';
 import 'particle_dot_texture.dart';
 import 'screen_tint.dart';
+import 'shader_effect.dart';
 import 'text.dart' as txt;
 import 'colorblind_filter.dart';
 import 'debug_memory.dart';
@@ -976,6 +977,7 @@ class _EnginePainter extends CustomPainter {
     order = _collectParticleItems(items, order, size, positions);
     order = _collectTextItems(items, order, size, positions);
     order = _collectHudBarItems(items, order, size, positions);
+    order = _collectShaderEffectItems(items, order, size, positions);
     _collectNineSliceItems(items, order, positions);
 
     // Stable by construction (`order` is a strictly increasing
@@ -3414,7 +3416,20 @@ class _EnginePainter extends CustomPainter {
                     // is only resolvable under this prefixed family name —
                     // even from code inside that same package — per Flutter's
                     // asset-bundling convention for package-provided fonts.
-                    fontFamily: 'packages/zarvan_flutter/EngineDefault',
+                    fontFamily:
+                        text.fontFamily ??
+                        'packages/zarvan_flutter/EngineDefault',
+                    shadows: text.shadowArgb == null
+                        ? null
+                        : [
+                            Shadow(
+                              color: Color(text.shadowArgb!),
+                              offset: Offset(
+                                effectiveFontSize * 0.08,
+                                effectiveFontSize * 0.08,
+                              ),
+                            ),
+                          ],
                   ),
                 ),
                 // Per-text override first, else locale-aware direction so
@@ -3503,6 +3518,105 @@ class _EnginePainter extends CustomPainter {
             bar.height * zoom,
           );
           canvas.drawRect(fillRect, Paint()..color = Color(bar.fillColorArgb));
+        }),
+      );
+    }
+    return order;
+  }
+
+  /// Collects one `_DrawItem` per `ShaderEffect`: its fragment shader painted
+  /// into the effect's rect (world space, scaled by the camera zoom); a `glow`
+  /// is blended additively. Skipped until the shader has compiled.
+  int _collectShaderEffectItems(
+    List<_DrawItem> items,
+    int order,
+    Size size,
+    ComponentStore<Position> positions,
+  ) {
+    final effects = world.componentsOf<ShaderEffect>();
+    for (var i = 0; i < effects.length; i++) {
+      final entity = effects.entityAt(i);
+      final fx = effects.denseAt(i);
+      final pos = positions.get(entity);
+      final isShine = fx.kind == ShaderEffect.shine;
+      // Glows and shines are additive and take one colour whose alpha is the
+      // intensity; the portal and orb (both a rect filled from a picture,
+      // just masked differently) take three.
+      final isGlow = fx.kind == ShaderEffect.glow || isShine;
+      final isOrb = fx.kind == ShaderEffect.orb;
+      final isPicture = fx.kind == ShaderEffect.portal || isOrb;
+      if (pos == null || (!isPicture && !isGlow)) continue;
+      final center = camera.worldToScreen(
+        pos.x,
+        pos.y,
+        size,
+        zIndex: fx.zIndex,
+      );
+      items.add(
+        _DrawItem(fx.zIndex, order++, (canvas) {
+          final shader =
+              (isShine
+                      ? EffectShader.shine
+                      : isGlow
+                      ? EffectShader.glow
+                      : isOrb
+                      ? EffectShader.orb
+                      : EffectShader.portal)
+                  .shader();
+          if (shader == null) return;
+          ui.Image? img(int i) =>
+              i < fx.images.length && atlasRegistry.has(fx.images[i])
+              ? atlasRegistry.resolve(fx.images[i]).image
+              : null;
+          final first = img(0), second = img(1);
+          final rect = Rect.fromCenter(
+            center: center,
+            width: fx.width * camera.zoom,
+            height: fx.height * camera.zoom,
+          );
+          shader
+            ..setFloat(0, rect.left)
+            ..setFloat(1, rect.top)
+            ..setFloat(2, rect.width)
+            ..setFloat(3, rect.height)
+            ..setFloat(4, shaderClock.elapsedMicroseconds / 1e6 * fx.speed)
+            // How many pictures, how soft, and what share of the image's
+            // width the picture's aspect crops to (it keeps its shape).
+            ..setFloat(5, first == null ? 0 : (second == null ? 1 : 2))
+            ..setFloat(6, isShine ? fx.period : fx.blur)
+            ..setFloat(
+              7,
+              first == null
+                  ? 1
+                  : (fx.width / fx.height) * first.height / first.width,
+            );
+          var k = 8;
+          if (isGlow) {
+            final col = Color(fx.coreArgb);
+            shader
+              ..setFloat(k++, col.r)
+              ..setFloat(k++, col.g)
+              ..setFloat(k++, col.b)
+              ..setFloat(k++, fx.intensity);
+          } else {
+            for (final argb in [fx.rimArgb, fx.armArgb, fx.coreArgb]) {
+              final col = Color(argb);
+              shader
+                ..setFloat(k++, col.r)
+                ..setFloat(k++, col.g)
+                ..setFloat(k++, col.b)
+                ..setFloat(k++, col.a);
+            }
+          }
+          shader
+            ..setImageSampler(0, first ?? blankShaderImage())
+            ..setImageSampler(1, second ?? first ?? blankShaderImage());
+          canvas.drawRect(
+            rect,
+            Paint()
+              ..shader = shader
+              ..blendMode = isGlow ? BlendMode.plus : BlendMode.srcOver,
+          );
         }),
       );
     }

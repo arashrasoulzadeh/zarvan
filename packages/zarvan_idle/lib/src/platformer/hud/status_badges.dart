@@ -16,6 +16,7 @@ class StatusBadgeStyle {
     required this.y,
     this.step = 14,
     this.size = 11,
+    this.iconsStem,
     this.colors = const {
       ConditionKind.bleed: 0xFFC8282E,
       ConditionKind.poison: 0xFF3FA34D,
@@ -29,7 +30,12 @@ class StatusBadgeStyle {
   final double step;
   final double size;
 
-  /// Badge colour per condition.
+  /// A `<stem>.png` + `.json` strip with one icon per [ConditionKind], in enum
+  /// order (bleed, poison, stun). When set the badge draws that icon instead of
+  /// a coloured block, with the seconds under it.
+  final String? iconsStem;
+
+  /// Badge colour per condition (used when there is no [iconsStem]).
   final Map<ConditionKind, int> colors;
 }
 
@@ -42,21 +48,31 @@ class StatusBadges {
     required this.style,
     required String fillAtlasId,
     Size fillSize = const Size(48, 27),
+    String? iconAtlasId,
+    double iconCell = 32,
     int zIndex = 112,
-  }) {
+  }) : _labelDy = iconAtlasId == null ? 0 : style.size * 0.62 {
     for (final kind in ConditionKind.values) {
       final block = world.spawn();
       world.componentsOf<Position>().set(block, Position(style.x, _hidden));
       world.componentsOf<eng.Sprite>().set(
         block,
-        eng.Sprite(
-          fillAtlasId,
-          'f11',
-          scaleX: style.size / fillSize.width,
-          scaleY: style.size / fillSize.height,
-          zIndex: zIndex,
-          tintArgb: style.colors[kind] ?? 0xFFFFFFFF,
-        ),
+        iconAtlasId != null
+            ? eng.Sprite(
+                iconAtlasId,
+                '${kind.index}',
+                scaleX: style.size / iconCell,
+                scaleY: style.size / iconCell,
+                zIndex: zIndex,
+              )
+            : eng.Sprite(
+                fillAtlasId,
+                'f11',
+                scaleX: style.size / fillSize.width,
+                scaleY: style.size / fillSize.height,
+                zIndex: zIndex,
+                tintArgb: style.colors[kind] ?? 0xFFFFFFFF,
+              ),
       );
       _blocks[kind] = block;
       _labels[kind] = eng.spawnWorldText(
@@ -72,6 +88,9 @@ class StatusBadges {
   }
 
   static const _hidden = -1000.0;
+
+  /// How far under the badge centre the seconds sit (0 over a plain block).
+  final double _labelDy;
 
   final StatusBadgeStyle style;
   final _blocks = <ConditionKind, EntityId>{};
@@ -91,7 +110,7 @@ class StatusBadges {
       final y = e == null ? _hidden : style.y + slot * style.step;
       if (e != null) slot++;
       positions.get(_blocks[kind]!)?.y = y;
-      positions.get(_labels[kind]!)?.y = y;
+      positions.get(_labels[kind]!)?.y = e == null ? y : y + _labelDy;
       texts.get(_labels[kind]!)?.text = e == null
           ? ''
           : '${e.remaining.ceil()}${e.stacks > 1 ? '×${e.stacks}' : ''}';

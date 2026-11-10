@@ -6,7 +6,8 @@ import '../rendering/text.dart';
 ///
 /// World space on purpose: positions are world units and the text scales with
 /// the camera, so a layout authored for one world size stays put at any window
-/// size (screen-space text positions are raw pixels). [align] makes [x] the
+/// size (screen-space text positions are raw pixels). [fontFamily] and
+/// [shadowArgb] style it (see `Text`). [align] makes [x] the
 /// left or right edge instead of the centre; [rtl] forces text direction.
 EntityId spawnWorldText(
   World world,
@@ -19,6 +20,8 @@ EntityId spawnWorldText(
   double? maxWidth,
   bool? rtl,
   TextAlignment align = TextAlignment.center,
+  String? fontFamily,
+  int? shadowArgb,
 }) {
   final id = world.spawn();
   world.componentsOf<Position>().set(id, Position(x, y));
@@ -33,6 +36,8 @@ EntityId spawnWorldText(
       zIndex: zIndex,
       maxWidth: maxWidth,
       rtl: rtl,
+      fontFamily: fontFamily,
+      shadowArgb: shadowArgb,
     ),
   );
   return id;

@@ -49,6 +49,14 @@ class Text {
   /// above world content regardless of that content's own `zIndex`.
   int zIndex;
 
+  /// A font family the app bundles (declared in its pubspec `fonts:`) to draw
+  /// this text with instead of the engine's default; null keeps the default.
+  String? fontFamily;
+
+  /// Colour of a hard drop shadow under the glyphs (offset ~8% of the font
+  /// size), which lifts light text off a busy background; null draws none.
+  int? shadowArgb;
+
   /// Accessibility text scale multiplier (1.0 = normal, >1 = larger text).
   /// Applied on top of [fontSize] at render time.
   double textScale;
@@ -63,6 +71,8 @@ class Text {
     this.maxWidth,
     this.textScale = 1.0,
     this.rtl,
+    this.fontFamily,
+    this.shadowArgb,
   });
 
   Map<String, dynamic> toJson() => {
@@ -75,6 +85,8 @@ class Text {
     'textScale': textScale,
     if (maxWidth != null) 'maxWidth': maxWidth,
     if (rtl != null) 'rtl': rtl,
+    if (fontFamily != null) 'fontFamily': fontFamily,
+    if (shadowArgb != null) 'shadowArgb': shadowArgb,
   };
 
   factory Text.fromJson(Map<String, dynamic> json) => Text(
@@ -90,5 +102,7 @@ class Text {
     maxWidth: (json['maxWidth'] as num?)?.toDouble(),
     textScale: (json['textScale'] as num?)?.toDouble() ?? 1.0,
     rtl: json['rtl'] as bool?,
+    fontFamily: json['fontFamily'] as String?,
+    shadowArgb: (json['shadowArgb'] as num?)?.toInt(),
   );
 }

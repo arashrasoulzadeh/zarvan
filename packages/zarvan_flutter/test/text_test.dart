@@ -63,4 +63,12 @@ void main() {
     expect(back.rtl, isTrue);
     expect(Text.fromJson({'text': 'x'}).rtl, isNull);
   });
+
+  test('fontFamily and shadowArgb survive a JSON round trip', () {
+    final t = Text('x', fontFamily: 'Lalezar', shadowArgb: 0xFF000000);
+    final back = Text.fromJson(t.toJson());
+    expect(back.fontFamily, 'Lalezar');
+    expect(back.shadowArgb, 0xFF000000);
+    expect(Text('y').toJson().containsKey('fontFamily'), isFalse);
+  });
 }

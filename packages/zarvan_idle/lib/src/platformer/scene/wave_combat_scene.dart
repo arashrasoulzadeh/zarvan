@@ -290,6 +290,8 @@ class WaveCombatScene extends Scene {
   static const _uiIcons = 'ui_icons';
   static const _uiPanel = 'ui_panel';
   static const _uiCurrency = 'ui_currency';
+  static const _uiStatus = 'ui_status';
+  double _statusCell = 32;
 
   late final WavePlan plan = WavePlan.generate(
     level,
@@ -589,6 +591,8 @@ class WaveCombatScene extends Scene {
         world,
         style: badgeStyle,
         fillAtlasId: _uiPanel,
+        iconAtlasId: badgeStyle.iconsStem == null ? null : _uiStatus,
+        iconCell: _statusCell,
         fillSize: Size(
           config.ui.upgradeLayout.frameSource.width -
               2 * config.ui.upgradeLayout.frameInset,
@@ -703,7 +707,8 @@ class WaveCombatScene extends Scene {
         (ui.captionBackdropImage != null ? 1 : 0) +
         (ui.buttonImage != null ? 1 : 0) +
         (ui.iconsStem != null ? 1 : 0) +
-        (ui.currencyIconsStem != null ? 1 : 0);
+        (ui.currencyIconsStem != null ? 1 : 0) +
+        (config.hud.statusBadges?.iconsStem != null ? 1 : 0);
     var done = 0;
     void loaded() => reportAssetProgress(++done, total);
     for (final layer in level.parallax) {
@@ -794,6 +799,13 @@ class WaveCombatScene extends Scene {
       _currencyCell = (await loadSheetSidecar(
         ui.currencyIconsStem!,
       )).cell.toDouble();
+      loaded();
+    }
+    final statusStem = config.hud.statusBadges?.iconsStem;
+    if (statusStem != null) {
+      final icons = await loadSpriteSheet(statusStem, measurePivots: false);
+      registry.register(_uiStatus, icons.atlas);
+      _statusCell = (await loadSheetSidecar(statusStem)).cell.toDouble();
       loaded();
     }
     return registry;

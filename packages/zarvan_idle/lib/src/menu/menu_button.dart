@@ -43,7 +43,7 @@ class MenuButton {
       cy,
       label,
       fontSize: fontSize,
-      colorArgb: 0xFFFFF3C7,
+      colorArgb: _textColorFor(style),
       zIndex: zIndex + 1,
       maxWidth: width * 0.8,
       rtl: rtl ? true : null,
@@ -61,9 +61,7 @@ class MenuButton {
   /// Switches the look: `primary`, `secondary` or `disabled`.
   void setStyle(World world, String style) {
     world.componentsOf<eng.Sprite>().get(sprite)?.region = style;
-    world.componentsOf<eng.Text>().get(text)?.colorArgb = style == 'disabled'
-        ? 0xFF7D7468
-        : 0xFFFFF3C7;
+    world.componentsOf<eng.Text>().get(text)?.colorArgb = _textColorFor(style);
   }
 
   /// Removes the button's entities.
@@ -72,3 +70,12 @@ class MenuButton {
     world.destroy(text);
   }
 }
+
+/// Label color for each button style. `disabled` used to be a dark
+/// brown-grey (`0xFF7D7468`) that all but disappeared against the equally
+/// dark panel art it sits on — a real readability bug (reported against the
+/// glossary's inactive category tabs), not just a lower-emphasis choice. A
+/// lighter, more desaturated grey keeps it visually subordinate to
+/// `primary`'s warm gold without going unreadable.
+int _textColorFor(String style) =>
+    style == 'disabled' ? 0xFFCFC6B5 : 0xFFFFF3C7;

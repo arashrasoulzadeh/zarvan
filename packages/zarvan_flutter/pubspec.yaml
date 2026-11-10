@@ -64,6 +64,10 @@ flutter:
     - shaders/normal_mapping.frag
     - shaders/normal_mapping_combined.frag
     - shaders/post_fx.frag
+    - shaders/portal.frag
+    - shaders/glow.frag
+    - shaders/shine.frag
+    - shaders/orb.frag
   fonts:
     # Bundled so `Text` has a default typeface it owns outright on every
     # platform, instead of implicitly depending on whatever "no

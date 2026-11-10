@@ -307,4 +307,30 @@ void main() {
       expect(onScreen(), 0, reason: 'ended conditions leave the screen');
     },
   );
+
+  test('status badges with an icon strip use one icon per kind', () {
+    final w = World(width: 180, height: 320);
+    registerCoreComponents(w);
+    eng.registerFlutterComponents(w);
+    final badges = StatusBadges.spawn(
+      w,
+      style: const StatusBadgeStyle(x: 20, y: 100, iconsStem: 'icons'),
+      fillAtlasId: 'panel',
+      iconAtlasId: 'status',
+    );
+    badges.sync(
+      w,
+      Conditions([StatusEffect(kind: ConditionKind.stun, remaining: 2)]),
+    );
+    final sprites = w.componentsOf<eng.Sprite>();
+    final regions = {
+      for (var i = 0; i < sprites.length; i++) sprites.denseAt(i).region,
+    };
+    expect(regions, {
+      '${ConditionKind.bleed.index}',
+      '${ConditionKind.poison.index}',
+      '${ConditionKind.stun.index}',
+    });
+    expect(sprites.denseAt(0).atlasId, 'status');
+  });
 }

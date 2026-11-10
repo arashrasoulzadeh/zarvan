@@ -45,3 +45,39 @@ across app launches. The store is intentionally injected so this package stays
 Flutter-free.
 
 Events are bounded, batch automatically, and are retained for retry when ingestion fails. The package has no Flutter dependency and can be used from a game service, CLI, or Flutter app.
+
+## Game helpers
+
+Standard events are available as typed helpers:
+
+```dart
+eye.levelStarted('forest_01');
+eye.levelCompleted('forest_01', duration: const Duration(seconds: 42));
+eye.levelFailed('forest_01', reason: 'player_died');
+eye.purchase('starter_pack', price: 2.99, currency: 'USD');
+eye.adWatched('continue', rewarded: true);
+eye.trackError(error, stackTrace: stack, fatal: false);
+```
+
+Pass game metadata through `EyeOptions.metadata`; it is attached to every
+event:
+
+```dart
+EyeOptions(
+  endpoint: endpoint,
+  apiKey: apiKey,
+  tenantId: tenant,
+  metadata: {'app_version': '1.4.0', 'build': '83', 'platform': 'android'},
+)
+```
+
+For offline games, provide an `EyeQueueStore` backed by durable storage.
+Events are restored on launch, retained when ingestion fails, and removed from
+the durable queue after a successful flush. `login()` and `logout()` manage an
+optional authenticated user while preserving the installation-wide anonymous
+id:
+
+```dart
+eye.login('account-42', {'plan': 'pro'});
+eye.logout();
+```

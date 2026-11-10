@@ -24,7 +24,7 @@ flowchart LR
 | [`zarvan_strategy`](https://github.com/arashrasoulzadeh/zarvan/tree/main/packages/zarvan_strategy) | Developers | One-call wiring for turn-based strategy and unit spawning. | Flutter |
 | [`zarvan_idle`](https://github.com/arashrasoulzadeh/zarvan/tree/main/packages/zarvan_idle) | Developers, game makers | Idle/incremental games: widgets, controller, session, saving. | Flutter |
 | [`zarvan_api`](https://github.com/arashrasoulzadeh/zarvan/tree/main/packages/zarvan_api) | Agents, operators | MCP server and HTTP / JSON-RPC API over the operation registry. | Pure Dart |
-| [`zarvan_eye`](https://github.com/arashrasoulzadeh/zarvan/tree/main/packages/zarvan_eye) | Game makers | Dart client for Eye analytics: sessions, identity, batching and retries. | Pure Dart |
+| [`zarvan_eye`](https://github.com/arashrasoulzadeh/zarvan/tree/main/packages/zarvan_eye) | Game makers | Dart client for Eye analytics: launch sessions, installation identity, offline queues, lifecycle/game helpers, metadata and error reporting. | Pure Dart |
 | [`zarvan_cli`](https://github.com/arashrasoulzadeh/zarvan/tree/main/packages/zarvan_cli) | Game makers, agents | The `zarvan` command: `create`, `upgrade`, `lint`, and every operation as a command. | Pure Dart |
 | [`zarvan_studio`](https://github.com/arashrasoulzadeh/zarvan/tree/main/packages/zarvan_studio) | Game makers | The visual Studio for editing levels and content. | Flutter |
 

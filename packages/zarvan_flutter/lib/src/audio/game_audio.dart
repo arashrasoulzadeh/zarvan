@@ -107,10 +107,12 @@ class GameAudio {
     bool loop = true,
   }) async {
     final path = _lookup(tracks, name, 'track');
-    final state = _output is AudioStateOutput
-        ? _output as AudioStateOutput
-        : null;
-    if (_currentTrack == name && (state == null || state.musicPlaying)) return;
+    // Scene population can run while audioplayers is reporting a transient
+    // `stopped` state during a native player/focus handoff. A scene change is
+    // not a request to restart the track: restarting here creates an audible
+    // gap and can reset the music whenever a menu page is opened. The
+    // platform output owns recovery of a genuinely interrupted player.
+    if (_currentTrack == name) return;
     _currentTrack = name;
     _musicQueue = _musicQueue.then((_) async {
       if (_currentTrack != name) return;

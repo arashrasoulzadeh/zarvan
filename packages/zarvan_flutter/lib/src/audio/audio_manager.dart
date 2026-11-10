@@ -304,6 +304,12 @@ class AudioManager
         AudioPreloadOutput,
         AudioStateOutput {
   final AudioPlayer _music = AudioPlayer();
+  static final _musicContext = AudioContextConfig(
+    focus: AudioContextConfigFocus.gain,
+  ).build();
+  static final _sfxContext = AudioContextConfig(
+    focus: AudioContextConfigFocus.mixWithOthers,
+  ).build();
   late final StreamSubscription<PlayerState> _musicStateSubscription = _music
       .onPlayerStateChanged
       .listen((state) {
@@ -445,6 +451,7 @@ class AudioManager
     try {
       await player.stop();
       await player.setReleaseMode(ReleaseMode.release);
+      await player.setAudioContext(_sfxContext);
       await player.setVolume(volume.clamp(0.0, 1.0));
       await player.setBalance(balance.clamp(-1.0, 1.0));
       await player.play(AssetSource(assetPath));
@@ -467,6 +474,7 @@ class AudioManager
   }) async {
     await _music.stop();
     await _music.setReleaseMode(loop ? ReleaseMode.loop : ReleaseMode.release);
+    await _music.setAudioContext(_musicContext);
     await _music.setVolume(volume.clamp(0.0, 1.0));
     await _music.play(AssetSource(assetPath));
   }

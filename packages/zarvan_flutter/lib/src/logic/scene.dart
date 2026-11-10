@@ -143,7 +143,8 @@ abstract class Scene {
   void handlePointerDown(
     World world,
     SceneController scenes,
-    Offset worldPosition,
+    double worldX,
+    double worldY,
   ) {}
 
   /// Called while a finger drags across the scene, on every move with [ended]

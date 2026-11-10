@@ -4,6 +4,7 @@ import 'package:zarvan_core/zarvan_core.dart';
 import 'package:zarvan_flutter/zarvan_flutter.dart' hide Text;
 
 void main() {
+  sceneTests();
   testWidgets(
     'onWorldPointerDown fires on touch-down, before lift, in world coordinates',
     (tester) async {
@@ -57,4 +58,32 @@ void main() {
     );
     await tester.tap(find.byType(EngineView));
   });
+}
+
+class _ProbeScene extends Scene {
+  final downs = <(double, double)>[];
+  @override
+  Future<void> populate(
+    World world,
+    SceneController scenes,
+    GameState state,
+  ) async {}
+  @override
+  void handlePointerDown(
+    World world,
+    SceneController scenes,
+    double worldX,
+    double worldY,
+  ) => downs.add((worldX, worldY));
+}
+
+void sceneTests() {
+  test(
+    'Scene.handlePointerDown takes plain doubles and defaults to a no-op',
+    () {
+      final s = _ProbeScene();
+      s.handlePointerDown(World(width: 1, height: 1), SceneController(), 3, 4);
+      expect(s.downs, [(3.0, 4.0)]);
+    },
+  );
 }

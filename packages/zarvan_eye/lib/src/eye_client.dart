@@ -86,6 +86,18 @@ class EyeEvent {
 
 /// Batching Dart client for the Eye analytics collector.
 class EyeClient {
+  /// Creates a client and establishes its default session before returning.
+  static Future<EyeClient> init(EyeOptions options) async {
+    final client = EyeClient(options);
+    try {
+      await client.ensureSession();
+      return client;
+    } catch (_) {
+      client.close();
+      rethrow;
+    }
+  }
+
   /// Creates a client. Call [close] when the game or owning service ends.
   EyeClient(this.options)
     : _http = options.httpClient ?? http.Client(),

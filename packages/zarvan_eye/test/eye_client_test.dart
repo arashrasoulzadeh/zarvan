@@ -119,4 +119,49 @@ void main() {
     );
     client.close();
   });
+
+  test('init creates the default session before returning', () async {
+    final transport = _Client();
+    final client = await EyeClient.init(
+      EyeOptions(
+        endpoint: 'https://eye.test',
+        apiKey: 'key',
+        tenantId: 'game',
+        httpClient: transport,
+        flushInterval: Duration.zero,
+        batchSize: 0,
+      ),
+    );
+    expect(client.sessionId, 'session-1');
+    expect(transport.requests, hasLength(1));
+    client.close();
+  });
+
+  test('activity records focus, idle and game time events', () async {
+    final transport = _Client();
+    final client = await EyeClient.init(
+      EyeOptions(
+        endpoint: 'https://eye.test',
+        apiKey: 'key',
+        tenantId: 'game',
+        httpClient: transport,
+        flushInterval: Duration.zero,
+        batchSize: 0,
+      ),
+    );
+    final activity = GameActivity(
+      client,
+      idleAfter: const Duration(milliseconds: 1),
+      heartbeat: const Duration(milliseconds: 10),
+    );
+    activity.setFocused(false);
+    activity.setFocused(true);
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+    activity.close();
+    expect(
+      client.bufferedEvents.map((event) => event.eventName),
+      containsAll(<String>['game_blurred', 'game_focused', 'game_time']),
+    );
+    client.close();
+  });
 }

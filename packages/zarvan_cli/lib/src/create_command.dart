@@ -5,8 +5,7 @@ import 'package:args/command_runner.dart';
 import 'process_utils.dart';
 import 'template.dart';
 
-const defaultEngineRepoUrl =
-    'https://github.com/arashrasoulzadeh/zarvan.git';
+const defaultEngineRepoUrl = 'https://github.com/arashrasoulzadeh/zarvan.git';
 
 class CreateCommand extends Command<int> {
   @override
@@ -97,6 +96,8 @@ class CreateCommand extends Command<int> {
       'ENGINE_REF': args['ref'] as String,
     });
 
+    _brandNativeLaunchScreen(projectDir);
+
     stdout.writeln('Fetching packages...');
     await _runProcess('flutter', [
       'pub',
@@ -112,5 +113,40 @@ Done! Your game is ready at ${projectDir.path}
 
 Run `zarvan upgrade` inside the project later to pull engine updates.''');
     return 0;
+  }
+
+  /// Replaces Flutter's generated blank launch background with a neutral
+  /// branded hand-off. The Dart splash still owns the actual engine loading
+  /// screen; this only covers the interval before Flutter draws its first
+  /// frame.
+  void _brandNativeLaunchScreen(Directory projectDir) {
+    final android = File(
+      '${projectDir.path}/android/app/src/main/res/drawable/launch_background.xml',
+    );
+    if (android.existsSync()) {
+      android.writeAsStringSync('''<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@android:color/white" />
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@mipmap/ic_launcher" />
+    </item>
+</layer-list>
+''');
+    }
+    final androidV21 = File(
+      '${projectDir.path}/android/app/src/main/res/drawable-v21/launch_background.xml',
+    );
+    if (androidV21.existsSync()) {
+      androidV21.writeAsStringSync('''<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@android:color/white" />
+    <item>
+        <bitmap android:gravity="center" android:src="@mipmap/ic_launcher" />
+    </item>
+</layer-list>
+''');
+    }
   }
 }

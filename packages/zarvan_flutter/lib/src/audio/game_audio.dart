@@ -33,6 +33,12 @@ abstract class AudioLifecycleOutput {
   Future<void> resumeSounds();
 }
 
+/// Optional asset preloading for outputs that can warm short effects.
+abstract class AudioPreloadOutput {
+  /// Loads [assetPaths] into the platform audio cache.
+  Future<void> preloadSounds(Iterable<String> assetPaths);
+}
+
 /// Plays sounds and music by short name: `audio.sfx('jump')`,
 /// `audio.music('theme')`, instead of passing asset paths through game code.
 ///

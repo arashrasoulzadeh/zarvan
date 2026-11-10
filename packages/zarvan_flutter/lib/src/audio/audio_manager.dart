@@ -5,7 +5,8 @@ import 'package:audioplayers/audioplayers.dart';
 
 import 'package:zarvan_core/zarvan_core.dart';
 
-import 'game_audio.dart' show AudioLifecycleOutput, AudioOutput;
+import 'game_audio.dart'
+    show AudioLifecycleOutput, AudioOutput, AudioPreloadOutput;
 
 /// Volume/stereo-balance for a sound at [sourceX]/[sourceY] as heard from
 /// [listenerX]/[listenerY] (typically the camera's world position) —
@@ -292,7 +293,8 @@ bool checkLineOfSightSync({
 /// the pooling benefit past [_maxPoolSize] of them at once. Music
 /// still uses a single persistent player since a game typically has
 /// one music track playing at a time.
-class AudioManager implements AudioOutput, AudioLifecycleOutput {
+class AudioManager
+    implements AudioOutput, AudioLifecycleOutput, AudioPreloadOutput {
   final AudioPlayer _music = AudioPlayer();
 
   /// Idle, ready-to-reuse `AudioPlayer`s — populated as sounds finish
@@ -317,6 +319,17 @@ class AudioManager implements AudioOutput, AudioLifecycleOutput {
   @override
   Future<void> playSound(String assetPath, {double volume = 1.0}) =>
       _play(assetPath, volume: volume);
+
+  @override
+  Future<void> preloadSounds(Iterable<String> assetPaths) async {
+    if (_disposed) return;
+    await Future.wait([
+      for (final path in assetPaths)
+        AudioCache.instance
+            .loadPath(path)
+            .then<void>((_) {}, onError: (_, __) {}),
+    ]);
+  }
 
   /// Plays a one-shot sound panned/attenuated by [sourceX]/[sourceY]'s
   /// distance from [listenerX]/[listenerY] — see [positionalAudioParams]

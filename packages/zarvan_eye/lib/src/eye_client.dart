@@ -75,6 +75,8 @@ class EyeOptions {
     this.installationStore,
     this.queueStore,
     this.metadata = const {},
+    this.maxPayloadBytes = 64 * 1024,
+    this.redactKeys = const {},
   });
 
   /// Base URL of the Eye collector, without a trailing slash.
@@ -109,6 +111,12 @@ class EyeOptions {
 
   /// Metadata attached to every event, such as app and device versions.
   final Map<String, Object?> metadata;
+
+  /// Maximum JSON payload size accepted by [EyeClient.track].
+  final int maxPayloadBytes;
+
+  /// Keys whose values are replaced before events leave the client.
+  final Set<String> redactKeys;
 }
 
 /// A serializable event queued for Eye ingestion.
@@ -194,6 +202,7 @@ class EyeClient {
   String? _userId;
   Map<String, Object?> _traits = const {};
   bool _closed = false;
+  Future<void>? _flushFuture;
 
   /// The current session, or null until [ensureSession] succeeds.
   String? get sessionId => _sessionId;
@@ -214,7 +223,7 @@ class EyeClient {
       headers: _headers,
       body: jsonEncode({
         'tenant_id': options.tenantId,
-        'device': _deviceInfo(),
+        'device': {..._deviceInfo(), ...options.metadata},
       }),
     );
     _checkResponse(response, 'create session');
@@ -234,12 +243,17 @@ class EyeClient {
     _checkOpen();
     final session = _sessionId;
     if (session == null) throw StateError('Call ensureSession before track');
-    if (options.debug && name.isEmpty) throw ArgumentError.value(name, 'name');
-    if (options.debug && payload != null) jsonEncode(payload);
+    if (name.isEmpty || !RegExp(r'^[a-zA-Z0-9_.:-]+$').hasMatch(name)) {
+      throw ArgumentError.value(name, 'name');
+    }
+    final safePayload = payload == null ? null : _sanitize(payload);
+    if (safePayload != null && utf8.encode(jsonEncode(safePayload)).length > options.maxPayloadBytes) {
+      throw ArgumentError.value(payload, 'payload', 'Payload is too large');
+    }
     final merged = <String, Object?>{
       if (_anonymousUserId != null) 'anonymous_user_id': _anonymousUserId,
       ...options.metadata,
-      ...?(dims),
+      ...?_sanitize(dims),
       ..._traits,
     };
     if (_userId != null) merged['user_id'] = _userId;
@@ -250,7 +264,7 @@ class EyeClient {
         sessionId: session,
         eventName: name,
         clientTimestamp: DateTime.now().millisecondsSinceEpoch,
-        payload: payload,
+        payload: safePayload,
         dims: merged,
       ),
     );
@@ -324,9 +338,38 @@ class EyeClient {
         },
       );
 
+  /// Records an achievement unlock.
+  void achievementUnlocked(String achievement) => track('achievement_unlocked', dims: {'achievement': achievement});
+
+  /// Records a quest start or completion.
+  void quest(String questId, {required bool completed}) => track(completed ? 'quest_completed' : 'quest_started', dims: {'quest': questId});
+
+  /// Records a checkpoint reached by the player.
+  void checkpointReached(String checkpoint) => track('checkpoint_reached', dims: {'checkpoint': checkpoint});
+
+  /// Records currency earned or spent.
+  void currencyChanged(String currency, num amount, {required bool spent}) => track(spent ? 'currency_spent' : 'currency_earned', dims: {'currency': currency, 'amount': amount});
+
+  /// Records an item acquisition.
+  void itemAcquired(String item, {int quantity = 1}) => track('item_acquired', dims: {'item': item, 'quantity': quantity});
+
+  /// Records tutorial progress.
+  void tutorialStep(String step) => track('tutorial_step', dims: {'step': step});
+
   /// Sends all buffered events, retaining them when the request fails.
   Future<void> flush() async {
     _checkOpen();
+    if (_flushFuture != null) return _flushFuture!;
+    final future = _flush();
+    _flushFuture = future;
+    try {
+      await future;
+    } finally {
+      _flushFuture = null;
+    }
+  }
+
+  Future<void> _flush() async {
     if (_buffer.isEmpty) return;
     final events = List<EyeEvent>.from(_buffer);
     _buffer.clear();
@@ -397,8 +440,19 @@ class EyeClient {
   }
 
   Future<void> _restoreQueue() async {
-    final saved = await options.queueStore?.readEvents() ?? const [];
-    _buffer.addAll(saved.map(EyeEvent.fromJson));
+    List<Map<String, Object?>> saved;
+    try {
+      saved = await options.queueStore?.readEvents() ?? const [];
+    } catch (_) {
+      saved = const [];
+    }
+    final ids = <String>{};
+    for (final json in saved) {
+      try {
+        final event = EyeEvent.fromJson(json);
+        if (ids.add(event.eventId)) _buffer.add(event);
+      } catch (_) {}
+    }
     while (_buffer.length > options.maxBufferSize) _buffer.removeAt(0);
   }
 
@@ -407,6 +461,17 @@ class EyeClient {
         _buffer.map((event) => event.toJson()).toList(),
       ) ??
       Future<void>.value();
+
+  Map<String, Object?> _sanitize(Map<String, Object?>? input) {
+    if (input == null) return {};
+    final keys = options.redactKeys.map((key) => key.toLowerCase()).toSet();
+    return input.map(
+      (key, value) => MapEntry(
+        key,
+        keys.contains(key.toLowerCase()) ? '[REDACTED]' : value,
+      ),
+    );
+  }
 
   String _newAnonymousUserId() {
     final random = Random.secure();

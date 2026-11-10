@@ -53,6 +53,15 @@
 .md-typeset table:not([class]) { display: table; width: 100%; border: 1px solid rgba(200,166,106,.18); }
 .md-sidebar__scrollwrap { scrollbar-color: var(--zv-gold) transparent; }
 
+/* Home is a landing surface; inner pages keep the full documentation chrome. */
+body:has(.zv-hero) .md-sidebar,
+body:has(.zv-hero) .md-tabs,
+body:has(.zv-hero) .md-content__button { display: none; }
+body:has(.zv-hero) .md-main__inner { display: block; max-width: 74rem; margin: 0 auto; }
+body:has(.zv-hero) .md-content { max-width: none; }
+body:has(.zv-hero) .md-content__inner { max-width: 68rem; margin: 0 auto; padding: 0 1.25rem 4rem; }
+body:has(.zv-hero) .md-header { background: var(--zv-obsidian); }
+
 .md-typeset h1, .md-typeset h2 { letter-spacing: -0.01em; }
 .md-typeset h2 { border-bottom: 1px solid color-mix(in srgb, var(--zv-gold) 35%, transparent); padding-bottom: .25em; }
 .md-typeset table:not([class]) { border-radius: 8px; overflow: hidden; }

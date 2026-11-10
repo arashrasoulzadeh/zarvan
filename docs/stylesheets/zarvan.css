@@ -50,7 +50,18 @@
 .zv-actions .md-button { margin: .25rem .4rem .25rem 0; color: var(--zv-ivory); border-color: var(--zv-gold); }
 .zv-actions .md-button--primary { background: var(--zv-gold); color: var(--zv-obsidian); border-color: var(--zv-gold); }
 .zv-hero__art img { filter: drop-shadow(0 0 24px rgba(200,166,106,.35)); border-radius: 50%; background: #fff; padding: 8px; }
+.zv-hero__art img { border-radius: 18px; padding: 0; object-fit: cover; box-shadow: 0 20px 50px rgba(0,0,0,.35); }
 .zv-hero ~ h1 { display: none; }
+.zv-hero__meta { display: flex; flex-wrap: wrap; gap: .45rem; margin: 1.25rem 0 .35rem; }
+.zv-hero__meta span, .zv-kicker { color: var(--zv-gold); border: 1px solid color-mix(in srgb, var(--zv-gold) 45%, transparent); border-radius: 999px; padding: .25rem .6rem; font-size: .72rem; letter-spacing: .04em; }
+.zv-showcase { display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.5rem; align-items: center; margin: 2rem 0 2.5rem; padding: 1.2rem; border: 1px solid color-mix(in srgb, var(--zv-gold) 30%, transparent); border-radius: 16px; background: color-mix(in srgb, var(--zv-gold) 6%, transparent); }
+.zv-showcase h2 { margin: .7rem 0 .4rem; border: 0; }
+.zv-showcase p { margin-top: 0; }
+.zv-showcase img { width: 100%; border-radius: 10px; display: block; }
+.zv-agent-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0 2rem; }
+.zv-agent-card { border: 1px solid color-mix(in srgb, var(--zv-gold) 35%, transparent); border-radius: 12px; padding: 1rem; background: color-mix(in srgb, var(--zv-gold) 5%, transparent); }
+.zv-agent-card h3 { margin-top: 0; }
+@media (max-width: 700px) { .zv-showcase { grid-template-columns: 1fr; } .zv-agent-grid { grid-template-columns: 1fr; } .zv-hero { padding: 2rem 1rem; } .zv-hero__art img { width: 100%; height: auto; } }
 
 .zv-pillars { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .75rem; margin: 1rem 0 2rem; }
 .zv-pillars div { border: 1px solid color-mix(in srgb, var(--zv-gold) 45%, transparent); border-radius: 10px; padding: .8rem 1rem; }

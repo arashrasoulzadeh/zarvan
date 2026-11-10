@@ -1,6 +1,8 @@
 site_name: ZARVAN
 site_description: ZARVAN, an agent-native, simulation-first game engine built with Dart — A pure-Dart 2D game engine built for AI agents and humans — ECS, platformer and turn-based strategy, content as data.
 site_url: https://meetarash.ir/agentic-game-engine/
+site_author: ZARVAN contributors
+copyright: "© ZARVAN contributors"
 repo_url: https://github.com/arashrasoulzadeh/zarvan
 repo_name: arashrasoulzadeh/zarvan
 edit_uri: edit/main/docs/
@@ -12,6 +14,8 @@ theme:
   logo: assets/logo.png
   favicon: assets/favicon.png
   features:
+    - navigation.instant
+    - navigation.instant.prefetch
     - navigation.tracking
     - navigation.tabs
     - navigation.sections
@@ -87,6 +91,7 @@ nav:
       - For game makers: guides/for-users.md
       - For developers: guides/for-developers.md
       - For AI agents: guides/for-ai-agents.md
+      - Agent hub: agents.md
       - Packages: packages.md
   - فارسی:
       - صفحه‌ی اصلی: fa/index.md
@@ -98,6 +103,7 @@ nav:
       - واژه‌نامه: fa/glossary.md
   - Start:
       - Getting started: getting-started.md
+      - Benchmarks: benchmarks.md
       - Releasing to the stores: releasing.md
       - Releasing the engine: engine-releasing.md
       - FAQ & troubleshooting: faq.md

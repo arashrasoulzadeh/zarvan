@@ -247,7 +247,8 @@ class EyeClient {
       throw ArgumentError.value(name, 'name');
     }
     final safePayload = payload == null ? null : _sanitize(payload);
-    if (safePayload != null && utf8.encode(jsonEncode(safePayload)).length > options.maxPayloadBytes) {
+    if (safePayload != null &&
+        utf8.encode(jsonEncode(safePayload)).length > options.maxPayloadBytes) {
       throw ArgumentError.value(payload, 'payload', 'Payload is too large');
     }
     final merged = <String, Object?>{
@@ -339,22 +340,33 @@ class EyeClient {
       );
 
   /// Records an achievement unlock.
-  void achievementUnlocked(String achievement) => track('achievement_unlocked', dims: {'achievement': achievement});
+  void achievementUnlocked(String achievement) =>
+      track('achievement_unlocked', dims: {'achievement': achievement});
 
   /// Records a quest start or completion.
-  void quest(String questId, {required bool completed}) => track(completed ? 'quest_completed' : 'quest_started', dims: {'quest': questId});
+  void quest(String questId, {required bool completed}) => track(
+    completed ? 'quest_completed' : 'quest_started',
+    dims: {'quest': questId},
+  );
 
   /// Records a checkpoint reached by the player.
-  void checkpointReached(String checkpoint) => track('checkpoint_reached', dims: {'checkpoint': checkpoint});
+  void checkpointReached(String checkpoint) =>
+      track('checkpoint_reached', dims: {'checkpoint': checkpoint});
 
   /// Records currency earned or spent.
-  void currencyChanged(String currency, num amount, {required bool spent}) => track(spent ? 'currency_spent' : 'currency_earned', dims: {'currency': currency, 'amount': amount});
+  void currencyChanged(String currency, num amount, {required bool spent}) =>
+      track(
+        spent ? 'currency_spent' : 'currency_earned',
+        dims: {'currency': currency, 'amount': amount},
+      );
 
   /// Records an item acquisition.
-  void itemAcquired(String item, {int quantity = 1}) => track('item_acquired', dims: {'item': item, 'quantity': quantity});
+  void itemAcquired(String item, {int quantity = 1}) =>
+      track('item_acquired', dims: {'item': item, 'quantity': quantity});
 
   /// Records tutorial progress.
-  void tutorialStep(String step) => track('tutorial_step', dims: {'step': step});
+  void tutorialStep(String step) =>
+      track('tutorial_step', dims: {'step': step});
 
   /// Sends all buffered events, retaining them when the request fails.
   Future<void> flush() async {

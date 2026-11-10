@@ -81,3 +81,9 @@ id:
 eye.login('account-42', {'plan': 'pro'});
 eye.logout();
 ```
+
+Additional gameplay helpers include `achievementUnlocked`, `quest`,
+`checkpointReached`, `currencyChanged`, `itemAcquired`, and `tutorialStep`.
+Configure `redactKeys` and `maxPayloadBytes` in `EyeOptions` to protect event
+data. `EyeQueueStore` supports durable queue implementations; malformed queued
+records are ignored during recovery and concurrent flush calls are coalesced.

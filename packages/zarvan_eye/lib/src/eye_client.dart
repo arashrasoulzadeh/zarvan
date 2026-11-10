@@ -25,6 +25,28 @@ abstract interface class EyeInstallationStore {
   Future<void> writeAnonymousUserId(String id);
 }
 
+/// Persistence for events that could not be uploaded while offline.
+abstract interface class EyeQueueStore {
+  /// Reads events saved by an earlier process.
+  Future<List<Map<String, Object?>>> readEvents();
+
+  /// Replaces the saved queue with [events].
+  Future<void> writeEvents(List<Map<String, Object?>> events);
+}
+
+/// In-memory queue store for tests and applications with no persistence.
+class MemoryEyeQueueStore implements EyeQueueStore {
+  List<Map<String, Object?>> _events = [];
+
+  @override
+  Future<List<Map<String, Object?>>> readEvents() async => _events;
+
+  @override
+  Future<void> writeEvents(List<Map<String, Object?>> events) async {
+    _events = List<Map<String, Object?>>.from(events);
+  }
+}
+
 /// A non-persistent store useful for tests and short-lived processes.
 class MemoryEyeInstallationStore implements EyeInstallationStore {
   String? _id;
@@ -51,6 +73,8 @@ class EyeOptions {
     this.httpClient,
     this.debug = false,
     this.installationStore,
+    this.queueStore,
+    this.metadata = const {},
   });
 
   /// Base URL of the Eye collector, without a trailing slash.
@@ -79,6 +103,12 @@ class EyeOptions {
 
   /// Store for the anonymous id shared by every session on this installation.
   final EyeInstallationStore? installationStore;
+
+  /// Durable store used to retain events while offline.
+  final EyeQueueStore? queueStore;
+
+  /// Metadata attached to every event, such as app and device versions.
+  final Map<String, Object?> metadata;
 }
 
 /// A serializable event queued for Eye ingestion.
@@ -109,6 +139,16 @@ class EyeEvent {
     'payload': payload,
     'dims': dims,
   };
+
+  /// Restores an event from a durable queue.
+  factory EyeEvent.fromJson(Map<String, Object?> json) => EyeEvent(
+    eventId: json['event_id']! as String,
+    sessionId: json['session_id']! as String,
+    eventName: json['event_name']! as String,
+    clientTimestamp: json['client_ts']! as int,
+    payload: (json['payload'] as Map?)?.cast<String, Object?>(),
+    dims: (json['dims'] as Map?)?.cast<String, Object?>() ?? const {},
+  );
 }
 
 /// Batching Dart client for the Eye analytics collector.
@@ -119,6 +159,7 @@ class EyeClient {
     try {
       await client._ensureAnonymousUserId();
       await client.ensureSession();
+      await client._restoreQueue();
       return client;
     } catch (_) {
       client.close();
@@ -197,6 +238,7 @@ class EyeClient {
     if (options.debug && payload != null) jsonEncode(payload);
     final merged = <String, Object?>{
       if (_anonymousUserId != null) 'anonymous_user_id': _anonymousUserId,
+      ...options.metadata,
       ...?(dims),
       ..._traits,
     };
@@ -212,6 +254,7 @@ class EyeClient {
         dims: merged,
       ),
     );
+    unawaited(_persistQueue());
     if (options.batchSize > 0 && _buffer.length >= options.batchSize)
       unawaited(flush());
   }
@@ -222,6 +265,64 @@ class EyeClient {
     _userId = userId;
     _traits = Map.unmodifiable(traits);
   }
+
+  /// Clears authenticated identity while retaining the installation id.
+  void logout() {
+    _checkOpen();
+    _userId = null;
+    _traits = const {};
+    track('logout');
+  }
+
+  /// Replaces the current authenticated identity.
+  void login(String userId, [Map<String, Object?> traits = const {}]) {
+    identify(userId, traits);
+    track('login');
+  }
+
+  /// Records a standard level start event.
+  void levelStarted(String level, {Map<String, Object?>? payload}) =>
+      track('level_started', payload: payload, dims: {'level': level});
+
+  /// Records a standard level completion event.
+  void levelCompleted(String level, {Duration? duration}) => track(
+    'level_completed',
+    dims: {
+      'level': level,
+      if (duration != null) 'duration_ms': duration.inMilliseconds,
+    },
+  );
+
+  /// Records a standard level failure event.
+  void levelFailed(String level, {String? reason}) => track(
+    'level_failed',
+    dims: {'level': level, if (reason != null) 'reason': reason},
+  );
+
+  /// Records a purchase or virtual transaction.
+  void purchase(String product, {num? price, String? currency}) => track(
+    'purchase',
+    dims: {
+      'product': product,
+      if (price != null) 'price': price,
+      if (currency != null) 'currency': currency,
+    },
+  );
+
+  /// Records a rewarded or interstitial advertisement.
+  void adWatched(String placement, {bool rewarded = false}) =>
+      track('ad_watched', dims: {'placement': placement, 'rewarded': rewarded});
+
+  /// Reports a non-fatal or fatal application error.
+  void trackError(Object error, {StackTrace? stackTrace, bool fatal = false}) =>
+      track(
+        'error',
+        payload: {
+          'error': '$error',
+          if (stackTrace != null) 'stack_trace': '$stackTrace',
+          'fatal': fatal,
+        },
+      );
 
   /// Sends all buffered events, retaining them when the request fails.
   Future<void> flush() async {
@@ -238,9 +339,15 @@ class EyeClient {
         }),
       );
       _checkResponse(response, 'flush events');
+      await options.queueStore?.writeEvents(
+        _buffer.map((event) => event.toJson()).toList(),
+      );
     } catch (_) {
       _buffer.insertAll(0, events);
       while (_buffer.length > options.maxBufferSize) _buffer.removeAt(0);
+      await options.queueStore?.writeEvents(
+        _buffer.map((event) => event.toJson()).toList(),
+      );
       rethrow;
     }
   }
@@ -251,6 +358,15 @@ class EyeClient {
     _closed = true;
     _timer?.cancel();
     if (_ownsHttp) _http.close();
+  }
+
+  /// Drops all queued events and resets the authenticated identity.
+  Future<void> clearIdentity() async {
+    _checkOpen();
+    _userId = null;
+    _traits = const {};
+    _buffer.clear();
+    await options.queueStore?.writeEvents(const []);
   }
 
   Uri _uri(String path) =>
@@ -279,6 +395,18 @@ class EyeClient {
     _anonymousUserId = existing ?? _newAnonymousUserId();
     if (existing == null) await store?.writeAnonymousUserId(_anonymousUserId!);
   }
+
+  Future<void> _restoreQueue() async {
+    final saved = await options.queueStore?.readEvents() ?? const [];
+    _buffer.addAll(saved.map(EyeEvent.fromJson));
+    while (_buffer.length > options.maxBufferSize) _buffer.removeAt(0);
+  }
+
+  Future<void> _persistQueue() =>
+      options.queueStore?.writeEvents(
+        _buffer.map((event) => event.toJson()).toList(),
+      ) ??
+      Future<void>.value();
 
   String _newAnonymousUserId() {
     final random = Random.secure();

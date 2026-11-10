@@ -59,6 +59,7 @@ packages/**/coverage/
 /test_game/
 /examples/
 /zahaak/
+/adad_bazi/
 
 # mkdocs build output
 /site/

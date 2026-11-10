@@ -38,6 +38,7 @@ semantics, level mechanics, UI toolkit models); see the changelog. One follow-up
 ship, with a test and docs.
 
 - [x] **Flat shape primitives** (`Shape`: circle, rounded rect, ring, dashes, screen space) for art-free games such as Adad Bazi; tests in `shape_test.dart`, benchmark in `benchmark/`.
+- [x] **Render a world to PNG** (`captureWorldToPng`) for share cards; tests in `capture_world_test.dart`.
 - [ ] **UI toolkit: Flutter widgets for the new models.** `layoutStack`, `anchorRect`, `ScrollListModel` and
       `TextInputModel` exist as pure models; scenes still need widgets that render and drive them.
 

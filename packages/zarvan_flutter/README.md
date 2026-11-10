@@ -20,6 +20,7 @@ content) lives in `zarvan_core`, which stays Flutter-free.
 - [Draw order (z-index)](#draw-order-z-index)
 - [Masking/clipping (`ClipShape`)](#maskingclipping-clipshape)
 - [Flat shapes (`Shape`)](#flat-shapes-shape)
+- [Capturing an image](#capturing-an-image)
 - [Lighting (`Light2D`)](#lighting-light2d)
 - [Audio](#audio)
 - [Save/load](#saveload)
@@ -441,6 +442,20 @@ always an outline. `dashLength`/`gapLength` dash an outline. `alpha` fades the
 whole shape. `screenSpace: true` ignores the camera (like `Text.screenSpace`).
 200 shapes cost about 0.5 ms of paint per frame
 (`benchmark/shape_benchmark_test.dart`).
+
+## Capturing an image
+
+`captureWorldToPng` renders a world once, off screen, to PNG bytes of an exact
+pixel size -- no widget, nothing shown, nothing stepped.
+
+```dart
+final png = await captureWorldToPng(cardWorld, width: 1080, height: 1920,
+    backgroundColor: const Color(0xFF101820));
+await File(path).writeAsBytes(png);
+```
+
+The world is only read, so it is safe on a live world. In widget tests wrap the
+call in `tester.runAsync`.
 
 ## Lighting (`Light2D`)
 

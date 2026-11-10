@@ -4039,3 +4039,44 @@ class _MirrorBatch {
     shader.dispose();
   }
 }
+
+/// Renders [world] once, off screen, and returns it as PNG bytes of exactly
+/// [width] x [height] pixels -- for share cards, store screenshots and
+/// anything else that needs a picture of a scene the player is not looking
+/// at.
+///
+/// Uses the same painter as [EngineView], so shapes, text, sprites and tiles
+/// look identical. The world is only read: nothing is stepped, no system
+/// runs and no component changes, so it is safe to call on a live world
+/// (build a dedicated card world instead when the picture should differ from
+/// the screen). [camera] defaults to a fresh `Camera()` (origin at the
+/// image centre, zoom 1). Async GPU readback means this must run with real
+/// Flutter bindings (in widget tests, inside `tester.runAsync`).
+Future<Uint8List> captureWorldToPng(
+  World world, {
+  required int width,
+  required int height,
+  AtlasRegistry? atlasRegistry,
+  Camera? camera,
+  Color backgroundColor = const Color(0xFF000000),
+}) async {
+  final painter = _EnginePainter(
+    world: world,
+    atlasRegistry: atlasRegistry ?? AtlasRegistry(),
+    camera: camera ?? Camera(),
+    backgroundColor: backgroundColor,
+    tileCullCache: {},
+    combinedTextureCache: {},
+  );
+  final recorder = ui.PictureRecorder();
+  painter.paint(Canvas(recorder), Size(width.toDouble(), height.toDouble()));
+  final picture = recorder.endRecording();
+  final image = await picture.toImage(width, height);
+  try {
+    final data = await image.toByteData(format: ui.ImageByteFormat.png);
+    return data!.buffer.asUint8List();
+  } finally {
+    image.dispose();
+    picture.dispose();
+  }
+}

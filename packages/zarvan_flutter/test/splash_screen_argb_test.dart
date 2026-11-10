@@ -17,5 +17,14 @@ void main() {
     expect(c.showEngineVersion, isFalse);
     expect(c.minDuration, const Duration(milliseconds: 800));
     expect(SplashConfig.fromArgb().backgroundColor, isNull);
+    expect(SplashConfig.fromArgb().logo, isNull);
+    final withLogo = SplashConfig.fromArgb(
+      logoAsset: 'assets/branding/logo.png',
+    );
+    expect(withLogo.logo, isA<AssetImage>());
+    expect(
+      (withLogo.logo! as AssetImage).assetName,
+      'assets/branding/logo.png',
+    );
   });
 }

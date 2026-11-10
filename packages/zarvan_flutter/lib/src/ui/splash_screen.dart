@@ -67,15 +67,18 @@ class SplashConfig {
     this.minDuration = Duration.zero,
   });
 
-  /// A splash described with plain `0xAARRGGBB` integers and a title, so a
+  /// A splash described with plain `0xAARRGGBB` integers, a title and the
+  /// bundled [logoAsset] path, so a
   /// game whose code never touches `dart:ui` can still brand its splash.
   factory SplashConfig.fromArgb({
     String? title,
+    String? logoAsset,
     int? backgroundArgb,
     int accentArgb = 0xFFC8A66A,
     bool showEngineVersion = true,
     Duration minDuration = Duration.zero,
   }) => SplashConfig(
+    logo: logoAsset == null ? null : AssetImage(logoAsset),
     title: title,
     backgroundColor: backgroundArgb == null ? null : Color(backgroundArgb),
     accentColor: Color(accentArgb),

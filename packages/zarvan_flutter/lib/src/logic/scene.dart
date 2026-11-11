@@ -22,7 +22,7 @@ import 'game_flow.dart';
 abstract class Scene {
   /// The rules/lifecycle flow that owns this scene. Visual scenes may be
   /// shared by multiple flows without sharing their progression policy.
-  GameFlow get flow => const GameFlow.main();
+  GameFlow get flow => const DefaultGameFlow();
 
   /// Adds systems and spawns entities on [world] — the same
   /// responsibility `Game.populateWorld` used to have. [scenes] is this

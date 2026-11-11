@@ -5,9 +5,10 @@ description: Real ZARVAN game and simulation outputs with focused code samples.
 
 # Showcase
 
-Ten small outputs that show what ZARVAN is built to do. Every card links to a
-corresponding tutorial, example, benchmark, or package test; snippets are the
-interesting part of the output, not a copy of the engine.
+Ten concrete outputs from the engine's documented paths. The first group is
+player-facing games; the second is the simulation and tooling underneath them.
+Each item has one job: show what you get, the smallest code that creates it,
+and where to follow the complete implementation.
 
 ## Games
 
@@ -18,7 +19,9 @@ interesting part of the output, not a copy of the engine.
 
 ### Tiny platformer
 
-Player movement, gravity, a patrol enemy, coins, and a health bar in one small world.
+Player movement, gravity, a patrol enemy, coins, and a health bar in one small
+world. The tutorial uses only public package APIs and its snippets are checked
+against current signatures.
 
 ```dart
 final player = spawnPlayer(world, at: const Vec2(48, 80));
@@ -26,7 +29,7 @@ spawnEnemy(world, at: const Vec2(180, 80), behavior: PatrolBehavior());
 installPlatformerSystems(world);
 ```
 
-[Build the platformer](tutorials/01-hello-world.md){ .md-button }
+[Verified in Tutorial 1 · Build the platformer](tutorials/01-hello-world.md){ .md-button }
 </article>
 
 <article class="zv-showcase-card" markdown>
@@ -34,7 +37,8 @@ installPlatformerSystems(world);
 
 ### Turn-based skirmish
 
-Grid movement, terrain, fog of war, and an AI opponent with explicit turns.
+An 8×8 battlefield with terrain costs, fog of war, two armies, and a computer
+controlled opponent. This is the repository's clearest end-to-end game output.
 
 ```dart
 final battle = StrategyGame.create(map: map, seed: 7);
@@ -42,7 +46,7 @@ battle.issue(MoveOrder(unit: scout, target: tile(4, 2)));
 battle.endTurn();
 ```
 
-[Build the strategy game](tutorials/02-turn-based-strategy.md){ .md-button }
+[Verified in Tutorial 2 · Build the strategy game](tutorials/02-turn-based-strategy.md){ .md-button }
 </article>
 
 <article class="zv-showcase-card" markdown>
@@ -50,7 +54,8 @@ battle.endTurn();
 
 ### Agent-driven game
 
-An agent observes a read-only world view, chooses an action, and plays through the same authority boundary as a human.
+The agent sees JSON, chooses orders, and gets rejected when it proposes an
+illegal move. The engine remains the referee.
 
 ```dart
 final view = world.viewFor(agentId);
@@ -58,7 +63,7 @@ final action = policy.choose(view);
 world.apply(action);
 ```
 
-[Build the agent game](tutorials/03-agent-driven-game.md){ .md-button }
+[Verified in Tutorial 3 · Build the agent game](tutorials/03-agent-driven-game.md){ .md-button }
 </article>
 
 <article class="zv-showcase-card" markdown>
@@ -66,14 +71,15 @@ world.apply(action);
 
 ### Multiplayer world
 
-One host simulation, multiple clients, and explicit commands moving through a transport.
+One host owns the simulation; two clients receive snapshots and submit orders.
+The mirror worlds never simulate or mutate authority locally.
 
 ```dart
 final host = GameServer(world: world, transport: WebSocketTransport());
 host.listen();
 ```
 
-[Build multiplayer](tutorials/04-multiplayer.md){ .md-button }
+[Verified in Tutorial 4 · Build multiplayer](tutorials/04-multiplayer.md){ .md-button }
 </article>
 
 <article class="zv-showcase-card" markdown>
@@ -81,7 +87,8 @@ host.listen();
 
 ### Idle economy
 
-Offline progress, upgrades, waves, loot, and a saveable economy driven by data.
+An economy generated from one JSON file: offline earnings, generators, upgrades,
+prestige, challenges, and validation without launching Flutter.
 
 ```dart
 final session = IdleSession.load(store);
@@ -89,7 +96,7 @@ final reward = session.applyOffline(elapsed: elapsed);
 session.save();
 ```
 
-[Build the idle game](tutorials/05-idle-game.md){ .md-button }
+[Verified in Tutorial 5 · Build the idle game](tutorials/05-idle-game.md){ .md-button }
 </article>
 
 </div>
@@ -103,7 +110,8 @@ session.save();
 
 ### ECS world step
 
-Systems query components, update the world, and run without a Flutter binding.
+The engine's smallest runtime unit: registered components, ordered systems, and
+a fixed step that can be asserted in a pure Dart test.
 
 ```dart
 world.addSystem(MovementSystem());
@@ -111,7 +119,7 @@ world.step(const Duration(milliseconds: 16));
 expect(world.get<Position>(player).x, 11);
 ```
 
-[Read the ECS concept](concepts/ecs.md){ .md-button }
+[Core concept · Read the ECS model](concepts/ecs.md){ .md-button }
 </article>
 
 <article class="zv-showcase-card" markdown>
@@ -119,14 +127,15 @@ expect(world.get<Position>(player).x, 11);
 
 ### JSON world snapshot
 
-State stays inspectable for tools, agents, save files, replay, and debugging.
+The same representation can cross a process boundary, become a save file, or
+be reduced into an observation for an agent.
 
 ```dart
 final snapshot = world.toJson();
 final restored = World.fromJson(snapshot);
 ```
 
-[Read content as data](concepts/content-as-data.md){ .md-button }
+[Core concept · Read content as data](concepts/content-as-data.md){ .md-button }
 </article>
 
 <article class="zv-showcase-card" markdown>
@@ -134,14 +143,15 @@ final restored = World.fromJson(snapshot);
 
 ### Fog of war
 
-Visibility is a simulation result: walls block sight, units reveal tiles, and the agent only receives allowed information.
+Visibility is not a renderer trick: walls block sight, explored cells persist,
+and illegal attacks fail when the target is outside the team's view.
 
 ```dart
 final visible = fog.canSee(observer, target);
 final view = fog.filter(world.viewFor(observer));
 ```
 
-[Add fog of war](examples/fog-of-war.md){ .md-button }
+[Verified example · Add fog of war](examples/fog-of-war.md){ .md-button }
 </article>
 
 <article class="zv-showcase-card" markdown>
@@ -149,7 +159,8 @@ final view = fog.filter(world.viewFor(observer));
 
 ### Rendering benchmark
 
-Measure world step, collision, post-processing, and frame time before changing the renderer.
+Measure simulation and rendering separately. The checked-in post-processing
+dataset records the device, resolution, preset, and frame-time conditions.
 
 ```dart
 benchmark('world step', () {
@@ -157,7 +168,7 @@ benchmark('world step', () {
 });
 ```
 
-[See benchmarks](benchmarks.md){ .md-button }
+[Checked-in data · See benchmarks](benchmarks.md){ .md-button }
 </article>
 
 <article class="zv-showcase-card" markdown>
@@ -165,7 +176,8 @@ benchmark('world step', () {
 
 ### Replayable simulation
 
-Commands and snapshots make a run reproducible for tests, debugging, and agent evaluation.
+Commands and snapshots make a run reproducible for tests, multiplayer debugging,
+and agent evaluation. The important output is a comparable state, not a replay video.
 
 ```dart
 final replay = Replay.from(commands);
@@ -173,10 +185,12 @@ replay.run(seed: 42);
 expect(replay.snapshot, expected);
 ```
 
-[Read the performance model](concepts/performance.md){ .md-button }
+[Concept + profiler · Read the performance model](concepts/performance.md){ .md-button }
 </article>
 
 </div>
 
 !!! note
-    The showcase uses the repository's real tutorials, examples, tests, and benchmark concepts. Each snippet is intentionally the smallest useful code that produces the output.
+    The showcase deliberately separates player-facing output from simulation
+    output. Follow the linked page for the complete runnable or tested path;
+    the snippets here are intentionally short.

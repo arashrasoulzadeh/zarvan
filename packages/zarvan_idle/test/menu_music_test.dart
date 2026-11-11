@@ -21,6 +21,10 @@ class _Out implements AudioOutput {
 
   @override
   Future<void> stopMusic() async => calls.add('stop');
+  @override
+  Future<void> pauseMusic() async => calls.add('pause');
+  @override
+  Future<void> resumeMusic() async => calls.add('resume');
 }
 
 void main() {

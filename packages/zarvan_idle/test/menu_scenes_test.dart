@@ -947,4 +947,8 @@ class _MusicOut implements AudioOutput {
 
   @override
   Future<void> stopMusic() async => log.add('stop');
+  @override
+  Future<void> pauseMusic() async => log.add('pause');
+  @override
+  Future<void> resumeMusic() async => log.add('resume');
 }

@@ -14,6 +14,10 @@ class _Recorder implements AudioOutput {
   }) async => calls.add('music $assetPath $volume $loop');
   @override
   Future<void> stopMusic() async => calls.add('stop');
+  @override
+  Future<void> pauseMusic() async => calls.add('pause');
+  @override
+  Future<void> resumeMusic() async => calls.add('resume');
 }
 
 void main() {
@@ -35,6 +39,21 @@ void main() {
       'music music/theme.mp3 0.5 false',
     ]);
   });
+
+  test(
+    'pause and resume keep the track; resume is a no-op with none',
+    () async {
+      final r = _Recorder();
+      final audio = make(r);
+      await audio.resumeMusic();
+      expect(r.calls, isEmpty);
+      await audio.music('theme');
+      await audio.pauseMusic();
+      await audio.resumeMusic();
+      expect(audio.currentTrack, 'theme');
+      expect(r.calls.skip(1), ['pause', 'resume']);
+    },
+  );
 
   test('asking for the playing track does not restart it', () async {
     final r = _Recorder();

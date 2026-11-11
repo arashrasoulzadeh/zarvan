@@ -27,8 +27,16 @@ class ShowcaseGame extends Game {
     worldHeight: 480,
     backgroundColor: Color(0xFF101216),
     fixedTimestepSeconds: 1 / 60,
-    onScreenControls: OnScreenControlsMode.off,
+    onScreenControls: OnScreenControlsMode.auto,
   );
+
+  @override
+  List<OnScreenButtonSpec> onScreenButtons() => demo == 'asteroids'
+      ? const [OnScreenButtonSpec('jump', 'FIRE')]
+      : const [];
+
+  @override
+  bool get onScreenJoystickVertical => demo == 'pong' || demo == 'asteroids';
 
   @override
   InputController createInputController() => input;

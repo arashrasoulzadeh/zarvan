@@ -23,7 +23,7 @@ class ShowcaseGame extends Game {
     worldHeight: 480,
     backgroundColor: Color(0xFF101216),
     fixedTimestepSeconds: 1 / 60,
-    onScreenControls: OnScreenControlsMode.off,
+    onScreenControls: OnScreenControlsMode.on,
   );
 
   @override
@@ -185,14 +185,18 @@ class PongSystem implements System {
     p.y += (input.isPressed('up') ? -280 : 0) * dt;
     p.y += (input.isPressed('down') ? 280 : 0) * dt;
     p.y = clamp(p.y, 125, 375);
-    e.y += (b.y - e.y) * dt * 2.2;
+    e.y += (b.y - e.y) * dt * 1.35;
     e.y = clamp(e.y, 125, 375);
     b.x += vx * dt;
     b.y += vy * dt;
     if (b.y < 82 || b.y > 398) vy = -vy;
-    if ((b.x < 95 && (b.y - p.y).abs() < 58) ||
-        (b.x > 705 && (b.y - e.y).abs() < 58))
-      vx = -vx;
+    if (b.x < 98 && (b.y - p.y).abs() < 70) {
+      b.x = 98;
+      vx = vx.abs();
+    } else if (b.x > 702 && (b.y - e.y).abs() < 70) {
+      b.x = 702;
+      vx = -vx.abs();
+    }
     if (b.x < 42) {
       enemyScore++;
       _reset(b, false);

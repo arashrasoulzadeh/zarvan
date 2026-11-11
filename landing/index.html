@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ZARVAN — A 2D game engine for understandable worlds</title>
+  <meta name="description" content="ZARVAN is a simulation-first, agent-native 2D game engine for Dart.">
+  <link rel="icon" href="assets/favicon.png">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <style>
+    @font-face{font-family:Vazir;src:url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/Vazir.woff2') format('woff2');font-display:swap}
+    :root{--ink:#17191d;--muted:#6a6d72;--line:#dedbd4;--paper:#f7f6f2;--card:#fff;--gold:#a17b38;--blue:#4f6688}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font-family:Vazir,Inter,system-ui,sans-serif;line-height:1.6}a{color:inherit;text-decoration:none}.page{max-width:1240px;margin:auto;padding:0 32px}.nav{height:76px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);font-size:14px}.brand{display:flex;align-items:center;gap:11px;font-size:16px;font-weight:800;letter-spacing:.08em}.brand img{width:30px;height:30px}.navlinks{display:flex;align-items:center;gap:28px;color:#5e6064}.navlinks a:hover{color:var(--ink)}.navlinks .docs{color:var(--ink);font-weight:700}.menu{display:none;border:0;background:none;font:inherit;color:var(--ink)}
+    .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:82px;align-items:center;padding:88px 0 96px}.eyebrow{color:var(--gold);font-size:12px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;margin:0 0 18px}.hero h1{font-size:clamp(42px,6vw,78px);letter-spacing:-.07em;line-height:1.02;max-width:680px;margin:0 0 24px}.hero p{max-width:570px;color:var(--muted);font-size:20px;line-height:1.8;margin:0}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:34px}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 20px;border-radius:6px;border:1px solid var(--ink);font-size:14px;font-weight:800;transition:.2s ease}.btn:hover{transform:translateY(-2px)}.btn.primary{background:var(--ink);color:white}.btn.secondary{background:transparent}.hero-art{position:relative}.hero-art img{display:block;width:100%;max-width:500px;margin-left:auto;aspect-ratio:1/1;object-fit:cover;border-radius:10px;box-shadow:24px 24px 0 #e6dfd1}.art-label{position:absolute;right:-16px;bottom:-28px;background:var(--ink);color:white;padding:15px 18px;border-radius:6px;font-size:12px}.art-label strong{display:block;color:#e5bf73;font-size:14px}
+    .proof{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:20px 0;color:#74736e;font-size:13px}.proof span+span{border-left:1px solid var(--line);padding-left:22px}.section{padding:105px 0}.section-head{max-width:610px;margin-bottom:42px}.section h2{font-size:clamp(30px,4vw,52px);line-height:1.08;letter-spacing:-.055em;margin:8px 0 16px}.section-head p:last-child{color:var(--muted);font-size:17px}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:28px;min-height:230px}.card .index{color:var(--gold);font-size:12px;font-weight:800}.card h3{font-size:21px;letter-spacing:-.03em;margin:32px 0 10px}.card p{color:var(--muted);font-size:14px;margin:0}.split{display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:center}.code{background:#191b20;color:#e8e5dc;border-radius:8px;padding:26px;box-shadow:14px 14px 0 #e7e1d5;overflow:auto}.code pre{margin:0;font:13px/1.8 ui-monospace,SFMono-Regular,Menlo,monospace}.code .comment{color:#9099a8}.code .key{color:#e5bf73}.visual{border-radius:8px;width:100%;display:block;border:1px solid var(--line)}.routes{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.route{border-top:2px solid var(--ink);padding:18px 0}.route strong{display:block;font-size:16px;margin-bottom:6px}.route span{display:block;color:var(--muted);font-size:13px}.route:hover{border-color:var(--gold)}.footer{border-top:1px solid var(--line);padding:28px 0 45px;color:#77736c;font-size:13px;display:flex;justify-content:space-between}.rtl{direction:rtl}
+    @media(max-width:800px){.page{padding:0 20px}.nav{height:66px}.navlinks{display:none}.menu{display:block}.hero{grid-template-columns:1fr;gap:46px;padding:60px 0 70px}.hero h1{font-size:clamp(42px,14vw,64px)}.hero p{font-size:17px}.hero-art{max-width:440px}.proof{grid-template-columns:1fr 1fr;gap:16px}.proof span+span{border:0;padding:0}.cards,.routes,.split{grid-template-columns:1fr}.section{padding:72px 0}.split{gap:38px}.footer{display:block}.footer span{display:block;margin-top:8px}}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header class="nav page">
+      <a class="brand" href="#top"><img src="assets/logo.png" alt="ZARVAN"> <span>ZARVAN</span></a>
+      <nav class="navlinks" aria-label="Primary navigation">
+        <a href="#engine">Engine</a><a href="#agents">Agents</a><a href="#learn">Learn</a><a class="docs" href="getting-started/">Documentation ↗</a>
+      </nav>
+      <button class="menu" @click="menuOpen=!menuOpen" aria-label="Toggle navigation">Menu</button>
+    </header>
+    <nav v-if="menuOpen" class="mobile-nav page navlinks" style="display:flex;padding:16px 0;height:auto;flex-wrap:wrap"><a href="#engine">Engine</a><a href="#agents">Agents</a><a href="#learn">Learn</a><a href="getting-started/">Documentation ↗</a></nav>
+
+    <main id="top">
+      <section class="hero page">
+        <div><p class="eyebrow">Dart · 2D · Simulation-first</p><h1>Make games that stay understandable.</h1><p>ZARVAN is a small, deterministic game engine for building 2D worlds that developers and AI agents can both inspect, test, and change.</p><div class="actions"><a class="btn primary" href="getting-started/">Start building</a><a class="btn secondary" href="https://github.com/arashrasoulzadeh/zarvan">View source ↗</a></div></div>
+        <div class="hero-art"><img src="img/strategy-skirmish.png" alt="ZARVAN strategy game scene"><div class="art-label"><strong>Simulation first</strong>Flutter renders the world.</div></div>
+      </section>
+      <div class="proof page"><span>Pure Dart core</span><span>Fixed-timestep worlds</span><span>JSON state</span><span>Android · iOS · Web</span></div>
+
+      <section id="engine" class="section page"><div class="section-head"><p class="eyebrow">The engine</p><h2>Everything starts with the world.</h2><p>ZARVAN keeps simulation, rendering, and game-specific systems separate, so the core remains portable and testable.</p></div><div class="cards"><article class="card"><span class="index">01 / CORE</span><h3>Deterministic simulation</h3><p>Fixed timesteps, seeded randomness, ECS, and headless tests. Run the same world on a phone, server, or CI.</p></article><article class="card"><span class="index">02 / SHELL</span><h3>Flutter when you need it</h3><p>Rendering, input, audio, camera, and platform services live at the edge. The simulation stays pure Dart.</p></article><article class="card"><span class="index">03 / DATA</span><h3>Content as data</h3><p>Serialize worlds to JSON, author levels as data, and keep genre packages focused instead of building one giant framework.</p></article></div></section>
+
+      <section id="agents" class="section page split"><div><p class="eyebrow">Agent-native by design</p><h2>Let agents play without giving up authority.</h2><p style="color:var(--muted);font-size:17px">Agents observe a read-only view and propose actions. The engine validates and applies them. State can be logged, replayed, evaluated, and patched as ordinary JSON.</p><div class="actions"><a class="btn secondary" href="agents/">Explore the agent hub</a></div></div><div class="code"><pre><span class="comment">// one tick, one inspectable snapshot</span>
+<span class="key">final</span> game = GameBuilder.create(
+  width: 320, height: 240,
+);
+game.spawn([
+  Position(10, 10),
+  Velocity(60, 0),
+]);
+game.update(1 / 60);
+<span class="key">final</span> state = game.world.toJson();</pre></div></section>
+
+      <section id="learn" class="section page"><div class="section-head"><p class="eyebrow">Choose your route</p><h2>Go from first tick to full system.</h2></div><div class="routes"><a class="route" href="getting-started/"><strong>Getting started ↗</strong><span>Install and run your first world.</span></a><a class="route" href="tutorials/"><strong>Tutorials ↗</strong><span>Build platformers, strategy, and agent games.</span></a><a class="route" href="examples/"><strong>Examples ↗</strong><span>Copy focused patterns into your project.</span></a><a class="route" href="fa/"><strong>فارسی ↗</strong><span>راهنمای فارسی زروان</span></a></div></section>
+    </main>
+    <footer class="footer page"><span>© ZARVAN contributors</span><span>Open source · Built with Dart</span></footer>
+  </div>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script>Vue.createApp({data:()=>({menuOpen:false})}).mount('#app')</script>
+</body>
+</html>

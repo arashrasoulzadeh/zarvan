@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "docs/**"
+      - "landing/**"
       - "mkdocs.yml"
       - "hooks/**"
       - "overrides/**"
@@ -19,6 +20,7 @@ on:
   pull_request:
     paths:
       - "docs/**"
+      - "landing/**"
       - "mkdocs.yml"
       - "hooks/**"
       - "overrides/**"
@@ -49,6 +51,9 @@ jobs:
 
       - name: Build site (broken links fail the build)
         run: mkdocs build --strict
+
+      - name: Install the standalone landing page
+        run: cp landing/index.html site/index.html
 
       # The Flutter SDK bundles Dart, so one setup documents every package; the
       # Flutter-dependent ones need `flutter pub get` rather than `dart pub get`.

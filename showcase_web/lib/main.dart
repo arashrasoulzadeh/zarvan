@@ -11,7 +11,9 @@ void main() =>
     runGame(ShowcaseGame(Uri.base.queryParameters['demo'] ?? 'pong'));
 
 class ShowcaseGame extends Game {
-  ShowcaseGame(this.demo);
+  ShowcaseGame(this.demo) {
+    loadingProgress.addListener(_syncHtmlLoader);
+  }
   final String demo;
   final InputController input = InputController(
     bindings: {
@@ -51,6 +53,14 @@ class ShowcaseGame extends Game {
 
   @override
   Scene createInitialScene() => GameScene(demo, input.state);
+
+  void _syncHtmlLoader() {
+    if (loadingProgress.fraction < 1) return;
+    final loader = html.document.getElementById('runtime-loader');
+    if (loader == null || loader.classes.contains('done')) return;
+    loader.classes.add('done');
+    Future<void>.delayed(const Duration(milliseconds: 350), loader.remove);
+  }
 }
 
 class GameScene extends Scene {

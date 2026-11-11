@@ -71,7 +71,10 @@ jobs:
         run: |
           cd showcase_web
           flutter pub get
-          flutter build web --release --base-href /zarvan/showcase/app/
+          # The showcase is embedded in the landing page. Disable Flutter's
+          # service worker so GitHub Pages cannot keep an older game runtime
+          # after a deployment.
+          flutter build web --release --pwa-strategy=none --base-href /zarvan/showcase/app/
           mkdir -p ../site/showcase/app
           cp -r build/web/. ../site/showcase/app/
 

@@ -376,10 +376,32 @@ class SnakeSystem implements System {
     if ((next.x - target!.x).abs() < 20 && (next.y - target.y).abs() < 20) {
       segments.add(box(w, target.x, target.y, 18, 18, 0xFFE6B86A));
       score++;
-      target.x = 90 + ((segments.length * 83) % 620);
-      target.y = 110 + ((segments.length * 47) % 280);
+      _placeFood(w, target);
     }
     (w.getComponent<ztext.Text>(scoreText!)!).text = '$score';
+  }
+
+  void _placeFood(World world, Position target) {
+    final candidates = <Position>[
+      for (var y = 110; y <= 390; y += 22)
+        for (var x = 90; x <= 710; x += 22)
+          Position(x.toDouble(), y.toDouble()),
+    ];
+    final start = (score * 37 + segments.length * 11) % candidates.length;
+    for (var offset = 0; offset < candidates.length; offset++) {
+      final candidate = candidates[(start + offset) % candidates.length];
+      final occupied = segments.any((id) {
+        final position = world.getComponent<Position>(id);
+        return position != null &&
+            position.x == candidate.x &&
+            position.y == candidate.y;
+      });
+      if (!occupied) {
+        target.x = candidate.x;
+        target.y = candidate.y;
+        return;
+      }
+    }
   }
 }
 
@@ -453,6 +475,7 @@ class BreakoutSystem implements System {
     if (b.y < 75) vy = -vy;
     if (b.y > 375 && b.y < 430 && (b.x - p.x).abs() < 68) {
       b.y = 375;
+      vx = clamp(vx + (b.x - p.x) * 2.1, -360, 360);
       vy = -vy;
     }
     for (final id in List<EntityId>.from(bricks)) {
@@ -551,8 +574,10 @@ class AsteroidsSystem implements System {
       s.x += math.cos(angle) * 150 * dt;
       s.y += math.sin(angle) * 150 * dt;
     }
-    s.x = clamp(s.x, 68, 732);
-    s.y = clamp(s.y, 96, 404);
+    if (s.x < 48) s.x = 752;
+    if (s.x > 752) s.x = 48;
+    if (s.y < 80) s.y = 420;
+    if (s.y > 420) s.y = 80;
     fireCooldown -= dt;
     if (input.isPressed('jump') && fireCooldown <= 0) {
       final bullet = dot(w, s.x, s.y, 7, 0xFFFFFFFF);
@@ -596,8 +621,10 @@ class AsteroidsSystem implements System {
       if (rp == null) continue;
       rp.x += rockVx[i] * dt;
       rp.y += rockVy[i] * dt;
-      if (rp.x < 60 || rp.x > 740) rockVx[i] = -rockVx[i];
-      if (rp.y < 92 || rp.y > 408) rockVy[i] = -rockVy[i];
+      if (rp.x < 48) rp.x = 752;
+      if (rp.x > 752) rp.x = 48;
+      if (rp.y < 80) rp.y = 420;
+      if (rp.y > 420) rp.y = 80;
       if ((rp.x - s.x).abs() < 24 && (rp.y - s.y).abs() < 24) {
         finished = true;
         (w.getComponent<ztext.Text>(resultText!)!).text =

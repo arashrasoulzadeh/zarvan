@@ -149,6 +149,32 @@ EntityId dot(World w, double x, double y, double size, int color) {
   return id;
 }
 
+EntityId diamond(World w, double x, double y, double size, int color) {
+  final id = w.spawn();
+  w.setComponent(id, Position(x, y));
+  w.setComponent(
+    id,
+    Shape(kind: ShapeKind.diamond, width: size, height: size, colorArgb: color),
+  );
+  return id;
+}
+
+EntityId ring(World w, double x, double y, double size, int color) {
+  final id = w.spawn();
+  w.setComponent(id, Position(x, y));
+  w.setComponent(
+    id,
+    Shape(
+      kind: ShapeKind.ring,
+      width: size,
+      height: size,
+      strokeWidth: 3,
+      colorArgb: color,
+    ),
+  );
+  return id;
+}
+
 double clamp(double v, double min, double max) => v.clamp(min, max).toDouble();
 
 void restartIfRequested(InputState input) {
@@ -224,15 +250,15 @@ class PongSystem implements System {
       enemyScore++;
       _reset(b, false);
     }
-    if (playerScore >= 11 || enemyScore >= 11) {
-      finished = true;
-      (w.getComponent<ztext.Text>(resultText!)!).text = playerScore > enemyScore
-          ? 'YOU WIN  ·  refresh to play again'
-          : 'CPU WINS  ·  refresh to play again';
-    }
     if (b.x > 758) {
       playerScore++;
       _reset(b, true);
+    }
+    if (playerScore >= 11 || enemyScore >= 11) {
+      finished = true;
+      (w.getComponent<ztext.Text>(resultText!)!).text = playerScore > enemyScore
+          ? 'YOU WIN  ·  press R to restart'
+          : 'CPU WINS  ·  press R to restart';
     }
     (w.getComponent<ztext.Text>(scoreText!)!).text =
         '$playerScore  :  $enemyScore';
@@ -250,7 +276,7 @@ class SnakeSystem implements System {
   SnakeSystem(this.input);
   final InputState input;
   final segments = <EntityId>[];
-  EntityId? food, resultText;
+  EntityId? food, scoreText, resultText;
   double timer = 0;
   int dx = 1, dy = 0, score = 0;
   bool initialized = false, finished = false;
@@ -265,6 +291,19 @@ class SnakeSystem implements System {
       for (var i = 0; i < 5; i++)
         segments.add(box(w, 400 - i * 22, 240, 18, 18, 0xFFE6B86A));
       food = dot(w, 600, 240, 16, 0xFFDE6C65);
+      scoreText = w.spawn();
+      w.setComponent(scoreText!, Position(660, 52));
+      w.setComponent(
+        scoreText!,
+        ztext.Text(
+          '0',
+          fontSize: 12,
+          colorArgb: 0xFFFFFFFF,
+          screenSpace: true,
+          align: ztext.TextAlignment.right,
+          zIndex: 100,
+        ),
+      );
       resultText = w.spawn();
       w.setComponent(resultText!, Position(400, 250));
       w.setComponent(
@@ -306,7 +345,7 @@ class SnakeSystem implements System {
     if (next.x < 70 || next.x > 730 || next.y < 90 || next.y > 410) {
       finished = true;
       (w.getComponent<ztext.Text>(resultText!)!).text =
-          'GAME OVER  ·  refresh to play again';
+          'GAME OVER  ·  press R to restart';
       return;
     }
     for (final segment in segments.skip(1)) {
@@ -314,7 +353,7 @@ class SnakeSystem implements System {
       if ((next.x - p.x).abs() < 12 && (next.y - p.y).abs() < 12) {
         finished = true;
         (w.getComponent<ztext.Text>(resultText!)!).text =
-            'GAME OVER  ·  refresh to play again';
+            'GAME OVER  ·  press R to restart';
         return;
       }
     }
@@ -332,6 +371,7 @@ class SnakeSystem implements System {
       target.x = 90 + ((segments.length * 83) % 620);
       target.y = 110 + ((segments.length * 47) % 280);
     }
+    (w.getComponent<ztext.Text>(scoreText!)!).text = '$score';
   }
 }
 
@@ -422,7 +462,7 @@ class BreakoutSystem implements System {
     if (bricks.isEmpty) {
       finished = true;
       (w.getComponent<ztext.Text>(resultText!)!).text =
-          'YOU WIN  ·  refresh to play again';
+          'YOU WIN  ·  press R to restart';
     } else if (b.y > 438) {
       lives--;
       b.x = 400;
@@ -432,7 +472,7 @@ class BreakoutSystem implements System {
       if (lives <= 0) {
         finished = true;
         (w.getComponent<ztext.Text>(resultText!)!).text =
-            'GAME OVER  ·  refresh to play again';
+            'GAME OVER  ·  press R to restart';
       }
     }
     (w.getComponent<ztext.Text>(scoreText!)!).text = '$score  ·  $lives';
@@ -459,7 +499,7 @@ class AsteroidsSystem implements System {
   void update(World w, double dt) {
     restartIfRequested(input);
     if (!initialized) {
-      ship = dot(w, 400, 350, 24, 0xFFE6B86A);
+      ship = diamond(w, 400, 350, 28, 0xFFE6B86A);
       scoreText = w.spawn();
       w.setComponent(scoreText!, Position(660, 52));
       w.setComponent(
@@ -488,7 +528,7 @@ class AsteroidsSystem implements System {
       );
       for (var i = 0; i < 10; i++) {
         rocks.add(
-          dot(w, 100 + (i * 59) % 600, 100 + (i * 41) % 250, 26, 0xFF526B91),
+          ring(w, 100 + (i * 59) % 600, 100 + (i * 41) % 250, 26, 0xFF526B91),
         );
         rockVx.add((i.isEven ? 1 : -1) * (20 + i * 2));
         rockVy.add((i.isEven ? -1 : 1) * (18 + i * 2));
@@ -531,9 +571,12 @@ class AsteroidsSystem implements System {
         if (rp != null &&
             (bp.x - rp.x).abs() < 20 &&
             (bp.y - rp.y).abs() < 20) {
+          final rockIndex = rocks.indexOf(rock);
           w.destroy(rock);
           w.destroy(bullet);
-          rocks.remove(rock);
+          rocks.removeAt(rockIndex);
+          rockVx.removeAt(rockIndex);
+          rockVy.removeAt(rockIndex);
           bullets.remove(bullet);
           score += 10;
           break;
@@ -550,13 +593,13 @@ class AsteroidsSystem implements System {
       if ((rp.x - s.x).abs() < 24 && (rp.y - s.y).abs() < 24) {
         finished = true;
         (w.getComponent<ztext.Text>(resultText!)!).text =
-            'SHIP LOST  ·  refresh to play again';
+            'SHIP LOST  ·  press R to restart';
       }
     }
     if (rocks.isEmpty) {
       finished = true;
       (w.getComponent<ztext.Text>(resultText!)!).text =
-          'SECTOR CLEAR  ·  refresh to play again';
+          'SECTOR CLEAR  ·  press R to restart';
     }
     (w.getComponent<ztext.Text>(scoreText!)!).text = '$score';
   }

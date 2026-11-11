@@ -8,6 +8,9 @@ pubspec.yaml.
 
 ## [Unreleased]
 
+### Changed (documentation)
+- Rebuilt the MkDocs home as a focused ZARVAN landing page with direct paths to the generated docs, agent hub, tutorials, architecture, and Persian documentation. The full navigation and sidebar remain available on inner documentation pages.
+
 ### Added (engine)
 - Added `zarvan_eye`, a Flutter-free Eye analytics client with session creation, identity enrichment, bounded batching, retries and periodic flushing.
 - Wave combat layout and feel: `UpgradeLayout.menu` (all buttons in a paused, framed, fading dialog behind one Upgrades button) and `iconOnly` buttons, `WaveCombatConfig.enemyScale`, `meleeLunge` (`LungeSystem`: melee enemies dash to the hero and back, random stopping distance), `fightDelaySeconds`, and one-at-a-time attacks within a squad.

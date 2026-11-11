@@ -1,16 +1,13 @@
 {% extends "base.html" %}
 
+{% block tabs %}{% endblock %}
+
 {% block content %}
-<section class="zv-hero">
-  <div class="zv-hero__text">
-    <p class="zv-eyebrow">ZARVAN · زروان</p>
-    <h1>Where Worlds Begin.</h1>
-    <p class="zv-lead">A small, deterministic foundation for games that humans
-      and AI agents can build together.</p>
+<main class="zv-home-shell">
+  <div class="zv-home-content">
+    {{ page.content }}
   </div>
-  <div class="zv-hero__art">
-    <img src="assets/logo.png" alt="ZARVAN logo" width="180" height="180">
-  </div>
-</section>
-{{ super() }}
+</main>
 {% endblock %}
+
+{% block footer %}{% endblock %}

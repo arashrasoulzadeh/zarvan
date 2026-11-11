@@ -4,86 +4,77 @@ hide:
   - toc
 ---
 
-# ZARVAN
+<section class="zv-landing" markdown>
 
-## Build worlds that agents can understand.
+<div class="zv-landing__hero" markdown>
+<div class="zv-landing__copy" markdown>
+<p class="zv-kicker">ZARVAN · زروان</p>
 
-ZARVAN is a pure-Dart 2D game engine with a deterministic simulation, plain
-JSON state, and a Flutter shell for Android, iOS, and the web.
+# Build worlds that think.
 
-<div class="zv-home-actions" markdown>
+ZARVAN is a simulation-first, agent-native 2D game engine for Dart. Build a
+deterministic world once, then let people, tools, and AI agents observe it,
+change it, and play inside it.
 
-[:material-rocket-launch: **Start building**](getting-started.md){ .md-button .md-button--primary }
-[:material-robot-outline: **Build with agents**](agents.md){ .md-button }
-[:material-github: **View source**](https://github.com/arashrasoulzadeh/zarvan){ .md-button }
-
+<div class="zv-landing__actions" markdown>
+[:material-arrow-right: **Read the docs**](getting-started.md){ .md-button .md-button--primary }
+[:material-github: **View on GitHub**](https://github.com/arashrasoulzadeh/zarvan){ .md-button }
+</div>
+<p class="zv-landing__note">Pure Dart core · Flutter shell · JSON state · 2D by design</p>
+</div>
+<div class="zv-landing__mark" aria-hidden="true"><img src="assets/logo.png" alt="" width="128" height="128"><span></span></div>
 </div>
 
-## The short version
-
-The simulation is the product. Flutter draws it. Agents observe and propose;
-the engine validates and applies.
-
-<div class="zv-home-grid" markdown>
-
-<div markdown>
-
+<div class="zv-landing__principles" markdown>
+<div markdown><span class="zv-number">01</span>
 ### Simulation first
-
-Fixed timesteps, seeded randomness, ECS, and headless tests. Run the same
-world on a phone, a server, or in CI.
-
+Fixed timesteps, seeded randomness, ECS, and headless tests keep the same
+world reproducible on a phone, a server, or in CI.
+</div>
+<div markdown><span class="zv-number">02</span>
+### Agents are native
+Agents receive read-only views and propose validated actions. World state is
+plain JSON, so it can be inspected, patched, replayed, and evaluated.
+</div>
+<div markdown><span class="zv-number">03</span>
+### Data stays portable
+Levels, components, commands, and content are data. Keep game rules in Dart,
+keep authoring flexible, and keep the engine small.
+</div>
 </div>
 
+<div class="zv-landing__split" markdown>
 <div markdown>
+<p class="zv-kicker">A small mental model</p>
+## The engine is the world.
+`zarvan_core` owns simulation and authority. `zarvan_flutter` renders it and
+connects input, audio, and platform services. Optional packages add genres,
+schemas, CLI tooling, and agent APIs without changing the core.
 
-### Agent-native
-
-Worlds serialize to JSON. `WorldView` is read-only. `Behavior`, `Action`, and
-`Order` keep authority inside the engine.
-
+[:octicons-arrow-right-24: Explore the architecture](concepts/architecture.md)
 </div>
-
-<div markdown>
-
-### Data-driven
-
-Author levels and content as data, validate them with the CLI, and keep genre
-logic in focused packages instead of one giant framework.
-
-</div>
-
-</div>
-
-## Choose your first step
-
-| You want to… | Start here |
-|---|---|
-| Run a game in five minutes | [Getting started](getting-started.md) |
-| Make a platformer | [Platformer tutorial](tutorials/01-hello-world.md) |
-| Make a strategy game | [Strategy tutorial](tutorials/02-turn-based-strategy.md) |
-| Let an agent play or edit | [Agent hub](agents.md) |
-| Look up an API or JSON shape | [Reference](reference/cheatsheet.md) |
-| Read in Persian | [مستندات فارسی](fa/index.md) |
-
-## A game starts this small
-
+<div class="zv-code-card" markdown>
 ```dart
 final game = GameBuilder.create(width: 320, height: 240);
-final player = game.spawn([Position(10, 10), Velocity(60, 0)]);
+final player = game.spawn([
+  Position(10, 10),
+  Velocity(60, 0),
+]);
 
 game.update(1 / 60);
 final snapshot = game.world.toJson();
 ```
+<span>One deterministic tick. One inspectable snapshot.</span>
+</div>
+</div>
 
-The rest of the engine is modular: `zarvan_core` for simulation, `zarvan_flutter`
-for rendering and input, and optional packages for platformers, strategy, idle
-games, CLI tooling, schemas, and agent APIs.
-
-[:octicons-arrow-right-24: Explore the package map](packages.md) ·
-[:octicons-arrow-right-24: Read the architecture](concepts/architecture.md) ·
-[:octicons-arrow-right-24: See benchmarks](benchmarks.md)
-
-!!! note "Documentation quality"
-    Tutorials and examples are exercised by the repository's tests. If a
-    snippet drifts from the API, treat it as a bug and open an issue.
+<div class="zv-landing__cta" markdown>
+<div markdown>## Start with the path that fits.</div>
+<div class="zv-landing__links" markdown>
+[:material-rocket-launch: **Getting started**](getting-started.md){ .md-button .md-button--primary }
+[:material-robot-outline: **Agent hub**](agents.md){ .md-button }
+[:material-book-open-variant: **Tutorials**](tutorials/README.md){ .md-button }
+[:material-translate: **فارسی**](fa/index.md){ .md-button }
+</div>
+</div>
+</section>

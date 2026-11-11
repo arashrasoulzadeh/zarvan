@@ -23,7 +23,7 @@ class ShowcaseGame extends Game {
     worldHeight: 480,
     backgroundColor: Color(0xFF101216),
     fixedTimestepSeconds: 1 / 60,
-    onScreenControls: OnScreenControlsMode.on,
+    onScreenControls: OnScreenControlsMode.off,
   );
 
   @override

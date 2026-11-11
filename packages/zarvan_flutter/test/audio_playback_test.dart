@@ -140,4 +140,17 @@ void main() {
       expect(calls.where((c) => c.method == 'dispose'), hasLength(10));
     },
   );
+
+  test(
+    'a rapid burst above the old ceiling still creates every sound',
+    () async {
+      final audio = AudioManager();
+      for (var i = 0; i < 16; i++) {
+        await audio.playSound('tone.wav');
+      }
+      // One persistent music player plus every concurrent SFX player.
+      expect(players, hasLength(17));
+      audio.dispose();
+    },
+  );
 }

@@ -333,7 +333,9 @@ class AudioManager
   /// guess at "more concurrent one-shot SFX than a typical 2D game
   /// actually overlaps at once," not a measured/tuned value.
   static const _maxPoolSize = 8;
-  static const _maxConcurrentSounds = 12;
+  // Keep a generous concurrent ceiling so rapid UI/gameplay bursts are not
+  // silently dropped. Idle players are still bounded by [_maxPoolSize].
+  static const _maxConcurrentSounds = 32;
   int _activeSounds = 0;
   bool _disposed = false;
   bool _soundsPaused = false;

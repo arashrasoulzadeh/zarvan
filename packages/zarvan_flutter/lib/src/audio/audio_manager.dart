@@ -356,6 +356,31 @@ class AudioManager
     ]);
   }
 
+  /// Warms a small number of native one-shot players so the first interaction
+  /// does not pay the platform-channel/player setup cost. The players are
+  /// silent and stopped immediately, then kept in the normal idle pool.
+  Future<void> warmupSounds(
+    Iterable<String> assetPaths, {
+    int playerCount = 3,
+  }) async {
+    if (_disposed || playerCount <= 0) return;
+    final paths = assetPaths.toList(growable: false);
+    if (paths.isEmpty) return;
+    for (var i = 0; i < playerCount && _pool.length < _maxPoolSize; i++) {
+      final player = AudioPlayer();
+      try {
+        await player.setReleaseMode(ReleaseMode.release);
+        await player.setAudioContext(_sfxContext);
+        await player.setVolume(0);
+        await player.play(AssetSource(paths[i % paths.length]));
+        await player.stop();
+        _pool.add(player);
+      } catch (_) {
+        await player.dispose();
+      }
+    }
+  }
+
   /// Plays a one-shot sound panned/attenuated by [sourceX]/[sourceY]'s
   /// distance from [listenerX]/[listenerY] — see [positionalAudioParams]
   /// for the (separately unit-tested) math. Computed once at trigger

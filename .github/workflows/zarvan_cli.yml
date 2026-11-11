@@ -71,6 +71,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: 3.38.9
       - run: dart pub get
         working-directory: packages/zarvan_cli
       - name: Generate ${{ matrix.template }}

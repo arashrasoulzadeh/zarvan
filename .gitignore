@@ -63,4 +63,5 @@ packages/**/coverage/
 
 # mkdocs build output
 /site/
+showcase_web/build/
 mobarez/

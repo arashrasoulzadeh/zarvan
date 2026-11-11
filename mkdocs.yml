@@ -87,6 +87,7 @@ validation:
 
 nav:
   - Home: README.md
+  - Showcase: showcase.md
   - Guides:
       - For game makers: guides/for-users.md
       - For developers: guides/for-developers.md

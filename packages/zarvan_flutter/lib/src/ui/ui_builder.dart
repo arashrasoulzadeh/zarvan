@@ -218,6 +218,28 @@ class UiBuilder {
     y: b.centerY + dy,
   );
 
+  UiNode diamond(
+    double x,
+    double y,
+    double width,
+    double height,
+    int color, {
+    double stroke = 0,
+    int z = 5,
+  }) => UiNode.shapeNode(
+    world,
+    Shape(
+      kind: ShapeKind.diamond,
+      width: width,
+      height: height,
+      colorArgb: color,
+      strokeWidth: stroke,
+      zIndex: z,
+    ),
+    x: x,
+    y: y + dy,
+  );
+
   UiNode text(
     String s,
     double x,

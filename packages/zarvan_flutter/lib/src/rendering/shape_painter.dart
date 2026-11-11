@@ -46,6 +46,13 @@ void paintShape(Canvas canvas, Shape shape, Offset center, double scale) {
       final r = max(0.0, shape.cornerRadius * scale - inset);
       path = Path()
         ..addRRect(RRect.fromRectAndRadius(rect, Radius.circular(r)));
+    case ShapeKind.diamond:
+      path = Path()
+        ..moveTo(center.dx, center.dy - h / 2 + inset)
+        ..lineTo(center.dx + w / 2 - inset, center.dy)
+        ..lineTo(center.dx, center.dy + h / 2 - inset)
+        ..lineTo(center.dx - w / 2 + inset, center.dy)
+        ..close();
   }
 
   if (outlined && shape.isDashed) {

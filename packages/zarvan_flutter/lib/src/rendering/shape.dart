@@ -9,6 +9,9 @@ enum ShapeKind {
   /// A circle outline of diameter [Shape.width], always stroked with
   /// [Shape.strokeWidth] (its centre stays transparent).
   ring,
+
+  /// A four-point diamond whose width and height are the supplied bounds.
+  diamond,
 }
 
 /// A flat, code-drawn geometric primitive (circle, rounded rectangle, ring)

@@ -73,18 +73,26 @@ body:has(.zv-home-shell) .md-content { max-width: none; }
 body:has(.zv-home-shell) .md-content__inner { max-width: none; margin: 0; padding: 0; }
 .zv-home-shell { overflow: hidden; color: #17191d; }
 .zv-home-content { max-width: 72rem; margin: 0 auto; padding: 0 2rem 4rem; }
-.zv-landing__hero { min-height: 33rem; display: grid; grid-template-columns: minmax(0, 1.15fr) .85fr; align-items: center; gap: 5rem; padding: 5rem 0 4rem; }
+.zv-landing__hero { min-height: 35rem; display: grid; grid-template-columns: minmax(0, 1fr) minmax(20rem, .9fr); align-items: center; gap: 5rem; padding: 4.5rem 0 4rem; }
 .zv-landing__copy { max-width: 42rem; }
 .zv-kicker { color: #94733b; font-size: .72rem; font-weight: 700; letter-spacing: .2em; margin: 0 0 1.1rem; text-transform: uppercase; }
-.zv-landing h1 { color: #17191d; font-size: clamp(3rem, 6vw, 5.8rem); line-height: .95; letter-spacing: -.065em; margin: 0 0 1.35rem; max-width: 11ch; }
+.zv-landing h1 { color: #17191d; font-size: clamp(2.8rem, 5.5vw, 5.2rem); line-height: .98; letter-spacing: -.06em; margin: 0 0 1.35rem; max-width: 12ch; }
 .zv-landing__copy > p:not(.zv-kicker):not(.zv-landing__note) { color: #5c6068; font-size: clamp(1.05rem, 1.6vw, 1.25rem); line-height: 1.65; max-width: 36rem; }
 .zv-landing__actions, .zv-landing__links { display: flex; flex-wrap: wrap; gap: .65rem; margin-top: 2rem; }
 .zv-landing__actions p, .zv-landing__links p { display: contents; }
 .zv-landing__note { color: #8b8b87; font-size: .76rem; letter-spacing: .04em; margin-top: 2rem; }
+.zv-landing__showcase { position: relative; min-height: 25rem; padding: .75rem; background: #e8e1d3; border-radius: 1.25rem; box-shadow: 0 1.5rem 3rem rgba(52,44,29,.1); transform: rotate(1.5deg); }
+.zv-landing__showcase img { display: block; width: 100%; height: 23.5rem; object-fit: cover; object-position: center; border-radius: .75rem; }
+.zv-showcase__caption { display: flex; justify-content: space-between; gap: 1rem; padding: .8rem .45rem .15rem; color: #6d6f73; font-size: .72rem; }
+.zv-showcase__caption strong { color: #17191d; }
 .zv-landing__mark { position: relative; display: grid; place-items: center; min-height: 20rem; background: #e8e1d3; border-radius: 1.5rem; }
 .zv-landing__mark::before { content: ""; position: absolute; inset: 1rem; border: 1px solid rgba(148,115,59,.35); border-radius: 1rem; }
 .zv-landing__mark img { position: relative; z-index: 1; width: 8rem; height: 8rem; border-radius: 50%; box-shadow: 0 1.5rem 3rem rgba(52,44,29,.18); }
 .zv-landing__mark span { display: none; }
+.zv-landing__proof { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; padding: 1.25rem 0; border-top: 1px solid #d9d4c9; border-bottom: 1px solid #d9d4c9; color: #77746d; font-size: .72rem; letter-spacing: .04em; }
+.zv-landing__proof span::before { content: "·"; color: #94733b; margin-right: .55rem; }
+.zv-landing__section-head { padding: 6rem 0 1rem; }
+.zv-landing__section-head h2 { color: #17191d; font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1; border: 0; margin: .5rem 0 1.25rem; }
 .zv-landing__principles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; border-top: 1px solid #d9d4c9; border-bottom: 1px solid #d9d4c9; }
 .zv-landing__principles > div { padding: 2rem 1.5rem 2.25rem 0; }
 .zv-landing__principles > div + div { padding-left: 1.5rem; border-left: 1px solid #d9d4c9; }
@@ -104,7 +112,7 @@ body:has(.zv-home-shell) .md-content__inner { max-width: none; margin: 0; paddin
 .zv-agent-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0 2rem; }
 .zv-agent-card { border: 1px solid color-mix(in srgb, var(--zv-gold) 35%, transparent); border-radius: 12px; padding: 1rem; background: color-mix(in srgb, var(--zv-gold) 5%, transparent); }
 .zv-agent-card h3 { margin-top: 0; }
-@media (max-width: 800px) { .zv-home-content { padding: 0 1.25rem 3rem; } .zv-landing__hero, .zv-landing__split { grid-template-columns: 1fr; gap: 2rem; padding: 4rem 0; } .zv-landing__mark { min-height: 14rem; order: -1; } .zv-landing__mark::before { width: 13rem; height: 13rem; } .zv-landing__mark img { width: 6rem; height: 6rem; } .zv-landing__mark::after { height: 18rem; } .zv-landing__principles { grid-template-columns: 1fr; } .zv-landing__principles > div, .zv-landing__principles > div + div { padding: 1.5rem 0; border-left: 0; } .zv-landing__cta { align-items: flex-start; flex-direction: column; } .zv-landing__links { justify-content: flex-start; } }
+@media (max-width: 800px) { .zv-home-content { padding: 0 1.25rem 3rem; } .zv-landing__hero, .zv-landing__split { grid-template-columns: 1fr; gap: 2rem; padding: 3.5rem 0; } .zv-landing__showcase { order: -1; min-height: 0; } .zv-landing__showcase img { height: 18rem; } .zv-landing__principles { grid-template-columns: 1fr; } .zv-landing__principles > div, .zv-landing__principles > div + div { padding: 1.5rem 0; border-left: 0; } .zv-landing__cta { align-items: flex-start; flex-direction: column; } .zv-landing__links { justify-content: flex-start; } }
 
 .zv-pillars { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .75rem; margin: 1rem 0 2rem; }
 .zv-pillars div { border: 1px solid color-mix(in srgb, var(--zv-gold) 45%, transparent); border-radius: 10px; padding: .8rem 1rem; }

@@ -5,10 +5,9 @@ description: Real ZARVAN game and simulation outputs with focused code samples.
 
 # Showcase
 
-Ten concrete outputs from the engine's documented paths. The first group is
-player-facing games; the second is the simulation and tooling underneath them.
-Each item has one job: show what you get, the smallest code that creates it,
-and where to follow the complete implementation.
+Four concrete, playable games from the live ZARVAN web runtime. Each one has
+real input, movement, collision, and a replayable game loop—not a screenshot or
+a placeholder card.
 
 ## Play the runtime
 
@@ -17,9 +16,9 @@ a screenshot. Pick a mode, then open it in the runtime below. The same build
 loads every mode through a `?demo=` query parameter.
 
 <div class="zv-live-demo" markdown>
-<iframe src="app/?demo=platformer" title="Live ZARVAN platformer demo" loading="eager"></iframe>
+<iframe src="app/?demo=pong" title="Live ZARVAN Pong game" loading="eager"></iframe>
 <div class="zv-live-links" markdown>
-[Platformer](https://meetarash.ir/zarvan/showcase/app/?demo=platformer) · [Strategy](https://meetarash.ir/zarvan/showcase/app/?demo=strategy) · [Agent](https://meetarash.ir/zarvan/showcase/app/?demo=agent) · [Multiplayer](https://meetarash.ir/zarvan/showcase/app/?demo=multiplayer) · [Idle](https://meetarash.ir/zarvan/showcase/app/?demo=idle) · [ECS](https://meetarash.ir/zarvan/showcase/app/?demo=ecs) · [JSON](https://meetarash.ir/zarvan/showcase/app/?demo=json) · [Fog](https://meetarash.ir/zarvan/showcase/app/?demo=fog) · [Benchmark](https://meetarash.ir/zarvan/showcase/app/?demo=benchmark) · [Replay](https://meetarash.ir/zarvan/showcase/app/?demo=replay)
+[Pong](https://meetarash.ir/zarvan/showcase/app/?demo=pong) · [Snake](https://meetarash.ir/zarvan/showcase/app/?demo=snake) · [Breakout](https://meetarash.ir/zarvan/showcase/app/?demo=breakout) · [Asteroids](https://meetarash.ir/zarvan/showcase/app/?demo=asteroids)
 </div>
 </div>
 

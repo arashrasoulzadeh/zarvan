@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart' hide Text;
+import 'package:flutter/material.dart' hide Text, Action, Velocity;
 import 'package:zarvan_core/zarvan_core.dart';
 import 'package:zarvan_flutter/zarvan_flutter.dart' hide Text;
 import 'package:zarvan_flutter/src/rendering/text.dart' as ztext;

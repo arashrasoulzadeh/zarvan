@@ -3,12 +3,15 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart' hide Text;
 import 'package:zarvan_core/zarvan_core.dart';
 import 'package:zarvan_flutter/zarvan_flutter.dart' hide Text;
+import 'package:zarvan_platformer/zarvan_platformer.dart';
+import 'package:zarvan_strategy/zarvan_strategy.dart';
 
 void main() => runGame(ShowcaseGame(Uri.base.queryParameters['demo'] ?? 'platformer'));
 
 class ShowcaseGame extends Game {
   ShowcaseGame(this.demo);
   final String demo;
+  final InputController input = InputController();
 
   @override
   GameConfig get config => GameConfig(
@@ -28,28 +31,32 @@ class ShowcaseGame extends Game {
       );
 
   @override
-  Scene createInitialScene() => ShowcaseScene(demo);
+  Scene createInitialScene() => ShowcaseScene(demo, input);
+
+  @override
+  InputController createInputController() => input;
 }
 
 class ShowcaseScene extends Scene {
-  ShowcaseScene(this.demo);
+  ShowcaseScene(this.demo, this.input);
   final String demo;
+  final InputController input;
 
   @override
   Future<void> populate(World world, SceneController scenes, GameState state) async {
     registerCoreComponents(world);
     registerFlutterComponents(world);
-    world.addSystem(_MotionSystem());
-    world.addSystem(_OrbitSystem());
+    if (demo != 'platformer') {
+      world.addSystem(_MotionSystem());
+      world.addSystem(_OrbitSystem());
+    }
     _buildDemo(world, demo);
   }
 
   void _buildDemo(World world, String demo) {
     switch (demo) {
       case 'strategy':
-        _grid(world, 8, 6);
-        _unit(world, 160, 300, 0xFFE6B86A, 28);
-        _unit(world, 560, 150, 0xFFDE6C65, 28);
+        _strategy(world);
         break;
       case 'agent':
         _agentLoop(world);
@@ -88,10 +95,17 @@ class ShowcaseScene extends Scene {
   }
 
   void _platformer(World w) {
-    _shape(w, 125, 290, 0xFFE6B86A, size: 30);
-    _shape(w, 320, 330, 0xFFDE6C65, size: 26);
-    for (var i = 0; i < 10; i++) _shape(w, 40 + i * 80, 410, 0xFF526B91, size: 55, kind: ShapeKind.roundedRect);
-    for (var i = 0; i < 4; i++) _shape(w, 220 + i * 42, 260 - i * 28, 0xFFC8A66A, size: 12);
+    final player = spawnPlayer(w, x: 120, y: 280, input: input.state, jumpSpeed: 420, maxHealth: 100);
+    w.componentsOf<Shape>().set(player, Shape(width: 30, height: 30, colorArgb: 0xFFE6B86A, cornerRadius: 8, kind: ShapeKind.roundedRect));
+    final behaviors = BehaviorRegistry();
+    behaviors.register('patrol', PatrolBehavior(minX: 300, maxX: 520, speed: 45));
+    final enemy = spawnEnemy(w, x: 410, y: 340, behaviorId: 'patrol', affectedByGravity: true, maxHealth: 30);
+    w.componentsOf<Shape>().set(enemy, Shape(width: 26, height: 26, colorArgb: 0xFFDE6C65, cornerRadius: 8, kind: ShapeKind.roundedRect));
+    final map = TileMap(tileWidth: 40, tileHeight: 40, cols: 20, rows: 12, tiles: List.generate(240, (i) => i >= 220 ? 1 : 0), solidTileIds: {1});
+    final ground = w.spawn();
+    w.setComponent(ground, map);
+    installPlatformerSystems(w, player: player, behaviors: behaviors, includeAnimation: false);
+    for (var i = 0; i < 4; i++) _shape(w, 220 + i * 42, 250 - i * 28, 0xFFC8A66A, size: 12);
   }
 
   void _grid(World w, int cols, int rows) {
@@ -101,6 +115,21 @@ class ShowcaseScene extends Scene {
         _shape(w, 180 + x * 56, 90 + y * 56, color, size: 48, kind: ShapeKind.roundedRect);
       }
     }
+  }
+
+  void _strategy(World w) {
+    const cell = 56.0;
+    final nav = GridNavigator(cols: 10, rows: 7, terrainCost: (col, row) => (col == 4 && row > 1 && row < 6) ? null : 1);
+    installStrategySystems(w, navigator: nav, cellSize: cell, fog: true, aiTeams: {'blue': AggressiveAI()});
+    final redA = spawnStrategyUnit(w, team: 'red', col: 1, row: 5, cellSize: cell, maxHp: 12, attack: 5, actionPoints: 4, visionRange: 4);
+    final redB = spawnStrategyUnit(w, team: 'red', col: 2, row: 5, cellSize: cell, maxHp: 10, attack: 3, actionPoints: 3, visionRange: 4);
+    final blueA = spawnStrategyUnit(w, team: 'blue', col: 8, row: 1, cellSize: cell, maxHp: 10, attack: 4, actionPoints: 3, visionRange: 4);
+    final blueB = spawnStrategyUnit(w, team: 'blue', col: 7, row: 1, cellSize: cell, maxHp: 10, attack: 3, actionPoints: 3, visionRange: 4);
+    w.componentsOf<Shape>().set(redA, Shape(width: 28, colorArgb: 0xFFE6B86A));
+    w.componentsOf<Shape>().set(redB, Shape(width: 24, colorArgb: 0xFFE6B86A));
+    w.componentsOf<Shape>().set(blueA, Shape(width: 28, colorArgb: 0xFFDE6C65));
+    w.componentsOf<Shape>().set(blueB, Shape(width: 24, colorArgb: 0xFFDE6C65));
+    startTurnBasedGame(w, ['red', 'blue']);
   }
 
   void _agentLoop(World w) {

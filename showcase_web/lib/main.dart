@@ -12,7 +12,9 @@ void main() =>
 class ShowcaseGame extends Game {
   ShowcaseGame(this.demo);
   final String demo;
-  final InputController input = InputController(wasd: true);
+  final InputController input = InputController(
+    bindings: InputController.defaultBindings(wasd: true),
+  );
 
   @override
   GameConfig get config => const GameConfig(
@@ -139,11 +141,7 @@ double clamp(double v, double min, double max) => v.clamp(min, max).toDouble();
 class PongSystem implements System {
   PongSystem(this.input);
   final InputState input;
-  late final EntityId player = _player;
-  late final EntityId enemy = _enemy;
-  late final EntityId ball = _ball;
-  late final EntityId scoreText = _score;
-  EntityId? _player, _enemy, _ball, _score;
+  EntityId? player, enemy, ball, scoreText;
   double vx = 220, vy = 130;
   int playerScore = 0, enemyScore = 0;
   bool initialized = false;
@@ -154,13 +152,13 @@ class PongSystem implements System {
   @override
   void update(World w, double dt) {
     if (!initialized) {
-      _player = box(w, 55, 240, 18, 92, 0xFFE6B86A);
-      _enemy = box(w, 745, 240, 18, 92, 0xFFDE6C65);
-      _ball = dot(w, 400, 240, 18, 0xFFFFFFFF);
-      _score = w.spawn();
-      w.setComponent(_score!, Position(400, 82));
+      player = box(w, 55, 240, 18, 92, 0xFFE6B86A);
+      enemy = box(w, 745, 240, 18, 92, 0xFFDE6C65);
+      ball = dot(w, 400, 240, 18, 0xFFFFFFFF);
+      scoreText = w.spawn();
+      w.setComponent(scoreText!, Position(400, 82));
       w.setComponent(
-        _score!,
+        scoreText!,
         ztext.Text(
           '0  :  0',
           fontSize: 28,
@@ -172,9 +170,9 @@ class PongSystem implements System {
       );
       initialized = true;
     }
-    final p = w.getComponent<Position>(player)!;
-    final e = w.getComponent<Position>(enemy)!;
-    final b = w.getComponent<Position>(ball)!;
+    final p = w.getComponent<Position>(player!)!;
+    final e = w.getComponent<Position>(enemy!)!;
+    final b = w.getComponent<Position>(ball!)!;
     p.y += (input.isPressed('up') ? -280 : 0) * dt;
     p.y += (input.isPressed('down') ? 280 : 0) * dt;
     p.y = clamp(p.y, 90, 390);
@@ -193,7 +191,7 @@ class PongSystem implements System {
       playerScore++;
       _reset(b, true);
     }
-    (w.getComponent<ztext.Text>(scoreText)!).text =
+    (w.getComponent<ztext.Text>(scoreText!)!).text =
         '$playerScore  :  $enemyScore';
   }
 

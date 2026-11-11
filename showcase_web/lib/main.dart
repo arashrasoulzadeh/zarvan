@@ -47,7 +47,7 @@ class ShowcaseScene extends Scene {
   Future<void> populate(World world, SceneController scenes, GameState state) async {
     registerCoreComponents(world);
     registerFlutterComponents(world);
-    if (demo != 'platformer') {
+    if (!{'platformer', 'strategy', 'agent', 'idle'}.contains(demo)) {
       world.addSystem(_MotionSystem());
       world.addSystem(_OrbitSystem());
     }
@@ -85,26 +85,8 @@ class ShowcaseScene extends Scene {
       case 'agent':
         _agentLoop(world);
         break;
-      case 'multiplayer':
-        _network(world);
-        break;
       case 'idle':
-        _bars(world);
-        break;
-      case 'ecs':
-        _orbiters(world);
-        break;
-      case 'json':
-        _jsonState(world);
-        break;
-      case 'fog':
-        _fog(world);
-        break;
-      case 'benchmark':
-        _benchmark(world);
-        break;
-      case 'replay':
-        _replay(world);
+        _idle(world);
         break;
       default:
         _platformer(world);
@@ -157,10 +139,14 @@ class ShowcaseScene extends Scene {
   }
 
   void _agentLoop(World w) {
-    _shape(w, 150, 240, 0xFFE6B86A, size: 84, kind: ShapeKind.ring);
-    _shape(w, 400, 240, 0xFF526B91, size: 84, kind: ShapeKind.ring);
-    _shape(w, 650, 240, 0xFFDE6C65, size: 84, kind: ShapeKind.ring);
-    for (var i = 0; i < 6; i++) _shape(w, 210 + i * 78, 240, 0xFFC8A66A, size: 10);
+    final agent = _shape(w, 120, 240, 0xFFE6B86A, size: 44, kind: ShapeKind.roundedRect);
+    w.componentsOf<Velocity>().set(agent, Velocity());
+    final target = _shape(w, 650, 240, 0xFFDE6C65, size: 64, kind: ShapeKind.ring);
+    final behaviors = BehaviorRegistry()..register('seek_target', _SeekBehavior(target));
+    w.componentsOf<AIState>().set(agent, AIState('seek_target'));
+    w.addSystem(AISystem(behaviors));
+    w.addSystem(MovementSystem());
+    for (var i = 0; i < 5; i++) _shape(w, 220 + i * 78, 240, 0xFFC8A66A, size: 8);
   }
 
   void _network(World w) {
@@ -169,6 +155,15 @@ class ShowcaseScene extends Scene {
     _shape(w, 650, 160, 0xFF526B91, size: 70);
     _shape(w, 150, 320, 0xFFDE6C65, size: 70);
     _shape(w, 650, 320, 0xFFDE6C65, size: 70);
+  }
+
+  void _idle(World w) {
+    final bars = <EntityId>[];
+    for (var i = 0; i < 4; i++) {
+      final id = _shape(w, 150 + i * 150, 340, 0xFFC8A66A, size: 64, kind: ShapeKind.roundedRect);
+      bars.add(id);
+    }
+    w.addSystem(_IdleEconomySystem(bars));
   }
 
   void _bars(World w) {
@@ -239,6 +234,42 @@ class _OrbitSystem implements System {
         p.x += math.sin(time + i) * dt * 20;
         p.y += math.cos(time + i) * dt * 20;
       }
+    }
+  }
+}
+
+class _SeekBehavior implements Behavior {
+  _SeekBehavior(this.target);
+  final EntityId target;
+
+  @override
+  Action decide(WorldView view, EntityId self) {
+    final from = view.component<Position>(self);
+    final to = view.component<Position>(target);
+    if (from == null || to == null) return NoOpAction();
+    final direction = to.x >= from.x ? 1.0 : -1.0;
+    return SetVelocityAction(self, direction * 55, 0);
+  }
+}
+
+class _IdleEconomySystem implements System {
+  _IdleEconomySystem(this.generators);
+  final List<EntityId> generators;
+  double elapsed = 0;
+
+  @override
+  String get name => 'showcase_idle_economy';
+
+  @override
+  void update(World world, double dt) {
+    elapsed += dt;
+    for (var i = 0; i < generators.length; i++) {
+      final shape = world.getComponent<Shape>(generators[i]);
+      final position = world.getComponent<Position>(generators[i]);
+      if (shape == null || position == null) continue;
+      final output = 30 + math.sin(elapsed * (i + 1) * .8) * 20 + i * 18;
+      shape.height = output;
+      position.y = 410 - output / 2;
     }
   }
 }

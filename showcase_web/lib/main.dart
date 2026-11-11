@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart' hide Text;
 import 'package:zarvan_core/zarvan_core.dart';
 import 'package:zarvan_flutter/zarvan_flutter.dart' hide Text;
+import 'package:zarvan_flutter/src/rendering/text.dart' as ztext;
 import 'package:zarvan_platformer/zarvan_platformer.dart';
 import 'package:zarvan_strategy/zarvan_strategy.dart';
 
@@ -51,6 +52,29 @@ class ShowcaseScene extends Scene {
       world.addSystem(_OrbitSystem());
     }
     _buildDemo(world, demo);
+    _hud(world, demo);
+  }
+
+  void _hud(World world, String mode) {
+    const titles = {
+      'platformer': ('PLATFORMER PLAYTEST', 'Arrow keys / Space · gravity · patrol AI · collision'),
+      'strategy': ('TURN-BASED STRATEGY', 'Red vs Blue · fog of war · action points · AI turn'),
+      'agent': ('AGENT AUTHORITY LOOP', 'Observe → propose → validate → apply'),
+      'multiplayer': ('NETWORK TOPOLOGY', 'Host owns state · clients submit commands'),
+      'idle': ('IDLE ECONOMY', 'Generators · growth curves · offline progression'),
+      'ecs': ('ECS WORLD STEP', 'Entities + components + ordered systems'),
+      'json': ('WORLD SNAPSHOT', 'Serializable state for save, replay, and agents'),
+      'fog': ('FOG OF WAR', 'Visibility is simulation state, not renderer state'),
+      'benchmark': ('PROFILER VIEW', 'Measure the simulation before optimizing'),
+      'replay': ('DETERMINISTIC REPLAY', 'Same commands + seed → comparable world'),
+    };
+    final copy = titles[mode] ?? titles['platformer']!;
+    final id = world.spawn();
+    world.setComponent(id, Position(24, 24));
+    world.setComponent(id, ztext.Text(copy.$1, fontSize: 20, colorArgb: 0xFFFFFFFF, screenSpace: true, align: ztext.TextAlignment.left, zIndex: 100));
+    final detail = world.spawn();
+    world.setComponent(detail, Position(24, 52));
+    world.setComponent(detail, ztext.Text(copy.$2, fontSize: 11, colorArgb: 0xFFC8A66A, screenSpace: true, align: ztext.TextAlignment.left, zIndex: 100));
   }
 
   void _buildDemo(World world, String demo) {
@@ -188,6 +212,7 @@ class _MotionSystem implements System {
   @override
   void update(World world, double dt) {
     for (final id in world.entities.all) {
+      if (world.getComponent<ztext.Text>(id) != null) continue;
       final p = world.getComponent<Position>(id);
       if (p == null) continue;
       if (p.x > 820) p.x = -20;
@@ -207,6 +232,7 @@ class _OrbitSystem implements System {
     time += dt;
     var i = 0;
     for (final id in world.entities.all) {
+      if (world.getComponent<ztext.Text>(id) != null) continue;
       final p = world.getComponent<Position>(id);
       if (p == null) continue;
       if (i++ % 3 == 0) {

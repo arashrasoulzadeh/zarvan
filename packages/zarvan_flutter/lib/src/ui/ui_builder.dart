@@ -97,10 +97,22 @@ class UiButton {
     final shape = bg.shape;
     if (shape == null) return;
     final before = shape.alpha;
+    final bgX = bg.pos.x, bgY = bg.pos.y;
+    final labelX = label.pos.x, labelY = label.pos.y;
     shape.alpha = (before * 0.62).clamp(0.0, 1.0);
+    bg.pos.y = bgY + 2;
+    label.pos.y = labelY + 2;
     unawaited(
       Future<void>.delayed(const Duration(milliseconds: 90), () {
-        if (visible && bg.shape == shape) shape.alpha = before;
+        if (visible && bg.shape == shape) {
+          shape.alpha = before;
+          bg.pos
+            ..x = bgX
+            ..y = bgY;
+          label.pos
+            ..x = labelX
+            ..y = labelY;
+        }
       }),
     );
   }

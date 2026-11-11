@@ -46,6 +46,7 @@ export 'src/rendering/engine_view.dart';
 export 'src/rendering/split_screen.dart';
 export 'src/logic/cinematic_camera_steps.dart';
 export 'src/logic/game.dart';
+export 'src/logic/game_flow.dart';
 export 'src/logic/game_config.dart';
 export 'src/input/gamepad_bindings_storage.dart';
 export 'src/ui/gamepad_remap_menu_scene.dart';

@@ -6,6 +6,7 @@ import 'package:zarvan_core/zarvan_core.dart';
 import '../rendering/camera.dart';
 import '../rendering/sprite_atlas.dart';
 import 'scene_transition.dart';
+import 'game_flow.dart';
 
 /// One level/room a `Game` can be showing. `GameRunner` builds a fresh
 /// `World` per scene (not a bulk-clear of the previous one, so no
@@ -19,6 +20,10 @@ import 'scene_transition.dart';
 /// `scenes.loadScene(NextRoomScene())` from inside `populate` (typically
 /// from a collision handler or `Behavior` registered there) to switch.
 abstract class Scene {
+  /// The rules/lifecycle flow that owns this scene. Visual scenes may be
+  /// shared by multiple flows without sharing their progression policy.
+  GameFlow get flow => const GameFlow.main();
+
   /// Adds systems and spawns entities on [world] — the same
   /// responsibility `Game.populateWorld` used to have. [scenes] is this
   /// scene's handle for triggering a switch to another `Scene` (e.g. on

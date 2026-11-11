@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:html' as html;
 
 import 'package:flutter/material.dart' hide Text, Action, Velocity;
 import 'package:flutter/services.dart';
@@ -13,7 +14,10 @@ class ShowcaseGame extends Game {
   ShowcaseGame(this.demo);
   final String demo;
   final InputController input = InputController(
-    bindings: InputController.defaultBindings(wasd: true),
+    bindings: {
+      ...InputController.defaultBindings(wasd: true),
+      LogicalKeyboardKey.keyR: 'restart',
+    },
   );
 
   @override
@@ -147,6 +151,10 @@ EntityId dot(World w, double x, double y, double size, int color) {
 
 double clamp(double v, double min, double max) => v.clamp(min, max).toDouble();
 
+void restartIfRequested(InputState input) {
+  if (input.isPressed('restart')) html.window.location.reload();
+}
+
 class PongSystem implements System {
   PongSystem(this.input);
   final InputState input;
@@ -160,6 +168,7 @@ class PongSystem implements System {
 
   @override
   void update(World w, double dt) {
+    restartIfRequested(input);
     if (!initialized) {
       player = box(w, 70, 250, 18, 92, 0xFFE6B86A);
       enemy = box(w, 730, 250, 18, 92, 0xFFDE6C65);
@@ -251,6 +260,7 @@ class SnakeSystem implements System {
 
   @override
   void update(World w, double dt) {
+    restartIfRequested(input);
     if (!initialized) {
       for (var i = 0; i < 5; i++)
         segments.add(box(w, 400 - i * 22, 240, 18, 18, 0xFFE6B86A));
@@ -339,6 +349,7 @@ class BreakoutSystem implements System {
 
   @override
   void update(World w, double dt) {
+    restartIfRequested(input);
     if (!initialized) {
       paddle = box(w, 400, 405, 110, 18, 0xFFE6B86A);
       ball = dot(w, 400, 380, 16, 0xFFFFFFFF);
@@ -446,6 +457,7 @@ class AsteroidsSystem implements System {
 
   @override
   void update(World w, double dt) {
+    restartIfRequested(input);
     if (!initialized) {
       ship = dot(w, 400, 350, 24, 0xFFE6B86A);
       scoreText = w.spawn();

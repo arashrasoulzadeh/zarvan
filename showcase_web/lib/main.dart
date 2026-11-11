@@ -66,7 +66,16 @@ class GameScene extends Scene {
       default:
         world.addSystem(PongSystem(input));
     }
+    _arena(world);
     _hud(world);
+  }
+
+  void _arena(World world) {
+    const wall = 0xFF252B36;
+    box(world, 40, 76, 720, 2, wall);
+    box(world, 40, 424, 720, 2, wall);
+    box(world, 40, 250, 2, 348, wall);
+    box(world, 760, 250, 2, 348, wall);
   }
 
   void _hud(World world) {
@@ -152,8 +161,8 @@ class PongSystem implements System {
   @override
   void update(World w, double dt) {
     if (!initialized) {
-      player = box(w, 55, 240, 18, 92, 0xFFE6B86A);
-      enemy = box(w, 745, 240, 18, 92, 0xFFDE6C65);
+      player = box(w, 70, 250, 18, 92, 0xFFE6B86A);
+      enemy = box(w, 730, 250, 18, 92, 0xFFDE6C65);
       ball = dot(w, 400, 240, 18, 0xFFFFFFFF);
       scoreText = w.spawn();
       w.setComponent(scoreText!, Position(400, 82));
@@ -175,19 +184,20 @@ class PongSystem implements System {
     final b = w.getComponent<Position>(ball!)!;
     p.y += (input.isPressed('up') ? -280 : 0) * dt;
     p.y += (input.isPressed('down') ? 280 : 0) * dt;
-    p.y = clamp(p.y, 90, 390);
+    p.y = clamp(p.y, 125, 375);
     e.y += (b.y - e.y) * dt * 2.2;
+    e.y = clamp(e.y, 125, 375);
     b.x += vx * dt;
     b.y += vy * dt;
     if (b.y < 82 || b.y > 398) vy = -vy;
-    if ((b.x < 74 && (b.y - p.y).abs() < 58) ||
-        (b.x > 726 && (b.y - e.y).abs() < 58))
+    if ((b.x < 95 && (b.y - p.y).abs() < 58) ||
+        (b.x > 705 && (b.y - e.y).abs() < 58))
       vx = -vx;
-    if (b.x < 0) {
+    if (b.x < 42) {
       enemyScore++;
       _reset(b, false);
     }
-    if (b.x > 800) {
+    if (b.x > 758) {
       playerScore++;
       _reset(b, true);
     }
@@ -280,14 +290,14 @@ class BreakoutSystem implements System {
   @override
   void update(World w, double dt) {
     if (!initialized) {
-      paddle = box(w, 400, 420, 110, 18, 0xFFE6B86A);
+      paddle = box(w, 400, 405, 110, 18, 0xFFE6B86A);
       ball = dot(w, 400, 380, 16, 0xFFFFFFFF);
       for (var y = 0; y < 4; y++)
         for (var x = 0; x < 10; x++)
           bricks.add(
             box(
               w,
-              105 + x * 65,
+              100 + x * 66,
               120 + y * 30,
               54,
               20,
@@ -300,12 +310,15 @@ class BreakoutSystem implements System {
     final b = w.getComponent<Position>(ball!)!;
     p.x += (input.isPressed('left') ? -320 : 0) * dt;
     p.x += (input.isPressed('right') ? 320 : 0) * dt;
-    p.x = clamp(p.x, 70, 730);
+    p.x = clamp(p.x, 110, 690);
     b.x += vx * dt;
     b.y += vy * dt;
-    if (b.x < 60 || b.x > 740) vx = -vx;
+    if (b.x < 58 || b.x > 742) vx = -vx;
     if (b.y < 75) vy = -vy;
-    if (b.y > 392 && (b.x - p.x).abs() < 65) vy = -vy;
+    if (b.y > 375 && b.y < 430 && (b.x - p.x).abs() < 68) {
+      b.y = 375;
+      vy = -vy;
+    }
     for (final id in List<EntityId>.from(bricks)) {
       final brick = w.getComponent<Position>(id);
       if (brick != null &&
@@ -317,9 +330,11 @@ class BreakoutSystem implements System {
         break;
       }
     }
-    if (b.y > 470) {
+    if (b.y > 438) {
       b.x = 400;
-      b.y = 380;
+      b.y = 360;
+      vx = 180;
+      vy = -180;
     }
   }
 }
@@ -354,7 +369,7 @@ class AsteroidsSystem implements System {
     final s = w.getComponent<Position>(ship!)!;
     s.x += (input.isPressed('left') ? -260 : 0) * dt;
     s.x += (input.isPressed('right') ? 260 : 0) * dt;
-    s.x = clamp(s.x, 60, 740);
+    s.x = clamp(s.x, 85, 715);
     time += dt;
     for (var i = 0; i < rocks.length; i++) {
       final r = w.getComponent<Position>(rocks[i]);

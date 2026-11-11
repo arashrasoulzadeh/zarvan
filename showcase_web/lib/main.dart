@@ -23,6 +23,7 @@ class ShowcaseGame extends Game {
   @override
   GameConfig get config => const GameConfig(
     title: 'ZARVAN · Playable games',
+    orientation: GameOrientation.landscape,
     worldWidth: 800,
     worldHeight: 480,
     backgroundColor: Color(0xFF101216),

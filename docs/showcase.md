@@ -19,7 +19,7 @@ loads every mode through a `?demo=` query parameter.
 <div class="zv-live-demo" markdown>
 <iframe src="app/?demo=platformer" title="Live ZARVAN platformer demo" loading="eager"></iframe>
 <div class="zv-live-links" markdown>
-[Platformer](app/?demo=platformer) · [Strategy](app/?demo=strategy) · [Agent](app/?demo=agent) · [Multiplayer](app/?demo=multiplayer) · [Idle](app/?demo=idle) · [ECS](app/?demo=ecs) · [JSON](app/?demo=json) · [Fog](app/?demo=fog) · [Benchmark](app/?demo=benchmark) · [Replay](app/?demo=replay)
+[Platformer](https://meetarash.ir/zarvan/showcase/app/?demo=platformer) · [Strategy](https://meetarash.ir/zarvan/showcase/app/?demo=strategy) · [Agent](https://meetarash.ir/zarvan/showcase/app/?demo=agent) · [Multiplayer](https://meetarash.ir/zarvan/showcase/app/?demo=multiplayer) · [Idle](https://meetarash.ir/zarvan/showcase/app/?demo=idle) · [ECS](https://meetarash.ir/zarvan/showcase/app/?demo=ecs) · [JSON](https://meetarash.ir/zarvan/showcase/app/?demo=json) · [Fog](https://meetarash.ir/zarvan/showcase/app/?demo=fog) · [Benchmark](https://meetarash.ir/zarvan/showcase/app/?demo=benchmark) · [Replay](https://meetarash.ir/zarvan/showcase/app/?demo=replay)
 </div>
 </div>
 

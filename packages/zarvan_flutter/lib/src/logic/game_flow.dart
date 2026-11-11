@@ -9,6 +9,7 @@ class GameFlowSettings {
     this.guided = false,
     this.showQuestionLessons = true,
     this.countdown = 3,
+    this.ensureNumericQuestion = false,
   });
 
   final double timeLimit;
@@ -18,6 +19,7 @@ class GameFlowSettings {
   final bool guided;
   final bool showQuestionLessons;
   final double countdown;
+  final bool ensureNumericQuestion;
 
   GameFlowSettings copyWith({
     double? timeLimit,
@@ -27,6 +29,7 @@ class GameFlowSettings {
     bool? guided,
     bool? showQuestionLessons,
     double? countdown,
+    bool? ensureNumericQuestion,
   }) => GameFlowSettings(
     timeLimit: timeLimit ?? this.timeLimit,
     maxLiveQuestions: maxLiveQuestions ?? this.maxLiveQuestions,
@@ -35,6 +38,7 @@ class GameFlowSettings {
     guided: guided ?? this.guided,
     showQuestionLessons: showQuestionLessons ?? this.showQuestionLessons,
     countdown: countdown ?? this.countdown,
+    ensureNumericQuestion: ensureNumericQuestion ?? this.ensureNumericQuestion,
   );
 }
 

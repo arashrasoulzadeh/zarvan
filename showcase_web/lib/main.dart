@@ -80,10 +80,10 @@ class GameScene extends Scene {
 
   void _hud(World world) {
     const titles = {
-      'pong': ('PONG', 'W/S or ↑/↓ to move · first to 7'),
+      'pong': ('PONG', 'W/S or ↑/↓ to move · first to 11 · R to restart'),
       'snake': ('SNAKE', 'Arrow keys or WASD · collect the gold'),
-      'breakout': ('BREAKOUT', 'A/D or ←/→ to move the paddle'),
-      'asteroids': ('ASTEROIDS', 'A/D or ←/→ · survive the field'),
+      'breakout': ('BREAKOUT', 'A/D or ←/→ · clear the wall · 3 lives'),
+      'asteroids': ('ASTEROIDS', 'A/D rotate · W thrust · Space fire'),
     };
     final copy = titles[demo] ?? titles['pong']!;
     final title = world.spawn();
@@ -150,10 +150,10 @@ double clamp(double v, double min, double max) => v.clamp(min, max).toDouble();
 class PongSystem implements System {
   PongSystem(this.input);
   final InputState input;
-  EntityId? player, enemy, ball, scoreText;
+  EntityId? player, enemy, ball, scoreText, resultText;
   double vx = 220, vy = 130;
   int playerScore = 0, enemyScore = 0;
-  bool initialized = false;
+  bool initialized = false, finished = false;
 
   @override
   String get name => 'pong';
@@ -177,13 +177,27 @@ class PongSystem implements System {
           zIndex: 90,
         ),
       );
+      resultText = w.spawn();
+      w.setComponent(resultText!, Position(400, 250));
+      w.setComponent(
+        resultText!,
+        ztext.Text(
+          '',
+          fontSize: 26,
+          colorArgb: 0xFFFFFFFF,
+          screenSpace: true,
+          align: ztext.TextAlignment.center,
+          zIndex: 100,
+        ),
+      );
       initialized = true;
     }
+    if (finished) return;
     final p = w.getComponent<Position>(player!)!;
     final e = w.getComponent<Position>(enemy!)!;
     final b = w.getComponent<Position>(ball!)!;
-    p.y += (input.isPressed('up') ? -280 : 0) * dt;
-    p.y += (input.isPressed('down') ? 280 : 0) * dt;
+    p.y += (input.isPressed('up') ? -360 : 0) * dt;
+    p.y += (input.isPressed('down') ? 360 : 0) * dt;
     p.y = clamp(p.y, 125, 375);
     e.y += (b.y - e.y) * dt * 1.35;
     e.y = clamp(e.y, 125, 375);
@@ -200,6 +214,12 @@ class PongSystem implements System {
     if (b.x < 42) {
       enemyScore++;
       _reset(b, false);
+    }
+    if (playerScore >= 11 || enemyScore >= 11) {
+      finished = true;
+      (w.getComponent<ztext.Text>(resultText!)!).text = playerScore > enemyScore
+          ? 'YOU WIN  ·  refresh to play again'
+          : 'CPU WINS  ·  refresh to play again';
     }
     if (b.x > 758) {
       playerScore++;
@@ -221,10 +241,10 @@ class SnakeSystem implements System {
   SnakeSystem(this.input);
   final InputState input;
   final segments = <EntityId>[];
-  EntityId? food;
+  EntityId? food, resultText;
   double timer = 0;
-  int dx = 1, dy = 0;
-  bool initialized = false;
+  int dx = 1, dy = 0, score = 0;
+  bool initialized = false, finished = false;
 
   @override
   String get name => 'snake';
@@ -235,8 +255,22 @@ class SnakeSystem implements System {
       for (var i = 0; i < 5; i++)
         segments.add(box(w, 400 - i * 22, 240, 18, 18, 0xFFE6B86A));
       food = dot(w, 600, 240, 16, 0xFFDE6C65);
+      resultText = w.spawn();
+      w.setComponent(resultText!, Position(400, 250));
+      w.setComponent(
+        resultText!,
+        ztext.Text(
+          '',
+          fontSize: 26,
+          colorArgb: 0xFFFFFFFF,
+          screenSpace: true,
+          align: ztext.TextAlignment.center,
+          zIndex: 100,
+        ),
+      );
       initialized = true;
     }
+    if (finished) return;
     if (input.isPressed('up') && dy == 0) {
       dx = 0;
       dy = -1;
@@ -260,9 +294,19 @@ class SnakeSystem implements System {
     final next = Position(head.x + dx * 22, head.y + dy * 22);
     final target = w.getComponent<Position>(food!);
     if (next.x < 70 || next.x > 730 || next.y < 90 || next.y > 410) {
-      dx = -dx;
-      dy = -dy;
+      finished = true;
+      (w.getComponent<ztext.Text>(resultText!)!).text =
+          'GAME OVER  ·  refresh to play again';
       return;
+    }
+    for (final segment in segments.skip(1)) {
+      final p = w.getComponent<Position>(segment)!;
+      if ((next.x - p.x).abs() < 12 && (next.y - p.y).abs() < 12) {
+        finished = true;
+        (w.getComponent<ztext.Text>(resultText!)!).text =
+            'GAME OVER  ·  refresh to play again';
+        return;
+      }
     }
     for (var i = segments.length - 1; i > 0; i--) {
       final from = w.getComponent<Position>(segments[i - 1])!;
@@ -274,6 +318,7 @@ class SnakeSystem implements System {
     head.y = next.y;
     if ((next.x - target!.x).abs() < 20 && (next.y - target.y).abs() < 20) {
       segments.add(box(w, target.x, target.y, 18, 18, 0xFFE6B86A));
+      score++;
       target.x = 90 + ((segments.length * 83) % 620);
       target.y = 110 + ((segments.length * 47) % 280);
     }
@@ -283,10 +328,11 @@ class SnakeSystem implements System {
 class BreakoutSystem implements System {
   BreakoutSystem(this.input);
   final InputState input;
-  EntityId? paddle, ball;
+  EntityId? paddle, ball, scoreText, resultText;
   final bricks = <EntityId>[];
   double vx = 180, vy = -180;
-  bool initialized = false;
+  int score = 0, lives = 3;
+  bool initialized = false, finished = false;
 
   @override
   String get name => 'breakout';
@@ -296,6 +342,32 @@ class BreakoutSystem implements System {
     if (!initialized) {
       paddle = box(w, 400, 405, 110, 18, 0xFFE6B86A);
       ball = dot(w, 400, 380, 16, 0xFFFFFFFF);
+      scoreText = w.spawn();
+      w.setComponent(scoreText!, Position(660, 52));
+      w.setComponent(
+        scoreText!,
+        ztext.Text(
+          '0  ·  3',
+          fontSize: 12,
+          colorArgb: 0xFFFFFFFF,
+          screenSpace: true,
+          align: ztext.TextAlignment.right,
+          zIndex: 100,
+        ),
+      );
+      resultText = w.spawn();
+      w.setComponent(resultText!, Position(400, 250));
+      w.setComponent(
+        resultText!,
+        ztext.Text(
+          '',
+          fontSize: 26,
+          colorArgb: 0xFFFFFFFF,
+          screenSpace: true,
+          align: ztext.TextAlignment.center,
+          zIndex: 100,
+        ),
+      );
       for (var y = 0; y < 4; y++)
         for (var x = 0; x < 10; x++)
           bricks.add(
@@ -310,6 +382,7 @@ class BreakoutSystem implements System {
           );
       initialized = true;
     }
+    if (finished) return;
     final p = w.getComponent<Position>(paddle!)!;
     final b = w.getComponent<Position>(ball!)!;
     p.x += (input.isPressed('left') ? -320 : 0) * dt;
@@ -330,26 +403,43 @@ class BreakoutSystem implements System {
           (b.y - brick.y).abs() < 15) {
         w.destroy(id);
         bricks.remove(id);
+        score += 10;
         vy = -vy;
         break;
       }
     }
-    if (b.y > 438) {
+    if (bricks.isEmpty) {
+      finished = true;
+      (w.getComponent<ztext.Text>(resultText!)!).text =
+          'YOU WIN  ·  refresh to play again';
+    } else if (b.y > 438) {
+      lives--;
       b.x = 400;
       b.y = 360;
       vx = 180;
       vy = -180;
+      if (lives <= 0) {
+        finished = true;
+        (w.getComponent<ztext.Text>(resultText!)!).text =
+            'GAME OVER  ·  refresh to play again';
+      }
     }
+    (w.getComponent<ztext.Text>(scoreText!)!).text = '$score  ·  $lives';
   }
 }
 
 class AsteroidsSystem implements System {
   AsteroidsSystem(this.input);
   final InputState input;
-  EntityId? ship;
+  EntityId? ship, scoreText, resultText;
   final rocks = <EntityId>[];
-  bool initialized = false;
-  double time = 0;
+  final bullets = <EntityId>[];
+  final rockVx = <double>[];
+  final rockVy = <double>[];
+  double angle = -math.pi / 2;
+  double fireCooldown = 0;
+  int score = 0;
+  bool initialized = false, finished = false;
 
   @override
   String get name => 'asteroids';
@@ -357,30 +447,105 @@ class AsteroidsSystem implements System {
   @override
   void update(World w, double dt) {
     if (!initialized) {
-      ship = dot(w, 400, 350, 26, 0xFFE6B86A);
-      for (var i = 0; i < 10; i++)
+      ship = dot(w, 400, 350, 24, 0xFFE6B86A);
+      scoreText = w.spawn();
+      w.setComponent(scoreText!, Position(660, 52));
+      w.setComponent(
+        scoreText!,
+        ztext.Text(
+          '0',
+          fontSize: 12,
+          colorArgb: 0xFFFFFFFF,
+          screenSpace: true,
+          align: ztext.TextAlignment.right,
+          zIndex: 100,
+        ),
+      );
+      resultText = w.spawn();
+      w.setComponent(resultText!, Position(400, 250));
+      w.setComponent(
+        resultText!,
+        ztext.Text(
+          '',
+          fontSize: 26,
+          colorArgb: 0xFFFFFFFF,
+          screenSpace: true,
+          align: ztext.TextAlignment.center,
+          zIndex: 100,
+        ),
+      );
+      for (var i = 0; i < 10; i++) {
         rocks.add(
-          dot(
-            w,
-            90 + (i * 67) % 620,
-            110 + (i * 43) % 250,
-            22 + (i % 3) * 7,
-            0xFF526B91,
-          ),
+          dot(w, 100 + (i * 59) % 600, 100 + (i * 41) % 250, 26, 0xFF526B91),
         );
+        rockVx.add((i.isEven ? 1 : -1) * (20 + i * 2));
+        rockVy.add((i.isEven ? -1 : 1) * (18 + i * 2));
+      }
       initialized = true;
     }
+    if (finished) return;
     final s = w.getComponent<Position>(ship!)!;
-    s.x += (input.isPressed('left') ? -260 : 0) * dt;
-    s.x += (input.isPressed('right') ? 260 : 0) * dt;
-    s.x = clamp(s.x, 85, 715);
-    time += dt;
-    for (var i = 0; i < rocks.length; i++) {
-      final r = w.getComponent<Position>(rocks[i]);
-      if (r == null) continue;
-      r.y += (30 + i * 3) * dt;
-      r.x += math.sin(time + i) * dt * 18;
-      if (r.y > 450) r.y = 85;
+    if (input.isPressed('left')) angle -= 2.8 * dt;
+    if (input.isPressed('right')) angle += 2.8 * dt;
+    if (input.isPressed('up')) {
+      s.x += math.cos(angle) * 150 * dt;
+      s.y += math.sin(angle) * 150 * dt;
     }
+    s.x = clamp(s.x, 68, 732);
+    s.y = clamp(s.y, 96, 404);
+    fireCooldown -= dt;
+    if (input.isPressed('jump') && fireCooldown <= 0) {
+      final bullet = dot(w, s.x, s.y, 7, 0xFFFFFFFF);
+      bullets.add(bullet);
+      w.setComponent(
+        bullet,
+        Velocity(math.cos(angle) * 360, math.sin(angle) * 360),
+      );
+      fireCooldown = .22;
+    }
+    for (final bullet in List<EntityId>.from(bullets)) {
+      final bp = w.getComponent<Position>(bullet);
+      final bv = w.getComponent<Velocity>(bullet);
+      if (bp == null || bv == null) continue;
+      bp.x += bv.x * dt;
+      bp.y += bv.y * dt;
+      if (bp.x < 45 || bp.x > 755 || bp.y < 80 || bp.y > 420) {
+        w.destroy(bullet);
+        bullets.remove(bullet);
+        continue;
+      }
+      for (final rock in List<EntityId>.from(rocks)) {
+        final rp = w.getComponent<Position>(rock);
+        if (rp != null &&
+            (bp.x - rp.x).abs() < 20 &&
+            (bp.y - rp.y).abs() < 20) {
+          w.destroy(rock);
+          w.destroy(bullet);
+          rocks.remove(rock);
+          bullets.remove(bullet);
+          score += 10;
+          break;
+        }
+      }
+    }
+    for (var i = 0; i < rocks.length; i++) {
+      final rp = w.getComponent<Position>(rocks[i]);
+      if (rp == null) continue;
+      rp.x += rockVx[i] * dt;
+      rp.y += rockVy[i] * dt;
+      if (rp.x < 60 || rp.x > 740) rockVx[i] = -rockVx[i];
+      if (rp.y < 92 || rp.y > 408) rockVy[i] = -rockVy[i];
+      if ((rp.x - s.x).abs() < 24 && (rp.y - s.y).abs() < 24) {
+        finished = true;
+        (w.getComponent<ztext.Text>(resultText!)!).text =
+            'SHIP LOST  ·  refresh to play again';
+      }
+    }
+    if (rocks.isEmpty) {
+      finished = true;
+      (w.getComponent<ztext.Text>(resultText!)!).text =
+          'SECTOR CLEAR  ·  refresh to play again';
+    }
+    (w.getComponent<ztext.Text>(scoreText!)!).text = '$score';
   }
 }

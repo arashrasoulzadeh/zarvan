@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:zarvan_core/zarvan_core.dart';
 
 import '../rendering/shape.dart';
@@ -89,6 +91,19 @@ class UiButton {
 
   /// Whether the button is drawn at all (hidden buttons ignore taps).
   bool visible = true;
+
+  /// A tiny press flash shared by every engine-built button.
+  void pressAnimation() {
+    final shape = bg.shape;
+    if (shape == null) return;
+    final before = shape.alpha;
+    shape.alpha = (before * 0.62).clamp(0.0, 1.0);
+    unawaited(
+      Future<void>.delayed(const Duration(milliseconds: 90), () {
+        if (visible && bg.shape == shape) shape.alpha = before;
+      }),
+    );
+  }
 
   /// Draws the button in [colors]: outlined when enabled, faint when not;
   /// [filled] draws it as a solid block.
@@ -292,6 +307,7 @@ class UiBuilder {
     for (final b in buttons) {
       if (b.visible && b.enabled && b.box.contains(x, y)) {
         onPress?.call();
+        b.pressAnimation();
         b.onTap();
         return true;
       }

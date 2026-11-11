@@ -21,6 +21,13 @@ class ShowcaseGame extends Game {
       );
 
   @override
+  SplashConfig get splash => const SplashConfig(
+        title: 'ZARVAN live showcase',
+        backgroundColor: Color(0xFF101216),
+        minDuration: Duration(milliseconds: 900),
+      );
+
+  @override
   Scene createInitialScene() => ShowcaseScene(demo);
 }
 

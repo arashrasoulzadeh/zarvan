@@ -10,17 +10,11 @@ dependencies:
     path: ../packages/zarvan_core
   zarvan_flutter:
     path: ../packages/zarvan_flutter
-  zarvan_platformer:
-    path: ../packages/zarvan_platformer
-  zarvan_strategy:
-    path: ../packages/zarvan_strategy
 dependency_overrides:
   zarvan_core:
     path: ../packages/zarvan_core
   zarvan_flutter:
     path: ../packages/zarvan_flutter
-  zarvan_platformer:
-    path: ../packages/zarvan_platformer
   zarvan_schema:
     path: ../packages/zarvan_schema
 flutter:

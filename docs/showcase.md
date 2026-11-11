@@ -10,6 +10,19 @@ player-facing games; the second is the simulation and tooling underneath them.
 Each item has one job: show what you get, the smallest code that creates it,
 and where to follow the complete implementation.
 
+## Play the runtime
+
+This is a live Flutter Web build using `zarvan_core` and `zarvan_flutter`, not
+a screenshot. Pick a mode, then open it in the runtime below. The same build
+loads every mode through a `?demo=` query parameter.
+
+<div class="zv-live-demo" markdown>
+<iframe src="app/?demo=platformer" title="Live ZARVAN platformer demo" loading="eager"></iframe>
+<div class="zv-live-links" markdown>
+[Platformer](app/?demo=platformer) · [Strategy](app/?demo=strategy) · [Agent](app/?demo=agent) · [Multiplayer](app/?demo=multiplayer) · [Idle](app/?demo=idle) · [ECS](app/?demo=ecs) · [JSON](app/?demo=json) · [Fog](app/?demo=fog) · [Benchmark](app/?demo=benchmark) · [Replay](app/?demo=replay)
+</div>
+</div>
+
 ## Games
 
 <div class="zv-showcase-grid" markdown>

@@ -129,6 +129,9 @@ body:has(.zv-home-shell) .md-content__inner { max-width: none; margin: 0; paddin
 .zv-showcase-card p { color: #6d6f73; }
 .zv-showcase-card pre { margin: .75rem 0 1rem; font-size: .72rem; }
 .zv-showcase-card .md-button { font-size: .78rem; min-height: 2rem; padding: .25rem .7rem; }
+.zv-live-demo { margin: 1.5rem 0 3rem; padding: .75rem; border: 1px solid #d9d4c9; border-radius: 12px; background: #fffdf9; box-shadow: 0 12px 28px rgba(52,44,29,.08); }
+.zv-live-demo iframe { display: block; width: 100%; min-height: 32rem; border: 0; border-radius: 8px; background: #101216; }
+.zv-live-links { padding: .9rem .4rem .2rem; color: var(--zv-blue); font-size: .78rem; line-height: 2; }
 .zv-output { height: 12rem; border-radius: 8px; margin-bottom: 1rem; background: #17191d; color: #f1ebdd; position: relative; overflow: hidden; }
 .zv-output--platformer { background: linear-gradient(#526b91 0 68%, #303c4b 68%); }
 .zv-output-player { position: absolute; left: 27%; top: 32%; color: #c8a66a; font-size: 2rem; }

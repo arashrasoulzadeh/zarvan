@@ -6,6 +6,7 @@ on:
     paths:
       - "docs/**"
       - "landing/**"
+      - "showcase_web/**"
       - "mkdocs.yml"
       - "hooks/**"
       - "overrides/**"
@@ -21,6 +22,7 @@ on:
     paths:
       - "docs/**"
       - "landing/**"
+      - "showcase_web/**"
       - "mkdocs.yml"
       - "hooks/**"
       - "overrides/**"
@@ -64,6 +66,14 @@ jobs:
         with:
           channel: stable
           flutter-version: 3.38.9
+
+      - name: Build the live Showcase runtime
+        run: |
+          cd showcase_web
+          flutter pub get
+          flutter build web --release --base-href /zarvan/showcase/app/
+          mkdir -p ../site/showcase/app
+          cp -r build/web/. ../site/showcase/app/
 
       - name: Generate API docs
         run: |

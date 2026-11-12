@@ -30,17 +30,14 @@ class ShowcaseGame extends Game {
     worldHeight: 480,
     backgroundColor: Color(0xFF101216),
     fixedTimestepSeconds: 1 / 60,
-    onScreenControls: OnScreenControlsMode.auto,
+    onScreenControls: OnScreenControlsMode.on,
   );
 
   @override
-  List<OnScreenButtonSpec> onScreenButtons() => demo == 'asteroids'
-      ? const [OnScreenButtonSpec('jump', 'FIRE')]
-      : const [];
+  List<OnScreenButtonSpec> onScreenButtons() => const [];
 
   @override
-  bool get onScreenJoystickVertical =>
-      demo == 'pong' || demo == 'snake' || demo == 'asteroids';
+  bool get onScreenJoystickVertical => demo == 'pong' || demo == 'snake';
 
   @override
   InputController createInputController() => input;
@@ -82,9 +79,6 @@ class GameScene extends Scene {
       case 'breakout':
         world.addSystem(BreakoutSystem(input));
         break;
-      case 'asteroids':
-        world.addSystem(AsteroidsSystem(input));
-        break;
       default:
         world.addSystem(PongSystem(input));
     }
@@ -105,7 +99,6 @@ class GameScene extends Scene {
       'pong': ('PONG', 'W/S or ↑/↓ to move · first to 11 · R to restart'),
       'snake': ('SNAKE', 'Arrow keys or WASD · collect the gold'),
       'breakout': ('BREAKOUT', 'A/D or ←/→ · clear the wall · 3 lives'),
-      'asteroids': ('ASTEROIDS', 'A/D rotate · W thrust · Space fire'),
     };
     final copy = titles[demo] ?? titles['pong']!;
     final title = world.spawn();
@@ -296,7 +289,7 @@ class SnakeSystem implements System {
   final segments = <EntityId>[];
   EntityId? food, scoreText, resultText;
   double timer = 0;
-  int dx = 1, dy = 0, score = 0;
+  int dx = 0, dy = 0, score = 0;
   bool initialized = false, finished = false;
 
   @override
@@ -354,6 +347,7 @@ class SnakeSystem implements System {
       dx = 1;
       dy = 0;
     }
+    if (dx == 0 && dy == 0) return;
     timer += dt;
     if (timer < .12) return;
     timer = 0;

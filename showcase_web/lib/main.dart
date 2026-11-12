@@ -40,6 +40,9 @@ class ShowcaseGame extends Game {
   bool get onScreenJoystickVertical => demo == 'pong' || demo == 'snake';
 
   @override
+  bool get onScreenControlsFloating => false;
+
+  @override
   InputController createInputController() => input;
 
   @override

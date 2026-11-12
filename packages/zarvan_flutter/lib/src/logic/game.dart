@@ -65,6 +65,11 @@ abstract class Game {
   /// free-movement game.
   bool get onScreenJoystickVertical => false;
 
+  /// Whether the on-screen joystick is visible before the first touch.
+  /// Keep the default floating behavior for normal mobile games; demos can
+  /// opt into a fixed visible control pad.
+  bool get onScreenControlsFloating => true;
+
   /// Returns null (static camera) by default — override to make the
   /// camera follow a specific entity (typically the player) each frame.
   EntityId? cameraFollowEntity(World world) => null;
@@ -691,6 +696,7 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
             OnScreenControls(
               controller: controller,
               verticalEnabled: widget.game.onScreenJoystickVertical,
+              floating: widget.game.onScreenControlsFloating,
               buttons: widget.game.onScreenButtons(),
               atlasRegistry: loaded.atlasRegistry,
             ),

@@ -445,6 +445,9 @@ class OnScreenControls extends StatelessWidget {
   /// — on by default for both the joystick and every button.
   final bool hapticFeedback;
 
+  /// Whether the joystick is visible before a drag begins.
+  final bool floating;
+
   const OnScreenControls({
     super.key,
     required this.controller,
@@ -453,6 +456,7 @@ class OnScreenControls extends StatelessWidget {
     this.atlasRegistry,
     this.analogOutput = false,
     this.hapticFeedback = true,
+    this.floating = true,
   });
 
   @override
@@ -475,6 +479,7 @@ class OnScreenControls extends StatelessWidget {
               child: VirtualJoystick(
                 controller: controller,
                 verticalEnabled: verticalEnabled,
+                floating: floating,
                 analogOutput: analogOutput,
                 hapticFeedback: hapticFeedback,
               ),

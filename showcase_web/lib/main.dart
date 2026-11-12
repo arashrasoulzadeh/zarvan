@@ -74,8 +74,6 @@ class GameScene extends Scene {
     SceneController scenes,
     GameState state,
   ) async {
-    registerCoreComponents(world);
-    registerFlutterComponents(world);
     switch (demo) {
       case 'snake':
         world.addSystem(SnakeSystem(input));

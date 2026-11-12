@@ -39,7 +39,8 @@ class ShowcaseGame extends Game {
       : const [];
 
   @override
-  bool get onScreenJoystickVertical => demo == 'pong' || demo == 'asteroids';
+  bool get onScreenJoystickVertical =>
+      demo == 'pong' || demo == 'snake' || demo == 'asteroids';
 
   @override
   InputController createInputController() => input;

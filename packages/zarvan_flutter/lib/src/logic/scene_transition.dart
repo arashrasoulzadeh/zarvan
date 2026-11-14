@@ -28,6 +28,7 @@ enum SceneTransitionType {
 
   /// The outgoing scene breaks into blocks that vanish in a scattered order.
   pixelDissolve,
+  portal,
 }
 
 extension SceneTransitionTypeX on SceneTransitionType {
@@ -61,12 +62,20 @@ class SceneTransitionConfig {
   /// For fade transitions: the color to fade to/from (ARGB).
   /// Defaults to black (0xFF000000).
   final int fadeColorArgb;
+  final double portalX;
+  final double portalY;
+  final int portalColorArgb;
+  final bool portalReverse;
 
   const SceneTransitionConfig({
     this.type = SceneTransitionType.fade,
     this.duration = 0.5,
     this.easing = EasingType.easeInOutQuad,
     this.fadeColorArgb = 0xFF000000,
+    this.portalX = 0,
+    this.portalY = 0,
+    this.portalColorArgb = 0xFFFFFFFF,
+    this.portalReverse = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -74,6 +83,10 @@ class SceneTransitionConfig {
     'duration': duration,
     'easing': easing.name,
     'fadeColorArgb': fadeColorArgb,
+    'portalX': portalX,
+    'portalY': portalY,
+    'portalColorArgb': portalColorArgb,
+    'portalReverse': portalReverse,
   };
 
   factory SceneTransitionConfig.fromJson(Map<String, dynamic> json) =>
@@ -88,6 +101,11 @@ class SceneTransitionConfig {
           orElse: () => EasingType.easeInOutQuad,
         ),
         fadeColorArgb: (json['fadeColorArgb'] as num?)?.toInt() ?? 0xFF000000,
+        portalX: (json['portalX'] as num?)?.toDouble() ?? 0,
+        portalY: (json['portalY'] as num?)?.toDouble() ?? 0,
+        portalColorArgb:
+            (json['portalColorArgb'] as num?)?.toInt() ?? 0xFFFFFFFF,
+        portalReverse: json['portalReverse'] == true,
       );
 }
 

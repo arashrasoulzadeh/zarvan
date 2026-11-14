@@ -22,6 +22,10 @@ class SnapshotTransitionPainter extends CustomPainter {
     required this.progress,
     this.pixelSize = 16,
     this.seed = 1,
+    this.portalX,
+    this.portalY,
+    this.portalColorArgb = 0xFFFFFFFF,
+    this.portalReverse = false,
   });
 
   final ui.Image snapshot;
@@ -35,6 +39,10 @@ class SnapshotTransitionPainter extends CustomPainter {
 
   /// Varies the dissolve pattern; the same seed always gives the same pattern.
   final int seed;
+  final double? portalX;
+  final double? portalY;
+  final int portalColorArgb;
+  final bool portalReverse;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -85,12 +93,51 @@ class SnapshotTransitionPainter extends CustomPainter {
         );
       case SceneTransitionType.pixelDissolve:
         _paintDissolve(canvas, size, src, t);
+      case SceneTransitionType.portal:
+        _paintPortal(canvas, size, src, t);
       case SceneTransitionType.fade:
       case SceneTransitionType.iris:
         // World-based transitions (screen tint / clip shape); they never paint a
         // snapshot, so there is nothing to draw if one is asked for.
         break;
     }
+  }
+
+  void _paintPortal(Canvas canvas, Size size, Rect src, double t) {
+    final center = Offset(
+      portalX ?? size.width / 2,
+      portalY ?? size.height / 2,
+    );
+    final maxRadius = math.sqrt(
+      size.width * size.width + size.height * size.height,
+    );
+    final radius =
+        maxRadius * Curves.easeInOut.transform(portalReverse ? 1 - t : t);
+    canvas.save();
+    if (portalReverse) {
+      canvas.clipPath(
+        Path()..addOval(Rect.fromCircle(center: center, radius: radius)),
+        doAntiAlias: true,
+      );
+    } else {
+      final path = Path()
+        ..addRect(Offset.zero & size)
+        ..addOval(Rect.fromCircle(center: center, radius: radius))
+        ..fillType = PathFillType.evenOdd;
+      canvas.clipPath(path, doAntiAlias: true);
+    }
+    canvas.drawImageRect(snapshot, src, Offset.zero & size, Paint());
+    canvas.restore();
+    final ring = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..color = Color.fromARGB(
+        ((1 - t) * 210).round(),
+        (portalColorArgb >> 16) & 0xFF,
+        (portalColorArgb >> 8) & 0xFF,
+        portalColorArgb & 0xFF,
+      );
+    canvas.drawCircle(center, radius, ring);
   }
 
   void _paintDissolve(Canvas canvas, Size size, Rect src, double t) {
@@ -202,6 +249,10 @@ class _SnapshotTransitionState extends State<SnapshotTransition>
             type: widget.config.type,
             progress: _progress,
             seed: math.max(1, widget.config.duration.hashCode),
+            portalX: widget.config.portalX,
+            portalY: widget.config.portalY,
+            portalColorArgb: widget.config.portalColorArgb,
+            portalReverse: widget.config.portalReverse,
           ),
         ),
       ),

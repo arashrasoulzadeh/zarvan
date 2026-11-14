@@ -61,6 +61,9 @@ class Text {
   /// Applied on top of [fontSize] at render time.
   double textScale;
 
+  /// Opacity used by UI transitions and scrolling list edge fades.
+  double alpha;
+
   Text(
     this.text, {
     this.fontSize = 16,
@@ -70,6 +73,7 @@ class Text {
     this.zIndex = 0,
     this.maxWidth,
     this.textScale = 1.0,
+    this.alpha = 1.0,
     this.rtl,
     this.fontFamily,
     this.shadowArgb,
@@ -83,6 +87,7 @@ class Text {
     'screenSpace': screenSpace,
     'zIndex': zIndex,
     'textScale': textScale,
+    'alpha': alpha,
     if (maxWidth != null) 'maxWidth': maxWidth,
     if (rtl != null) 'rtl': rtl,
     if (fontFamily != null) 'fontFamily': fontFamily,
@@ -101,6 +106,7 @@ class Text {
     zIndex: (json['zIndex'] as num?)?.toInt() ?? 0,
     maxWidth: (json['maxWidth'] as num?)?.toDouble(),
     textScale: (json['textScale'] as num?)?.toDouble() ?? 1.0,
+    alpha: (json['alpha'] as num?)?.toDouble() ?? 1.0,
     rtl: json['rtl'] as bool?,
     fontFamily: json['fontFamily'] as String?,
     shadowArgb: (json['shadowArgb'] as num?)?.toInt(),

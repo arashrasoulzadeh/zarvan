@@ -3462,7 +3462,9 @@ class _EnginePainter extends CustomPainter {
                 text: TextSpan(
                   text: text.text,
                   style: TextStyle(
-                    color: Color(text.colorArgb),
+                    color: Color(
+                      text.colorArgb,
+                    ).withValues(alpha: Color(text.colorArgb).a * text.alpha),
                     fontSize: effectiveFontSize,
                     // No fontFamily means "whatever the platform's default
                     // is" — fine on mobile/desktop (the OS always has one)

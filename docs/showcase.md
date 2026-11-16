@@ -5,7 +5,7 @@ description: Real ZARVAN game and simulation outputs with focused code samples.
 
 # Showcase
 
-Four concrete, playable games from the live ZARVAN web runtime. Each one has
+Three concrete, playable games from the live ZARVAN web runtime. Each one has
 real input, movement, collision, and a replayable game loop—not a screenshot or
 a placeholder card.
 
@@ -20,7 +20,6 @@ loads every mode through a `?demo=` query parameter.
 <button class="is-active" data-demo="pong" data-hint="W/S or ↑/↓ to move · first to 11 · R restarts">Pong</button>
 <button data-demo="snake" data-hint="Arrow keys or WASD · collect the gold · R restarts">Snake</button>
 <button data-demo="breakout" data-hint="A/D or ←/→ · clear the wall · 3 lives · R restarts">Breakout</button>
-<button data-demo="asteroids" data-hint="←/→ rotate · ↑ thrust · Space fires · R restarts">Asteroids</button>
 <a data-open href="app/?demo=pong">Open full screen ↗</a>
 </div>
 <div class="zv-live-stage"><div class="zv-live-box"><div class="zv-spin"><i></i>Loading game…</div><iframe src="app/?demo=pong" title="Live ZARVAN game" loading="lazy"></iframe></div></div>
@@ -30,41 +29,6 @@ loads every mode through a `?demo=` query parameter.
 ## Games
 
 <div class="zv-showcase-grid" markdown>
-
-<article class="zv-showcase-card" markdown>
-<div class="zv-output zv-output--platformer"><span class="zv-output-player">●</span><span class="zv-output-ground"></span><span class="zv-output-enemy"></span></div>
-
-### Tiny platformer
-
-Player movement, gravity, a patrol enemy, coins, and a health bar in one small
-world. The tutorial uses only public package APIs and its snippets are checked
-against current signatures.
-
-```dart
-final player = spawnPlayer(world, at: const Vec2(48, 80));
-spawnEnemy(world, at: const Vec2(180, 80), behavior: PatrolBehavior());
-installPlatformerSystems(world);
-```
-
-[Verified in Tutorial 1 · Build the platformer](tutorials/01-hello-world.md){ .md-button }
-</article>
-
-<article class="zv-showcase-card" markdown>
-<img src="img/strategy-skirmish.png" alt="Turn-based strategy output">
-
-### Turn-based skirmish
-
-An 8×8 battlefield with terrain costs, fog of war, two armies, and a computer
-controlled opponent. This is the repository's clearest end-to-end game output.
-
-```dart
-final battle = StrategyGame.create(map: map, seed: 7);
-battle.issue(MoveOrder(unit: scout, target: tile(4, 2)));
-battle.endTurn();
-```
-
-[Verified in Tutorial 2 · Build the strategy game](tutorials/02-turn-based-strategy.md){ .md-button }
-</article>
 
 <article class="zv-showcase-card" markdown>
 <div class="zv-output zv-output--agent"><span class="zv-agent-node">WorldView</span><span class="zv-agent-arrow">→</span><span class="zv-agent-node">Action</span><span class="zv-agent-arrow">→</span><span class="zv-agent-node">World</span></div>

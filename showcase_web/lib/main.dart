@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'dart:html' as html;
 
 import 'package:flutter/material.dart' hide Text, Action, Velocity;
@@ -92,9 +91,6 @@ class GameScene extends Scene {
       case 'breakout':
         world.addSystem(BreakoutSystem(input));
         break;
-      case 'asteroids':
-        world.addSystem(AsteroidsSystem(input));
-        break;
       default:
         world.addSystem(PongSystem(input));
     }
@@ -116,10 +112,6 @@ class GameScene extends Scene {
       'pong': ('PONG', 'W/S or ↑/↓ to move · first to 11 · R to restart'),
       'snake': ('SNAKE', 'Arrow keys or WASD · collect the gold'),
       'breakout': ('BREAKOUT', 'A/D or ←/→ · clear the wall · 3 lives'),
-      'asteroids': (
-        'ASTEROIDS',
-        '←/→ rotate · ↑ thrust · Space to fire · R to restart',
-      ),
     };
     final copy = titles[demo] ?? titles['pong']!;
     final title = world.spawn();
@@ -532,135 +524,5 @@ class BreakoutSystem implements System {
       }
     }
     (w.getComponent<ztext.Text>(scoreText!)!).text = '$score  ·  $lives';
-  }
-}
-
-class AsteroidsSystem implements System {
-  AsteroidsSystem(this.input);
-  final InputState input;
-  EntityId? ship, scoreText, resultText;
-  final rocks = <EntityId>[];
-  final bullets = <EntityId>[];
-  final rockVx = <double>[];
-  final rockVy = <double>[];
-  double angle = -math.pi / 2;
-  double fireCooldown = 0;
-  int score = 0;
-  bool initialized = false, finished = false;
-
-  @override
-  String get name => 'asteroids';
-
-  @override
-  void update(World w, double dt) {
-    restartIfRequested(input);
-    if (!initialized) {
-      ship = diamond(w, 400, 350, 28, 0xFFE6B86A);
-      scoreText = w.spawn();
-      w.setComponent(scoreText!, Position(660, 52));
-      w.setComponent(
-        scoreText!,
-        ztext.Text(
-          '0',
-          fontSize: 12,
-          colorArgb: 0xFFFFFFFF,
-          screenSpace: true,
-          align: ztext.TextAlignment.right,
-          zIndex: 100,
-        ),
-      );
-      resultText = w.spawn();
-      w.setComponent(resultText!, Position(400, 250));
-      w.setComponent(
-        resultText!,
-        ztext.Text(
-          '',
-          fontSize: 26,
-          colorArgb: 0xFFFFFFFF,
-          screenSpace: true,
-          align: ztext.TextAlignment.center,
-          zIndex: 100,
-        ),
-      );
-      for (var i = 0; i < 10; i++) {
-        rocks.add(
-          ring(w, 100 + (i * 59) % 600, 100 + (i * 41) % 250, 26, 0xFF526B91),
-        );
-        rockVx.add((i.isEven ? 1 : -1) * (20 + i * 2));
-        rockVy.add((i.isEven ? -1 : 1) * (18 + i * 2));
-      }
-      initialized = true;
-    }
-    if (finished) return;
-    final s = w.getComponent<Position>(ship!)!;
-    if (input.isPressed('left')) angle -= 2.8 * dt;
-    if (input.isPressed('right')) angle += 2.8 * dt;
-    if (input.isPressed('up')) {
-      s.x += math.cos(angle) * 150 * dt;
-      s.y += math.sin(angle) * 150 * dt;
-    }
-    if (s.x < 48) s.x = 752;
-    if (s.x > 752) s.x = 48;
-    if (s.y < 80) s.y = 420;
-    if (s.y > 420) s.y = 80;
-    fireCooldown -= dt;
-    if (input.isPressed('jump') && fireCooldown <= 0) {
-      final bullet = dot(w, s.x, s.y, 7, 0xFFFFFFFF);
-      bullets.add(bullet);
-      w.setComponent(
-        bullet,
-        Velocity(math.cos(angle) * 360, math.sin(angle) * 360),
-      );
-      fireCooldown = .22;
-    }
-    for (final bullet in List<EntityId>.from(bullets)) {
-      final bp = w.getComponent<Position>(bullet);
-      final bv = w.getComponent<Velocity>(bullet);
-      if (bp == null || bv == null) continue;
-      bp.x += bv.x * dt;
-      bp.y += bv.y * dt;
-      if (bp.x < 45 || bp.x > 755 || bp.y < 80 || bp.y > 420) {
-        w.destroy(bullet);
-        bullets.remove(bullet);
-        continue;
-      }
-      for (final rock in List<EntityId>.from(rocks)) {
-        final rp = w.getComponent<Position>(rock);
-        if (rp != null &&
-            (bp.x - rp.x).abs() < 20 &&
-            (bp.y - rp.y).abs() < 20) {
-          final rockIndex = rocks.indexOf(rock);
-          w.destroy(rock);
-          w.destroy(bullet);
-          rocks.removeAt(rockIndex);
-          rockVx.removeAt(rockIndex);
-          rockVy.removeAt(rockIndex);
-          bullets.remove(bullet);
-          score += 10;
-          break;
-        }
-      }
-    }
-    for (var i = 0; i < rocks.length; i++) {
-      final rp = w.getComponent<Position>(rocks[i]);
-      if (rp == null) continue;
-      rp.x += rockVx[i] * dt;
-      rp.y += rockVy[i] * dt;
-      if (rp.x < 48) rp.x = 752;
-      if (rp.x > 752) rp.x = 48;
-      if (rp.y < 80) rp.y = 420;
-      if (rp.y > 420) rp.y = 80;
-      if ((rp.x - s.x).abs() < 24 && (rp.y - s.y).abs() < 24) {
-        finished = true;
-        (w.getComponent<ztext.Text>(resultText!)!).text =
-            'SHIP LOST  ·  press R to restart';
-      }
-    }
-    if (rocks.isEmpty) {
-      finished = true;
-      (w.getComponent<ztext.Text>(resultText!)!).text =
-          'SECTOR CLEAR  ·  press R to restart';
-    }
-    (w.getComponent<ztext.Text>(scoreText!)!).text = '$score';
   }
 }

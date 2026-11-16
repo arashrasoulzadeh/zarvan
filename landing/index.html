@@ -174,7 +174,7 @@
         <div class="side">
           <span class="eyebrow">Live runtime</span>
           <h2>Play the real engine.</h2>
-          <p>Four tiny games with rules, input, collision and a win/lose loop — running on the same <code>zarvan_core</code> + <code>zarvan_flutter</code> you install. Click the game, then use the keyboard.</p>
+          <p>Three tiny games with rules, input, collision and a win/lose loop — running on the same <code>zarvan_core</code> + <code>zarvan_flutter</code> you install. Click the game, then use the keyboard.</p>
           <div class="picker" id="picker"></div>
           <div class="keys" id="keys"></div>
           <div class="btns"><a class="btn ghost" id="full" href="showcase/app/?demo=pong">Open full screen ↗</a><a class="btn ghost" href="showcase/">All showcases</a></div>
@@ -265,8 +265,7 @@ game.update(<span class="t">1</span> / <span class="t">60</span>);
     var demos=[
       ['pong','Pong','W/S or ↑/↓ to move · first to 11 · R restarts'],
       ['snake','Snake','Arrow keys or WASD · collect the gold · R restarts'],
-      ['breakout','Breakout','A/D or ←/→ · clear the wall · 3 lives · R restarts'],
-      ['asteroids','Asteroids','←/→ rotate · ↑ thrust · Space fires · R restarts']
+      ['breakout','Breakout','A/D or ←/→ · clear the wall · 3 lives · R restarts']
     ];
     var picker=$('#picker'),frame=$('#game'),keys=$('#keys'),full=$('#full');
     var spin=$('#spin'),tm;

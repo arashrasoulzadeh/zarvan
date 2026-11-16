@@ -15,11 +15,16 @@ This is a live Flutter Web build using `zarvan_core` and `zarvan_flutter`, not
 a screenshot. Pick a mode, then open it in the runtime below. The same build
 loads every mode through a `?demo=` query parameter.
 
-<div class="zv-live-demo" markdown>
-<iframe src="app/?demo=pong" title="Live ZARVAN Pong game" loading="eager"></iframe>
-<div class="zv-live-links" markdown>
-[Pong](https://meetarash.ir/zarvan/showcase/app/?demo=pong) · [Snake](https://meetarash.ir/zarvan/showcase/app/?demo=snake) · [Breakout](https://meetarash.ir/zarvan/showcase/app/?demo=breakout) · [Asteroids](https://meetarash.ir/zarvan/showcase/app/?demo=asteroids)
+<div class="zv-live-demo">
+<div class="zv-live-bar">
+<button class="is-active" data-demo="pong" data-hint="W/S or ↑/↓ to move · first to 11 · R restarts">Pong</button>
+<button data-demo="snake" data-hint="Arrow keys or WASD · collect the gold · R restarts">Snake</button>
+<button data-demo="breakout" data-hint="A/D or ←/→ · clear the wall · 3 lives · R restarts">Breakout</button>
+<button data-demo="asteroids" data-hint="←/→ rotate · ↑ thrust · Space fires · R restarts">Asteroids</button>
+<a data-open href="app/?demo=pong">Open full screen ↗</a>
 </div>
+<div class="zv-live-stage"><iframe src="app/?demo=pong" title="Live ZARVAN game" loading="lazy"></iframe></div>
+<div class="zv-live-hint">W/S or ↑/↓ to move · first to 11 · R restarts</div>
 </div>
 
 ## Games

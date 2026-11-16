@@ -84,6 +84,9 @@ class GameScene extends Scene {
       case 'breakout':
         world.addSystem(BreakoutSystem(input));
         break;
+      case 'asteroids':
+        world.addSystem(AsteroidsSystem(input));
+        break;
       default:
         world.addSystem(PongSystem(input));
     }
@@ -92,7 +95,7 @@ class GameScene extends Scene {
   }
 
   void _arena(World world) {
-    const wall = 0xFF252B36;
+    const wall = 0xFF3B4558;
     box(world, 40, 76, 720, 2, wall);
     box(world, 40, 424, 720, 2, wall);
     box(world, 40, 250, 2, 348, wall);
@@ -104,6 +107,10 @@ class GameScene extends Scene {
       'pong': ('PONG', 'W/S or ↑/↓ to move · first to 11 · R to restart'),
       'snake': ('SNAKE', 'Arrow keys or WASD · collect the gold'),
       'breakout': ('BREAKOUT', 'A/D or ←/→ · clear the wall · 3 lives'),
+      'asteroids': (
+        'ASTEROIDS',
+        '←/→ rotate · ↑ thrust · Space to fire · R to restart',
+      ),
     };
     final copy = titles[demo] ?? titles['pong']!;
     final title = world.spawn();

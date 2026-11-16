@@ -4,80 +4,284 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ZARVAN — A 2D game engine for understandable worlds</title>
-  <meta name="description" content="ZARVAN is a simulation-first, agent-native 2D game engine for Dart.">
+  <meta name="description" content="ZARVAN is a simulation-first, agent-native 2D game engine for Dart: deterministic ECS, Flutter shell, content as data.">
+  <meta property="og:title" content="ZARVAN — a 2D game engine for understandable worlds">
+  <meta property="og:description" content="Deterministic, JSON-serializable 2D worlds that developers and AI agents can both inspect, test and change.">
+  <meta property="og:image" content="https://meetarash.ir/zarvan/assets/header.png">
+  <meta name="theme-color" content="#0d0f13">
   <link rel="icon" href="assets/favicon.png">
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    @font-face{font-family:Vazir;src:url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/Vazir-Regular.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}@font-face{font-family:Vazir;src:url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/Vazir-Bold.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap}@font-face{font-family:Vazir;src:url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/Vazir-Black.woff2') format('woff2');font-weight:900;font-style:normal;font-display:swap}
-    :root{--ink:#17191d;--muted:#6a6d72;--line:#dedbd4;--paper:#f7f6f2;--card:#fff;--gold:#a17b38;--blue:#4f6688}
-    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font-family:Vazir,Inter,system-ui,sans-serif;line-height:1.6;font-synthesis:none}a{color:inherit;text-decoration:none}.page{max-width:1240px;margin:auto;padding:0 32px}.nav{height:76px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);font-size:14px}.brand{display:flex;align-items:center;gap:11px;font-size:16px;font-weight:900;letter-spacing:.08em}.brand img{width:30px;height:30px}.navlinks{display:flex;align-items:center;gap:28px;color:#5e6064}.navlinks a:hover{color:var(--ink)}.navlinks .docs{color:var(--ink);font-weight:900}.menu{display:none;border:0;background:none;font:inherit;color:var(--ink)}
-    .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:82px;align-items:center;padding:88px 0 96px}.eyebrow{color:var(--gold);font-size:12px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;margin:0 0 18px}.hero h1{font-size:clamp(42px,6vw,78px);font-weight:900;letter-spacing:-.07em;line-height:1.02;max-width:680px;margin:0 0 24px}.hero p{max-width:570px;color:var(--muted);font-size:20px;line-height:1.8;margin:0}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:34px}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 20px;border-radius:6px;border:1px solid var(--ink);font-size:14px;font-weight:900;transition:.2s ease}.btn:hover{transform:translateY(-2px)}.btn.primary{background:var(--ink);color:white}.btn.secondary{background:transparent}.hero-art{position:relative;min-height:500px}.carousel-card{position:absolute;inset:0;transition:transform .55s ease,opacity .55s ease,filter .55s ease;transform-origin:bottom right}.carousel-card pre{display:block;width:100%;height:470px;margin:0;overflow:auto;border-radius:10px;padding:28px;background:#191b20;color:#e8e5dc;box-shadow:24px 24px 0 #e6dfd1;font:13px/1.85 ui-monospace,SFMono-Regular,Menlo,monospace}.carousel-card:not(.active){opacity:.55;filter:saturate(.65)}.carousel-card[data-depth="1"]{transform:translate(18px,18px) scale(.965);z-index:1}.carousel-card[data-depth="2"]{transform:translate(34px,34px) scale(.93);z-index:0}.carousel-card[data-depth="3"]{transform:translate(48px,48px) scale(.9);z-index:-1}.carousel-card.active{z-index:3;transform:translate(0,0) scale(1);opacity:1;filter:none}.code-comment{color:#9099a8}.code-key{color:#e5bf73}.code-type{color:#82b5d8}.code-string{color:#a9cf88}.art-label{position:absolute;right:-16px;bottom:-28px;z-index:5;background:var(--ink);color:white;padding:15px 18px;border-radius:6px;font-size:12px}.art-label strong{display:block;color:#e5bf73;font-size:14px}.carousel-dots{position:absolute;z-index:6;left:18px;bottom:-24px;display:flex;gap:7px}.carousel-dots button{width:8px;height:8px;border:0;padding:0;border-radius:50%;background:#c7c3bb;cursor:pointer}.carousel-dots button.active{background:var(--ink);transform:scale(1.35)}
-    .proof{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:20px 0;color:var(--ink);font-size:14px;font-weight:900}.proof span+span{border-left:1px solid var(--line);padding-left:22px}.section{padding:105px 0}.section-head{max-width:610px;margin-bottom:42px}.section h2{font-size:clamp(30px,4vw,52px);font-weight:900;line-height:1.08;letter-spacing:-.055em;margin:8px 0 16px}.section-head p:last-child{color:var(--muted);font-size:17px}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:28px;min-height:230px}.card .index{color:var(--gold);font-size:12px;font-weight:900}.card h3{font-size:21px;font-weight:900;letter-spacing:-.03em;margin:32px 0 10px}.card p{color:var(--muted);font-size:14px;margin:0}.split{display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:center}.agent-examples{display:grid;gap:10px;margin-top:28px}.agent-example{border-left:3px solid var(--gold);padding:9px 14px;background:#efebe2;font-size:13px}.agent-example strong{display:block;font-weight:900}.agent-example span{color:var(--muted)}.code{background:#191b20;color:#e8e5dc;border-radius:8px;padding:26px;box-shadow:14px 14px 0 #e7e1d5;overflow:auto}.code pre{margin:0;font:13px/1.8 ui-monospace,SFMono-Regular,Menlo,monospace}.code .comment{color:#9099a8}.code .key{color:#e5bf73}.visual{border-radius:8px;width:100%;display:block;border:1px solid var(--line)}.routes{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.route{border-top:2px solid var(--ink);padding:18px 0}.route strong{display:block;font-size:16px;font-weight:900;margin-bottom:6px}.route span{display:block;color:var(--muted);font-size:13px}.route:hover{border-color:var(--gold)}.footer{border-top:1px solid var(--line);padding:28px 0 45px;color:#77736c;font-size:13px;display:flex;justify-content:space-between}.rtl{direction:rtl}
-    .live-preview{display:grid;grid-template-columns:1.1fr .9fr;gap:34px;align-items:center;background:#e9e4da;border-radius:10px;padding:28px;overflow:hidden}.live-game-frame{padding:16px;background:#15171d;border:1px solid #343944;border-radius:12px;box-shadow:0 18px 36px rgba(23,25,29,.16)}.live-preview iframe{display:block;width:100%;height:auto;min-height:360px;aspect-ratio:16/9;border:0;border-radius:7px;background:#101216}.live-preview-copy{padding:18px 20px}.live-preview-copy h2{font-size:clamp(28px,3vw,44px);font-weight:900;line-height:1.05;letter-spacing:-.05em;margin:8px 0 14px}.live-preview-copy p{color:var(--muted);font-size:15px}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.step{padding-top:18px;border-top:2px solid var(--ink)}.step b{font-size:18px;font-weight:900}.step p{color:var(--muted);font-size:14px}.package-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.package{padding:22px;background:#eeeae1;border-radius:7px}.package strong{display:block;font-weight:900}.package code{display:block;color:var(--gold);font-size:12px;margin:6px 0}.package span{color:var(--muted);font-size:13px}.quality{display:grid;grid-template-columns:1fr 1fr;gap:16px}.quality-card{background:var(--card);border:1px solid var(--line);padding:25px;border-radius:8px}.quality-card strong{display:block;font-size:18px;font-weight:900;margin-bottom:8px}.quality-card span{color:var(--muted);font-size:14px}
-    .demo-picker{display:flex;flex-wrap:wrap;gap:6px;margin-top:20px}.demo-picker button{border:1px solid #c8c2b6;background:transparent;border-radius:999px;padding:7px 11px;color:#5d5b56;font:700 12px Vazir, sans-serif;cursor:pointer}.demo-picker button.selected{background:var(--ink);border-color:var(--ink);color:#fff}
-    @media(max-width:800px){.page{padding:0 20px}.nav{height:66px}.navlinks{display:none}.menu{display:block}.hero{grid-template-columns:1fr;gap:46px;padding:60px 0 70px}.hero h1{font-size:clamp(42px,14vw,64px)}.hero p{font-size:17px}.hero-art{max-width:440px;min-height:390px}.carousel-card pre{height:360px}.proof{grid-template-columns:1fr 1fr;gap:16px}.proof span+span{border:0;padding:0}.cards,.routes,.split,.live-preview,.steps,.package-grid,.quality{grid-template-columns:1fr}.live-preview iframe{height:300px}.section{padding:72px 0}.split{gap:38px}.footer{display:block}.footer span{display:block;margin-top:8px}}
+    :root{--bg:#0d0f13;--bg2:#12151a;--card:#161a21;--line:rgba(200,166,106,.16);--ink:#ece8df;--muted:#a09d94;--gold:#c8a66a;--gold2:#e1c486;--blue:#6e8bb5;--r:16px}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.65 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+    a{color:inherit;text-decoration:none}
+    code,pre{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace}
+    .wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+    .glow{position:absolute;inset:0 0 auto 0;height:720px;background:radial-gradient(60% 60% at 75% 0%,rgba(200,166,106,.16),transparent 70%),radial-gradient(45% 50% at 5% 20%,rgba(82,107,145,.18),transparent 70%);pointer-events:none;z-index:-1}
+    header{position:sticky;top:0;z-index:20;background:rgba(13,15,19,.8);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+    .nav{height:68px;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:11px;font-weight:800;letter-spacing:.16em;font-size:15px}
+    .brand img{width:30px;height:30px;border-radius:8px}
+    .links{display:flex;align-items:center;gap:26px;font-size:14px;color:var(--muted)}
+    .links a:hover{color:var(--ink)}
+    .pill{padding:9px 18px;border-radius:999px;border:1px solid var(--gold);color:var(--gold2)!important;font-weight:600}
+    .pill:hover{background:var(--gold);color:#101216!important}
+    .burger{display:none;background:none;border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:7px 12px;font:600 13px Inter}
+    .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;padding:96px 0 84px}
+    .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+    .eyebrow:before{content:"";width:22px;height:1px;background:var(--gold)}
+    h1{font-size:clamp(40px,6vw,68px);line-height:1.02;letter-spacing:-.045em;font-weight:800;margin:18px 0 20px}
+    h1 em{font-style:normal;background:linear-gradient(100deg,var(--gold2),var(--gold) 45%,#d78f5a);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .lead{font-size:19px;color:var(--muted);max-width:34em;margin:0 0 30px}
+    .btns{display:flex;flex-wrap:wrap;gap:12px}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:13px 24px;border-radius:999px;font-weight:700;font-size:15px;border:1px solid var(--line);transition:transform .15s,box-shadow .15s,background .15s}
+    .btn:hover{transform:translateY(-2px)}
+    .btn.primary{background:var(--gold);border-color:var(--gold);color:#101216}
+    .btn.primary:hover{background:var(--gold2);box-shadow:0 10px 28px rgba(200,166,106,.3)}
+    .btn.ghost:hover{border-color:var(--gold)}
+    .install{margin-top:28px;display:inline-flex;align-items:center;gap:12px;padding:11px 16px;border-radius:12px;background:var(--card);border:1px solid var(--line);font:500 13px "JetBrains Mono",monospace;color:var(--muted)}
+    .install b{color:var(--gold2);font-weight:500}
+    .term{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 30px 70px rgba(0,0,0,.45);overflow:hidden}
+    .term-bar{display:flex;align-items:center;gap:7px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--bg2)}
+    .term-bar i{width:10px;height:10px;border-radius:50%;background:#2b303a}
+    .term-bar span{margin-left:auto;font-size:12px;color:var(--muted)}
+    .term pre{margin:0;padding:22px 24px;font-size:13.5px;line-height:1.75;min-height:236px;overflow:auto;color:#d6d2c8}
+    .c{color:#6b7280}.k{color:#d78f5a}.t{color:var(--gold2)}.s{color:#9ec58a}
+    .tabs{display:flex;gap:6px;padding:12px 16px;border-top:1px solid var(--line);background:var(--bg2);flex-wrap:wrap}
+    .tabs button{border:1px solid transparent;background:none;color:var(--muted);padding:6px 12px;border-radius:999px;font:600 12px Inter;cursor:pointer}
+    .tabs button.on{background:rgba(200,166,106,.14);color:var(--gold2);border-color:var(--line)}
+    .proof{display:flex;flex-wrap:wrap;justify-content:space-between;gap:14px 28px;padding:22px 0;border-block:1px solid var(--line);color:var(--muted);font-size:14px}
+    .proof span:before{content:"◆";color:var(--gold);font-size:9px;margin-right:10px;vertical-align:2px}
+    section{padding:104px 0 0}
+    .head{max-width:46em;margin-bottom:44px}
+    h2{font-size:clamp(30px,4vw,46px);line-height:1.08;letter-spacing:-.035em;font-weight:800;margin:14px 0 14px}
+    .head p{color:var(--muted);font-size:17px;margin:0}
+    .play{display:grid;grid-template-columns:1.5fr 1fr;gap:0;background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,.4)}
+    .stage{background:#07080a;padding:22px;display:flex;align-items:center}
+    .stage iframe{display:block;width:100%;aspect-ratio:5/3;border:0;border-radius:10px;background:#101216}
+    .side{padding:36px 34px;display:flex;flex-direction:column;justify-content:center}
+    .side h2{font-size:34px;margin-top:10px}
+    .side p{color:var(--muted);margin:0 0 20px}
+    .picker{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+    .picker button{cursor:pointer;border:1px solid var(--line);background:none;color:var(--muted);border-radius:999px;padding:9px 16px;font:700 13px Inter;transition:all .15s}
+    .picker button:hover{border-color:var(--gold);color:var(--ink)}
+    .picker button.on{background:var(--gold);border-color:var(--gold);color:#101216}
+    .keys{font-size:13px;color:var(--muted);padding:12px 14px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);margin-bottom:22px;min-height:46px}
+    .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    .card{padding:30px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);transition:transform .2s,border-color .2s}
+    .card:hover{transform:translateY(-4px);border-color:rgba(200,166,106,.5)}
+    .idx{font-size:12px;font-weight:700;letter-spacing:.16em;color:var(--gold)}
+    .card h3{font-size:20px;letter-spacing:-.02em;margin:12px 0 8px}
+    .card p{color:var(--muted);font-size:15px;margin:0}
+    .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;counter-reset:s}
+    .step{padding:26px 0 0;border-top:2px solid var(--gold)}
+    .step b{font-size:18px}.step p{color:var(--muted);margin:8px 0 0;font-size:15px}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+    .split>div>p{color:var(--muted);font-size:17px}
+    .ex{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:26px 0}
+    .ex div{padding:16px 18px;border-radius:12px;background:var(--card);border:1px solid var(--line)}
+    .ex strong{display:block;color:var(--gold2);font-size:14px;margin-bottom:2px}
+    .ex span{font-size:13.5px;color:var(--muted);line-height:1.5;display:block}
+    .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+    .pkg{padding:24px;border-radius:var(--r);background:var(--card);border:1px solid var(--line)}
+    .pkg strong{display:block;font-size:17px}
+    .pkg code{display:block;color:var(--gold);font-size:12px;margin:8px 0}
+    .pkg span{color:var(--muted);font-size:14px}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .link{display:block;padding:28px;border-radius:var(--r);background:var(--card);border:1px solid var(--line);transition:transform .2s,border-color .2s}
+    .link:hover{transform:translateY(-3px);border-color:var(--gold)}
+    .link strong{font-size:18px;display:block}.link span{color:var(--muted);font-size:15px}
+    .routes{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+    .cta{margin-top:104px;padding:64px 40px;text-align:center;border-radius:26px;border:1px solid var(--line);background:radial-gradient(70% 140% at 50% 0%,rgba(200,166,106,.16),transparent 70%),var(--card)}
+    .cta h2{margin:0 0 12px}.cta p{color:var(--muted);margin:0 0 28px}
+    .cta .btns{justify-content:center}
+    footer{margin-top:84px;border-top:1px solid var(--line);padding:30px 0 44px;color:var(--muted);font-size:14px}
+    footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+    footer a:hover{color:var(--ink)}
+    .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s,transform .6s}
+    .reveal.in{opacity:1;transform:none}
+    @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}html{scroll-behavior:auto}}
+    @media(max-width:920px){
+      .hero,.play,.split{grid-template-columns:1fr}.hero{padding:60px 0}
+      .grid3,.steps,.grid4,.routes,.grid2{grid-template-columns:1fr 1fr}
+      .links{display:none}.burger{display:block}
+      .links.open{display:flex;position:absolute;top:68px;left:0;right:0;flex-direction:column;align-items:flex-start;padding:20px 28px;background:var(--bg);border-bottom:1px solid var(--line)}
+      section{padding-top:76px}.side{padding:28px}
+    }
+    @media(max-width:600px){.wrap{padding:0 20px}.grid3,.steps,.grid4,.routes,.grid2,.ex{grid-template-columns:1fr}.stage{padding:12px}.cta{padding:44px 22px}}
   </style>
 </head>
-<style>
-  /* Keep the playable canvas visibly inset inside the landing card. */
-  .live-game-frame{padding:24px!important;border-radius:14px!important}
-  /* Showcase worlds are authored at 800×480 (5:3), not 16:9. */
-  .live-preview iframe{aspect-ratio:5/3!important;min-height:0!important;height:auto!important}
-</style>
 <body>
-  <div id="app">
-    <header class="nav page">
-      <a class="brand" href="#top"><img src="assets/logo.png" alt="ZARVAN"> <span>ZARVAN</span></a>
-      <nav class="navlinks" aria-label="Primary navigation">
-        <a href="#engine">Engine</a><a href="#gallery">Live gallery</a><a href="#agents">Agents</a><a href="#learn">Learn</a><a class="docs" href="getting-started/">Documentation ↗</a>
+  <div class="glow"></div>
+  <header>
+    <div class="wrap nav">
+      <a class="brand" href="#top"><img src="assets/logo.png" alt=""> ZARVAN</a>
+      <nav class="links" id="links" aria-label="Primary">
+        <a href="#play">Play</a><a href="#engine">Engine</a><a href="#agents">Agents</a><a href="#packages">Packages</a><a href="showcase/">Showcase</a>
+        <a class="pill" href="getting-started/">Documentation</a>
       </nav>
-      <button class="menu" @click="menuOpen=!menuOpen" aria-label="Toggle navigation">Menu</button>
-    </header>
-    <nav v-if="menuOpen" class="mobile-nav page navlinks" style="display:flex;padding:16px 0;height:auto;flex-wrap:wrap"><a href="#engine">Engine</a><a href="#gallery">Live gallery</a><a href="#agents">Agents</a><a href="#learn">Learn</a><a href="getting-started/">Documentation ↗</a></nav>
+      <button class="burger" id="burger" aria-label="Toggle navigation">Menu</button>
+    </div>
+  </header>
 
-    <main id="top">
-      <section class="hero page">
-        <div><p class="eyebrow">Dart · 2D · Simulation-first</p><h1>Make games that stay understandable.</h1><p>ZARVAN is a small, deterministic game engine for building 2D worlds that developers and AI agents can both inspect, test, and change.</p><div class="actions"><a class="btn primary" href="getting-started/">Start building</a><a class="btn secondary" href="https://github.com/arashrasoulzadeh/zarvan">View source ↗</a></div></div>
-        <div class="hero-art" @mouseenter="pauseCarousel" @mouseleave="startCarousel"><div v-for="(example,index) in examples" :key="example.name" class="carousel-card" :class="{active:index===activeExample}" :data-depth="depth(index)"><pre v-html="example.code"></pre></div><div class="art-label"><strong>{{ examples[activeExample].name }}</strong>{{ examples[activeExample].caption }}</div><div class="carousel-dots"><button v-for="(_,index) in examples" :key="index" :class="{active:index===activeExample}" @click="selectExample(index)" :aria-label="'Show code example '+(index+1)"></button></div></div>
-      </section>
-      <div class="proof page"><span>Pure Dart core</span><span>Fixed-timestep worlds</span><span>JSON state</span><span>Android · iOS · Web</span></div>
+  <main id="top">
+    <div class="wrap hero">
+      <div>
+        <span class="eyebrow">Dart · 2D · Simulation-first</span>
+        <h1>Games that stay <em>understandable.</em></h1>
+        <p class="lead">ZARVAN is a small, deterministic 2D engine. Worlds are plain data that developers and AI agents can inspect, test and change — rendered by Flutter on Android, iOS and the web.</p>
+        <div class="btns">
+          <a class="btn primary" href="getting-started/">Start building →</a>
+          <a class="btn ghost" href="#play">Play the demos</a>
+          <a class="btn ghost" href="https://github.com/arashrasoulzadeh/zarvan">GitHub ↗</a>
+        </div>
+        <div class="install"><b>$</b> zarvan create my_game <span style="opacity:.6">· <a href="getting-started/" style="text-decoration:underline">install the CLI</a></span></div>
+      </div>
+      <div class="term" aria-live="polite">
+        <div class="term-bar"><i></i><i></i><i></i><span id="ex-name">Spawn a world</span></div>
+        <pre id="ex-code"></pre>
+        <div class="tabs" id="ex-tabs"></div>
+      </div>
+    </div>
 
-      <section id="gallery" class="section page"><div class="live-preview"><div class="live-game-frame"><iframe :key="activeDemo" :src="'showcase/app/?demo='+activeDemo+'&v=9'" :title="'Live ZARVAN '+activeDemo+' demo'" loading="eager"></iframe></div><div class="live-preview-copy"><p class="eyebrow">Four complete demos</p><h2>Play the real runtime.</h2><p>Four small games with rules, input, collision, movement, and a visible win/fail loop. No placeholder tech demos.</p><div class="demo-picker"><button v-for="demo in demos" :key="demo.id" :class="{selected:demo.id===activeDemo}" @click="selectDemo(demo.id)">{{ demo.label }}</button></div><div class="actions"><a class="btn secondary" :href="'showcase/app/?demo='+activeDemo">Open in a new tab ↗</a></div></div></div></section>
+    <div class="wrap"><div class="proof"><span>Pure Dart core</span><span>Fixed-timestep worlds</span><span>JSON world state</span><span>Android · iOS · Web</span><span>Agent-ready API</span></div></div>
 
-      <section id="engine" class="section page"><div class="section-head"><p class="eyebrow">The engine</p><h2>Everything starts with the world.</h2><p>ZARVAN keeps simulation, rendering, and game-specific systems separate, so the core remains portable and testable.</p></div><div class="cards"><article class="card"><span class="index">01 / CORE</span><h3>Deterministic simulation</h3><p>Fixed timesteps, seeded randomness, ECS, and headless tests. Run the same world on a phone, server, or CI.</p></article><article class="card"><span class="index">02 / SHELL</span><h3>Flutter when you need it</h3><p>Rendering, input, audio, camera, and platform services live at the edge. The simulation stays pure Dart.</p></article><article class="card"><span class="index">03 / DATA</span><h3>Content as data</h3><p>Serialize worlds to JSON, author levels as data, and keep genre packages focused instead of building one giant framework.</p></article></div></section>
+    <section id="play"><div class="wrap">
+      <div class="play reveal">
+        <div class="stage"><iframe id="game" title="Live ZARVAN demo" src="showcase/app/?demo=pong" loading="lazy" allow="autoplay"></iframe></div>
+        <div class="side">
+          <span class="eyebrow">Live runtime</span>
+          <h2>Play the real engine.</h2>
+          <p>Four tiny games with rules, input, collision and a win/lose loop — running on the same <code>zarvan_core</code> + <code>zarvan_flutter</code> you install. Click the game, then use the keyboard.</p>
+          <div class="picker" id="picker"></div>
+          <div class="keys" id="keys"></div>
+          <div class="btns"><a class="btn ghost" id="full" href="showcase/app/?demo=pong">Open full screen ↗</a><a class="btn ghost" href="showcase/">All showcases</a></div>
+        </div>
+      </div>
+    </div></section>
 
-      <section class="section page"><div class="section-head"><p class="eyebrow">A frame in three steps</p><h2>Simple enough to reason about.</h2><p>Keep the loop visible. Each tick has a clear boundary between input, simulation, and presentation.</p></div><div class="steps"><div class="step"><b>01 / Observe</b><p>Read input, commands, or an agent WorldView without changing authority.</p></div><div class="step"><b>02 / Simulate</b><p>Advance systems with a fixed timestep and deterministic rules.</p></div><div class="step"><b>03 / Present</b><p>Let Flutter render the resulting world and connect platform services.</p></div></div></section>
+    <section id="engine"><div class="wrap">
+      <div class="head reveal"><span class="eyebrow">The engine</span><h2>Everything starts with the world.</h2><p>Simulation, rendering and genre systems are separate layers, so the core stays portable, fast and testable.</p></div>
+      <div class="grid3">
+        <article class="card reveal"><span class="idx">01 / CORE</span><h3>Deterministic simulation</h3><p>Fixed timesteps, seeded randomness, ECS and headless tests. Run the exact same world on a phone, a server or CI.</p></article>
+        <article class="card reveal"><span class="idx">02 / SHELL</span><h3>Flutter at the edge</h3><p>Rendering, input, audio, camera and platform services live in a thin shell. Gameplay never depends on Flutter.</p></article>
+        <article class="card reveal"><span class="idx">03 / DATA</span><h3>Content as data</h3><p>Serialize worlds to JSON, author levels and dialogue as data, and keep each genre in a focused package.</p></article>
+      </div>
+    </div></section>
 
-      <section id="agents" class="section page split"><div><p class="eyebrow">Agent-native by design</p><h2>Let agents play without giving up authority.</h2><p style="color:var(--muted);font-size:17px">Agents observe a read-only view and propose actions. The engine validates and applies them. State can be logged, replayed, evaluated, and patched as ordinary JSON.</p><div class="agent-examples"><div class="agent-example"><strong>Observe</strong><span>Read a compact WorldView without mutating the simulation.</span></div><div class="agent-example"><strong>Act</strong><span>Submit a Move, Attack, Build, or custom command through the operation registry.</span></div><div class="agent-example"><strong>Evaluate</strong><span>Replay the same JSON state and compare outcomes in CI or a benchmark.</span></div><div class="agent-example"><strong>Author</strong><span>Patch data-driven levels, dialogue, and entities without touching renderer code.</span></div></div><div class="actions"><a class="btn secondary" href="agents/">Explore the agent hub</a></div></div><div class="code"><pre><span class="comment">// one tick, one inspectable snapshot</span>
-<span class="key">final</span> game = GameBuilder.create(
-  width: 320, height: 240,
+    <section><div class="wrap">
+      <div class="head reveal"><span class="eyebrow">A frame in three steps</span><h2>Simple enough to reason about.</h2><p>The loop is visible: every tick has a clear boundary between input, simulation and presentation.</p></div>
+      <div class="steps">
+        <div class="step reveal"><b>01 · Observe</b><p>Read input, commands or an agent <code>WorldView</code> — without changing authority.</p></div>
+        <div class="step reveal"><b>02 · Simulate</b><p>Advance ordered systems with a fixed timestep and deterministic rules.</p></div>
+        <div class="step reveal"><b>03 · Present</b><p>Let Flutter render the resulting world and wire up platform services.</p></div>
+      </div>
+    </div></section>
+
+    <section id="agents"><div class="wrap split">
+      <div class="reveal">
+        <span class="eyebrow">Agent-native by design</span>
+        <h2>Let agents play without giving up authority.</h2>
+        <p>Agents observe a read-only view and propose actions. The engine validates and applies them. State can be logged, replayed, evaluated and patched as ordinary JSON — over MCP or HTTP.</p>
+        <div class="ex">
+          <div><strong>Observe</strong><span>Compact WorldView, no mutation.</span></div>
+          <div><strong>Act</strong><span>Move, attack, build — via the operation registry.</span></div>
+          <div><strong>Evaluate</strong><span>Replay the same JSON in CI or a benchmark.</span></div>
+          <div><strong>Author</strong><span>Patch levels, dialogue and entities as data.</span></div>
+        </div>
+        <a class="btn ghost" href="agents/">Explore the agent hub →</a>
+      </div>
+      <div class="term reveal">
+        <div class="term-bar"><i></i><i></i><i></i><span>one tick, one inspectable snapshot</span></div>
+<pre><span class="k">final</span> game = <span class="t">GameBuilder</span>.create(
+  width: <span class="t">320</span>, height: <span class="t">240</span>,
 );
 game.spawn([
-  Position(10, 10),
-  Velocity(60, 0),
+  <span class="t">Position</span>(<span class="t">10</span>, <span class="t">10</span>),
+  <span class="t">Velocity</span>(<span class="t">60</span>, <span class="t">0</span>),
 ]);
-game.update(1 / 60);
-<span class="key">final</span> state = game.world.toJson();</pre></div></section>
+game.update(<span class="t">1</span> / <span class="t">60</span>);
+<span class="k">final</span> state = game.world.toJson();</pre>
+      </div>
+    </div></section>
 
-      <section class="section page"><div class="section-head"><p class="eyebrow">Packages that stay focused</p><h2>Start small. Add only what your game needs.</h2></div><div class="package-grid"><div class="package"><strong>Core</strong><code>zarvan_core</code><span>ECS, world state, commands, agent API.</span></div><div class="package"><strong>Flutter</strong><code>zarvan_flutter</code><span>Rendering, input, audio, camera.</span></div><div class="package"><strong>Genres</strong><code>platformer · strategy · idle</code><span>Focused systems on top of the core.</span></div><div class="package"><strong>Tooling</strong><code>cli · schema · api</code><span>Author, validate, inspect, automate.</span></div></div></section>
+    <section id="packages"><div class="wrap">
+      <div class="head reveal"><span class="eyebrow">Packages that stay focused</span><h2>Start small. Add only what your game needs.</h2></div>
+      <div class="grid4">
+        <div class="pkg reveal"><strong>Core</strong><code>zarvan_core</code><span>ECS, world state, commands, agent API.</span></div>
+        <div class="pkg reveal"><strong>Flutter</strong><code>zarvan_flutter</code><span>Rendering, input, audio, camera.</span></div>
+        <div class="pkg reveal"><strong>Genres</strong><code>platformer · strategy · idle</code><span>Focused systems on top of the core.</span></div>
+        <div class="pkg reveal"><strong>Tooling</strong><code>cli · schema · api</code><span>Author, validate, inspect, automate.</span></div>
+      </div>
+    </div></section>
 
-      <section class="section page"><div class="section-head"><p class="eyebrow">Proof over promises</p><h2>Measure the parts that matter.</h2><p>Use headless tests and repeatable benchmarks to understand simulation cost, rendering cost, and package behavior before shipping.</p></div><div class="quality"><a class="quality-card" href="benchmarks/"><strong>Benchmarks ↗</strong><span>See measured performance notes, frame-time charts, and post-processing comparisons.</span></a><a class="quality-card" href="concepts/performance/"><strong>Performance concepts ↗</strong><span>Learn how time control, batching, warm-up, effects, and capture fit into the engine.</span></a></div></section>
+    <section><div class="wrap">
+      <div class="head reveal"><span class="eyebrow">Proof over promises</span><h2>Measure the parts that matter.</h2><p>Headless tests and repeatable benchmarks show simulation cost, rendering cost and package behaviour before you ship.</p></div>
+      <div class="grid2">
+        <a class="link reveal" href="benchmarks/"><strong>Benchmarks ↗</strong><span>Measured performance, frame-time charts and post-processing comparisons.</span></a>
+        <a class="link reveal" href="concepts/performance/"><strong>Performance concepts ↗</strong><span>How time control, batching, warm-up, effects and capture fit together.</span></a>
+      </div>
+    </div></section>
 
-      <section id="learn" class="section page"><div class="section-head"><p class="eyebrow">Choose your route</p><h2>Go from first tick to full system.</h2></div><div class="routes"><a class="route" href="getting-started/"><strong>Getting started ↗</strong><span>Install and run your first world.</span></a><a class="route" href="tutorials/"><strong>Tutorials ↗</strong><span>Build platformers, strategy, and agent games.</span></a><a class="route" href="examples/"><strong>Examples ↗</strong><span>Copy focused patterns into your project.</span></a><a class="route" href="fa/"><strong>فارسی ↗</strong><span>راهنمای فارسی زروان</span></a></div></section>
-    </main>
-    <footer class="footer page"><span>© ZARVAN contributors</span><span>Open source · Built with Dart</span></footer>
-  </div>
-  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-  <script>Vue.createApp({data:()=>({menuOpen:false,activeDemo:'pong',activeExample:0,timer:null,demos:[{id:'pong',label:'Pong'},{id:'snake',label:'Snake'},{id:'breakout',label:'Breakout'},{id:'asteroids',label:'Asteroids'}],examples:[{name:'Spawn a world',caption:'Create entities with plain Dart.',code:'<span class="code-comment">// a tiny deterministic world</span>\n<span class="code-key">final</span> game = <span class="code-type">GameBuilder</span>.create(\n  width: <span class="code-type">320</span>, height: <span class="code-type">240</span>,\n);\ngame.spawn([\n  <span class="code-type">Position</span>(<span class="code-type">10</span>, <span class="code-type">10</span>),\n  <span class="code-type">Velocity</span>(<span class="code-type">60</span>, <span class="code-type">0</span>),\n]);'},{name:'Advance one tick',caption:'The simulation is explicit and testable.',code:'<span class="code-comment">// advance without a renderer</span>\n<span class="code-key">for</span> (<span class="code-key">var</span> i = <span class="code-type">0</span>; i &lt; <span class="code-type">60</span>; i++) {\n  game.update(<span class="code-type">1</span> / <span class="code-type">60</span>);\n}\n<span class="code-key">assert</span>(game.world.time == <span class="code-type">1</span>);'},{name:'Inspect state',caption:'Give tools and agents plain JSON.',code:'<span class="code-comment">// snapshots are easy to log or replay</span>\n<span class="code-key">final</span> snapshot = game.world.toJson();\n<span class="code-key">final</span> player = snapshot[<span class="code-string">\'entities\'</span>]\n  .firstWhere((e) =&gt; e[<span class="code-string">\'id\'</span>] == playerId);'},{name:'Propose an action',caption:'The engine keeps the final say.',code:'<span class="code-comment">// an agent proposes; the world validates</span>\n<span class="code-key">final</span> result = world.apply(\n  <span class="code-type">MoveAction</span>(\n    entityId: playerId,\n    direction: <span class="code-type">Direction</span>.east,\n  ),\n);'}]}),mounted(){this.startCarousel()},beforeUnmount(){this.stopCarousel()},methods:{selectDemo(id){this.activeDemo=id},depth(index){return(index-this.activeExample+this.examples.length)%this.examples.length},selectExample(index){this.activeExample=index;this.startCarousel()},startCarousel(){this.stopCarousel();this.timer=setInterval(()=>{this.activeExample=(this.activeExample+1)%this.examples.length},4200)},pauseCarousel(){this.stopCarousel()},stopCarousel(){if(this.timer){clearInterval(this.timer);this.timer=null}}}}).mount('#app');window.__zarvanVueMounted=true</script>
-  <script>window.setTimeout(function(){if(window.__zarvanVueMounted)return;document.querySelectorAll('[v-if]').forEach(function(e){e.remove()});var label=document.querySelector('.art-label');if(label)label.innerHTML='<strong>Spawn a world</strong>Create entities with plain Dart.';var frame=document.querySelector('.live-preview iframe');var picker=document.querySelector('.demo-picker');var demos=[['pong','Pong'],['snake','Snake'],['breakout','Breakout'],['asteroids','Asteroids']];if(frame)frame.src='showcase/app/?demo=pong&v=9';if(picker){picker.innerHTML='';demos.forEach(function(d,i){var b=document.createElement('button');b.textContent=d[1];b.className=i===0?'selected':'';b.onclick=function(){demos.forEach(function(x){ });picker.querySelectorAll('button').forEach(function(x){x.classList.remove('selected')});b.classList.add('selected');if(frame)frame.src='showcase/app/?demo='+d[0]+'&v=9'};picker.appendChild(b)})}document.querySelectorAll('[v-]').forEach(function(e){Array.from(e.attributes).forEach(function(a){if(a.name.indexOf('v-')===0)e.removeAttribute(a.name)})})},1200)</script>
-<script>
-  // The public gallery intentionally ships three polished demos.
-  window.setTimeout(function(){
-    var picker=document.querySelector('.demo-picker');
-    if(picker){var buttons=picker.querySelectorAll('button');if(buttons.length>3)buttons[buttons.length-1].remove()}
-    document.querySelectorAll('.live-preview-copy p').forEach(function(p){p.textContent=p.textContent.replace('Four small games','Three small games')});
-    document.querySelectorAll('.eyebrow').forEach(function(p){p.textContent=p.textContent.replace('Four complete demos','Three complete demos')});
-  },1400);
-</script>
+    <section><div class="wrap">
+      <div class="head reveal"><span class="eyebrow">Choose your route</span><h2>From first tick to full system.</h2></div>
+      <div class="routes">
+        <a class="link reveal" href="getting-started/"><strong>Getting started ↗</strong><span>Install and run your first world.</span></a>
+        <a class="link reveal" href="tutorials/"><strong>Tutorials ↗</strong><span>Platformer, strategy, agent games.</span></a>
+        <a class="link reveal" href="examples/"><strong>Examples ↗</strong><span>Copy focused patterns.</span></a>
+        <a class="link reveal" href="fa/"><strong>فارسی ↗</strong><span>راهنمای فارسی زروان</span></a>
+      </div>
+      <div class="cta reveal"><h2>Build something you can fully see.</h2><p>Open source, pure Dart, ready for people and agents.</p><div class="btns"><a class="btn primary" href="getting-started/">Get started →</a><a class="btn ghost" href="https://github.com/arashrasoulzadeh/zarvan">Star on GitHub ↗</a></div></div>
+    </div></section>
+  </main>
+
+  <footer><div class="wrap"><span>© ZARVAN contributors · Open source · Built with Dart</span><span><a href="getting-started/">Docs</a> · <a href="showcase/">Showcase</a> · <a href="agents/">Agents</a> · <a href="https://github.com/arashrasoulzadeh/zarvan">GitHub</a></span></div></footer>
+
+  <script>
+  (function(){
+    var $=function(s){return document.querySelector(s)};
+    var demos=[
+      ['pong','Pong','W/S or ↑/↓ to move · first to 11 · R restarts'],
+      ['snake','Snake','Arrow keys or WASD · collect the gold · R restarts'],
+      ['breakout','Breakout','A/D or ←/→ · clear the wall · 3 lives · R restarts'],
+      ['asteroids','Asteroids','←/→ rotate · ↑ thrust · Space fires · R restarts']
+    ];
+    var picker=$('#picker'),frame=$('#game'),keys=$('#keys'),full=$('#full');
+    function pick(i){
+      var d=demos[i],src='showcase/app/?demo='+d[0];
+      frame.src=src;full.href=src;keys.textContent=d[2];
+      [].forEach.call(picker.children,function(b,j){b.classList.toggle('on',i===j)});
+    }
+    demos.forEach(function(d,i){var b=document.createElement('button');b.textContent=d[1];b.onclick=function(){pick(i)};picker.appendChild(b)});
+    pick(0);
+
+    var T=function(x){return '<span class="t">'+x+'</span>'},K=function(x){return '<span class="k">'+x+'</span>'},C=function(x){return '<span class="c">'+x+'</span>'},S=function(x){return '<span class="s">'+x+'</span>'};
+    var ex=[
+      ['Spawn a world',C('// a tiny deterministic world')+'\n'+K('final')+' game = '+T('GameBuilder')+'.create(\n  width: '+T('320')+', height: '+T('240')+',\n);\ngame.spawn([\n  '+T('Position')+'('+T('10')+', '+T('10')+'),\n  '+T('Velocity')+'('+T('60')+', '+T('0')+'),\n]);'],
+      ['Advance one second',C('// advance without a renderer')+'\n'+K('for')+' ('+K('var')+' i = '+T('0')+'; i &lt; '+T('60')+'; i++) {\n  game.update('+T('1')+' / '+T('60')+');\n}\n'+K('assert')+'(game.world.time == '+T('1')+');'],
+      ['Inspect state',C('// snapshots are easy to log or replay')+'\n'+K('final')+' snapshot = game.world.toJson();\n'+K('final')+' player = snapshot['+S("'entities'")+']\n  .firstWhere((e) =&gt; e['+S("'id'")+'] == playerId);'],
+      ['Propose an action',C('// an agent proposes; the world validates')+'\n'+K('final')+' result = world.apply(\n  '+T('MoveAction')+'(\n    entityId: playerId,\n    direction: '+T('Direction')+'.east,\n  ),\n);']
+    ];
+    var code=$('#ex-code'),name=$('#ex-name'),tabs=$('#ex-tabs'),cur=0,timer;
+    function show(i){cur=i;code.innerHTML=ex[i][1];name.textContent=ex[i][0];[].forEach.call(tabs.children,function(b,j){b.classList.toggle('on',i===j)})}
+    function auto(){clearInterval(timer);timer=setInterval(function(){show((cur+1)%ex.length)},4500)}
+    ex.forEach(function(e,i){var b=document.createElement('button');b.textContent=e[0];b.onclick=function(){show(i);auto()};tabs.appendChild(b)});
+    show(0);
+    if(!matchMedia('(prefers-reduced-motion:reduce)').matches)auto();
+
+    $('#burger').onclick=function(){$('#links').classList.toggle('open')};
+    [].forEach.call(document.querySelectorAll('#links a'),function(a){a.addEventListener('click',function(){$('#links').classList.remove('open')})});
+
+    var els=document.querySelectorAll('.reveal');
+    if('IntersectionObserver' in window){
+      var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12});
+      [].forEach.call(els,function(e){io.observe(e)});
+    }else{[].forEach.call(els,function(e){e.classList.add('in')})}
+  })();
+  </script>
 </body>
 </html>

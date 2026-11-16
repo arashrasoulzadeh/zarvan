@@ -78,6 +78,7 @@ jobs:
           # GitHub Pages serves static files with max-age=432000; without a changing
           # URL, returning visitors keep running the previous game code for days.
           sed -i "s#main\.dart\.js#main.dart.js?v=${GITHUB_SHA::8}#g" build/web/flutter_bootstrap.js
+          sed -i "s#flutter_bootstrap\.js#flutter_bootstrap.js?v=${GITHUB_SHA::8}#" build/web/index.html
           mkdir -p ../site/showcase/app
           cp -r build/web/. ../site/showcase/app/
 

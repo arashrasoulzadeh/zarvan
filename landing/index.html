@@ -62,6 +62,12 @@
     .head p{color:var(--muted);font-size:17px;margin:0}
     .play{display:grid;grid-template-columns:1.5fr 1fr;gap:0;background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,.4)}
     .stage{background:#07080a;padding:22px;display:flex;align-items:center}
+    .stage{position:relative}
+    .stage .box{position:relative;width:100%}
+    .spin{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#101216;color:#a09d94;font:600 13px Inter,system-ui,sans-serif;border-radius:10px;transition:opacity .3s;z-index:2}
+    .spin.off{opacity:0;pointer-events:none}
+    .spin i{width:34px;height:34px;border-radius:50%;border:3px solid rgba(200,166,106,.2);border-top-color:#c8a66a;animation:sp .8s linear infinite}
+    @keyframes sp{to{transform:rotate(360deg)}}
     .stage iframe{display:block;width:100%;aspect-ratio:5/3;border:0;border-radius:10px;background:#101216}
     .side{padding:36px 34px;display:flex;flex-direction:column;justify-content:center}
     .side h2{font-size:34px;margin-top:10px}
@@ -152,7 +158,7 @@
 
     <section id="play"><div class="wrap">
       <div class="play reveal">
-        <div class="stage"><iframe id="game" title="Live ZARVAN demo" src="showcase/app/?demo=pong" loading="lazy" allow="autoplay"></iframe></div>
+        <div class="stage"><div class="box"><div class="spin" id="spin"><i></i>Loading game…</div><iframe id="game" title="Live ZARVAN demo" src="showcase/app/?demo=pong" loading="lazy" allow="autoplay"></iframe></div></div>
         <div class="side">
           <span class="eyebrow">Live runtime</span>
           <h2>Play the real engine.</h2>
@@ -251,9 +257,12 @@ game.update(<span class="t">1</span> / <span class="t">60</span>);
       ['asteroids','Asteroids','←/→ rotate · ↑ thrust · Space fires · R restarts']
     ];
     var picker=$('#picker'),frame=$('#game'),keys=$('#keys'),full=$('#full');
+    var spin=$('#spin'),tm;
+    function busy(on){spin.classList.toggle('off',!on);clearTimeout(tm);if(on)tm=setTimeout(function(){busy(false)},30000)}
+    addEventListener('message',function(e){if(e.data==='zarvan-ready'&&e.source===frame.contentWindow)busy(false)});
     function pick(i){
       var d=demos[i],src='showcase/app/?demo='+d[0];
-      frame.src=src;full.href=src;keys.textContent=d[2];
+      busy(true);frame.src=src;full.href=src;keys.textContent=d[2];
       [].forEach.call(picker.children,function(b,j){b.classList.toggle('on',i===j)});
     }
     demos.forEach(function(d,i){var b=document.createElement('button');b.textContent=d[1];b.onclick=function(){pick(i)};picker.appendChild(b)});

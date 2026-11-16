@@ -159,6 +159,11 @@ body:has(.zv-home-shell) .md-content__inner { max-width: none; margin: 0; paddin
 .zv-live-bar button.is-active { background: var(--zv-gold); border-color: var(--zv-gold); color: var(--zv-obsidian); }
 .zv-live-bar a { margin-left: auto; font-size: .72rem; font-weight: 600; }
 .zv-live-stage { padding: 1rem; background: #07080a; }
+.zv-live-box { position: relative; max-width: 60rem; margin: 0 auto; }
+.zv-spin{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#101216;color:#a09d94;font:600 13px Inter,system-ui,sans-serif;border-radius:10px;transition:opacity .3s;z-index:2}
+.zv-spin.off{opacity:0;pointer-events:none}
+.zv-spin i{width:34px;height:34px;border-radius:50%;border:3px solid rgba(200,166,106,.2);border-top-color:#c8a66a;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
 .zv-live-demo iframe { display: block; width: 100%; max-width: 60rem; margin: 0 auto; aspect-ratio: 5 / 3; border: 0; border-radius: 10px; background: #101216; }
 .zv-live-hint { padding: .75rem 1rem; color: var(--zv-text-soft); font-size: .74rem; border-top: 1px solid var(--zv-line); }
 .zv-live-hint kbd { font-size: .9em; }

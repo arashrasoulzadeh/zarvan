@@ -60,6 +60,9 @@ class ShowcaseGame extends Game {
   void _syncHtmlLoader() {
     if (loadingProgress.fraction < 1) return;
     final loader = html.document.getElementById('runtime-loader');
+    // The embedding page shows its own spinner until this arrives; iframe
+    // `load` fires long before Flutter has drawn anything.
+    html.window.parent?.postMessage('zarvan-ready', '*');
     if (loader == null || loader.classes.contains('done')) return;
     loader.classes.add('done');
     Future<void>.delayed(const Duration(milliseconds: 350), loader.remove);

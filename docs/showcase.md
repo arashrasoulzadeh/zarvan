@@ -23,7 +23,7 @@ loads every mode through a `?demo=` query parameter.
 <button data-demo="asteroids" data-hint="←/→ rotate · ↑ thrust · Space fires · R restarts">Asteroids</button>
 <a data-open href="app/?demo=pong">Open full screen ↗</a>
 </div>
-<div class="zv-live-stage"><iframe src="app/?demo=pong" title="Live ZARVAN game" loading="lazy"></iframe></div>
+<div class="zv-live-stage"><div class="zv-live-box"><div class="zv-spin"><i></i>Loading game…</div><iframe src="app/?demo=pong" title="Live ZARVAN game" loading="lazy"></iframe></div></div>
 <div class="zv-live-hint">W/S or ↑/↓ to move · first to 11 · R restarts</div>
 </div>
 

@@ -35,6 +35,11 @@ class ShowcaseGame extends Game {
     onScreenControls: OnScreenControlsMode.off,
   );
 
+  // Without this the world is drawn at 1 unit per pixel, so any iframe narrower
+  // than 800px (every phone) showed only the top-left corner of the arena.
+  @override
+  ViewportConfig get viewportConfig => const ViewportConfig.fittingWorld(800, 480);
+
   @override
   List<OnScreenButtonSpec> onScreenButtons() => const [];
 
@@ -98,9 +103,10 @@ class GameScene extends Scene {
   }
 
   void _arena(World world) {
-    const wall = 0xFF3B4558;
-    box(world, 40, 76, 720, 2, wall);
-    box(world, 40, 424, 720, 2, wall);
+    const wall = 0xFF5A6A86;
+    // Shapes are centred on their Position, so the long walls sit at x=400.
+    box(world, 400, 76, 720, 2, wall);
+    box(world, 400, 424, 720, 2, wall);
     box(world, 40, 250, 2, 348, wall);
     box(world, 760, 250, 2, 348, wall);
   }

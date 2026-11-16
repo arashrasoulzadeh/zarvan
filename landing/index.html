@@ -15,6 +15,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root{--bg:#0d0f13;--bg2:#12151a;--card:#161a21;--line:rgba(200,166,106,.16);--ink:#ece8df;--muted:#a09d94;--gold:#c8a66a;--gold2:#e1c486;--blue:#6e8bb5;--r:16px}
+:root[data-theme=light]{--bg:#fbf9f4;--bg2:#f1ede3;--card:#fff;--line:rgba(23,25,29,.12);--ink:#17191d;--muted:#5f6268;--gold:#a17b38;--gold2:#7a5d2b}
+    :root[data-theme=light] header{background:rgba(251,249,244,.85)}
+    :root[data-theme=light] .term,:root[data-theme=light] .play{box-shadow:0 24px 50px rgba(52,44,29,.12)}
+    :root[data-theme=light] .term pre{color:#2a2d33}
+    :root[data-theme=light] .c{color:#8b8f97}:root[data-theme=light] .k{color:#b5601f}:root[data-theme=light] .t{color:#7a5d2b}:root[data-theme=light] .s{color:#3f7a2a}
+    :root[data-theme=light] .btn.primary,:root[data-theme=light] .picker button.on,:root[data-theme=light] .pill:hover{color:#fff!important}
+    :root[data-theme=light] .glow{opacity:.5}
+    .theme{background:none;border:1px solid var(--line);color:var(--ink);width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:15px;line-height:1}
+    .theme:hover{border-color:var(--gold)}
+    .install{max-width:100%;flex-wrap:wrap}
+    .install .cmd{white-space:nowrap}
     *{box-sizing:border-box}
     html{scroll-behavior:smooth}
     body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.65 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
@@ -30,7 +41,7 @@
     .links a:hover{color:var(--ink)}
     .pill{padding:9px 18px;border-radius:999px;border:1px solid var(--gold);color:var(--gold2)!important;font-weight:600}
     .pill:hover{background:var(--gold);color:#101216!important}
-    .burger{display:none;background:none;border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:7px 12px;font:600 13px Inter}
+    .nav{gap:12px}.burger{display:none;background:none;border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:7px 12px;font:600 13px Inter}
     .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;padding:96px 0 84px}
     .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
     .eyebrow:before{content:"";width:22px;height:1px;background:var(--gold)}
@@ -130,6 +141,7 @@
         <a href="#play">Play</a><a href="#engine">Engine</a><a href="#agents">Agents</a><a href="#packages">Packages</a><a href="showcase/">Showcase</a>
         <a class="pill" href="getting-started/">Documentation</a>
       </nav>
+      <button class="theme" id="theme" aria-label="Toggle light and dark theme">◐</button>
       <button class="burger" id="burger" aria-label="Toggle navigation">Menu</button>
     </div>
   </header>
@@ -145,7 +157,7 @@
           <a class="btn ghost" href="#play">Play the demos</a>
           <a class="btn ghost" href="https://github.com/arashrasoulzadeh/zarvan">GitHub ↗</a>
         </div>
-        <div class="install"><b>$</b> zarvan create my_game <span style="opacity:.6">· <a href="getting-started/" style="text-decoration:underline">install the CLI</a></span></div>
+        <div class="install"><span class="cmd"><b>$</b> zarvan create my_game</span><a href="getting-started/" style="text-decoration:underline;opacity:.75">install the CLI →</a></div>
       </div>
       <div class="term" aria-live="polite">
         <div class="term-bar"><i></i><i></i><i></i><span id="ex-name">Spawn a world</span></div>
@@ -282,6 +294,11 @@ game.update(<span class="t">1</span> / <span class="t">60</span>);
     show(0);
     if(!matchMedia('(prefers-reduced-motion:reduce)').matches)auto();
 
+    var root=document.documentElement,saved=null;
+    try{saved=localStorage.getItem('zv-theme')}catch(e){}
+    function setTheme(t){root.setAttribute('data-theme',t);document.querySelector('meta[name=theme-color]').content=t==='light'?'#fbf9f4':'#0d0f13';try{localStorage.setItem('zv-theme',t)}catch(e){}}
+    setTheme(saved||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'));
+    $('#theme').onclick=function(){setTheme(root.getAttribute('data-theme')==='light'?'dark':'light')};
     $('#burger').onclick=function(){$('#links').classList.toggle('open')};
     [].forEach.call(document.querySelectorAll('#links a'),function(a){a.addEventListener('click',function(){$('#links').classList.remove('open')})});
 

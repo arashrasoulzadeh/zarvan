@@ -298,6 +298,59 @@ void main() {
       expect(kinds.where((k) => k == ShaderEffect.glow), hasLength(1));
     });
 
+    test('the poem is written word by word, then stays', () async {
+      final r = await stage();
+      List<double> poem() {
+        final t = r.world.componentsOf<eng.Text>();
+        return [
+          for (var i = 0; i < t.length; i++)
+            if (t.denseAt(i).fontSize == 20 &&
+                !r.kit.session.question!.options.contains(t.denseAt(i).text))
+              t.denseAt(i).alpha,
+        ];
+      }
+
+      r.run(0.2);
+      final early = poem();
+      expect(early.length, greaterThan(3));
+      expect(early.first, greaterThan(0), reason: 'the first word is in');
+      expect(early.last, 0, reason: 'the last word is not written yet');
+      r.run(4);
+      expect(poem().every((a) => a == 1), isTrue);
+    });
+
+    test('a hint redraw does not restart the writing', () async {
+      final r = await stage();
+      r.run(4);
+      r.tap(
+        r.hasPart('Hint') ? r.texts.firstWhere((t) => t.contains('Hint')) : '',
+      );
+      r.run(0.1);
+      final t = r.world.componentsOf<eng.Text>();
+      for (var i = 0; i < t.length; i++) {
+        final x = t.denseAt(i);
+        if (x.fontSize == 20 &&
+            !r.kit.session.question!.options.contains(x.text)) {
+          expect(x.alpha, 1, reason: '"${x.text}" ${x.fontSize}');
+        }
+      }
+    });
+
+    test('the right option is lit up, not just filled', () async {
+      final r = await stage();
+      int glows() {
+        final fx = r.world.componentsOf<ShaderEffect>();
+        return [
+          for (var i = 0; i < fx.length; i++) fx.denseAt(i).kind,
+        ].where((k) => k == ShaderEffect.glow).length;
+      }
+
+      expect(glows(), 1);
+      r.tap(r.optionRight);
+      r.run(0.1);
+      expect(glows(), 2, reason: 'the card and the right option both glow');
+    });
+
     test('an answer throws a burst of sparks that then fades away', () async {
       final r = await stage();
       int shapes() => r.world.componentsOf<Shape>().length;

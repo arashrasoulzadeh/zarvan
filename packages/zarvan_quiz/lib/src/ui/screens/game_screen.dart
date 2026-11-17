@@ -28,6 +28,14 @@ class QuizGameScreen extends QuizScreen {
   bool _left = false;
   bool _asked = false;
   bool _wasAnswered = false;
+  String? _revealFor;
+  double _revealStart = 0;
+  final List<_Word> _words = [];
+  final List<_Ring> _rings = [];
+  UiButton? _shaking;
+  double _shakeAge = 0;
+  double _shakeBgX = 0;
+  double _shakeLabelX = 0;
   double _time = 0;
   final List<Twinkle> _twinkles = [];
   final List<_Particle> _bursts = [];
@@ -61,6 +69,9 @@ class QuizGameScreen extends QuizScreen {
       t.apply(_time);
     }
     _stepBursts(dt);
+    _stepWords();
+    _stepRings(dt);
+    _stepShake(dt);
     session.tick(Duration(microseconds: (dt * 1e6).round()));
     if (session.finished && !_left) {
       _left = true;
@@ -103,6 +114,8 @@ class QuizGameScreen extends QuizScreen {
 
   void _redraw() {
     _view.clear();
+    _words.clear();
+    _shaking = null;
     final q = session.question;
     _stamp = (
       q,
@@ -112,6 +125,11 @@ class QuizGameScreen extends QuizScreen {
       session.canHint,
     );
     if (q == null) return;
+    // A hint makes a new Question for the same item: the writing carries on.
+    if (q.itemId != _revealFor) {
+      _revealFor = q.itemId;
+      _revealStart = _time;
+    }
     final s = kit.strings;
     final theme = this.theme;
     final answered = session.answered;
@@ -195,17 +213,56 @@ class QuizGameScreen extends QuizScreen {
       }
     }
     var y = cardTop + 16;
+    var wordNo = 0;
     for (var i = 0; i < lines.length; i++) {
-      _view.addNode(
-        label(
-          lines[i],
-          QuizScreen.worldWidth / 2,
-          y + sizes[i].height / 2,
-          size: _poemSize,
-          maxWidth: textWidth,
-          color: answered ? theme.correct : theme.ink,
-        ),
-      );
+      final lineY = y + sizes[i].height / 2;
+      final finalColor = answered ? theme.correct : theme.ink;
+      final wrapped = sizes[i].height > _poemSize * 1.9;
+      final words = lines[i].split(' ').where((w) => w.isNotEmpty).toList();
+      if (wrapped || words.length < 2) {
+        _view.addNode(
+          label(
+            lines[i],
+            QuizScreen.worldWidth / 2,
+            lineY,
+            size: _poemSize,
+            maxWidth: textWidth,
+            color: finalColor,
+          ),
+        );
+      } else {
+        // Written word by word, like a pen: each word is placed where it sits
+        // in the finished line and appears in turn.
+        double w(String t) => measureText(
+          t,
+          fontSize: _poemSize,
+          fontFamily: theme.fontFamily,
+          rtl: rtl,
+        ).width;
+        final total = sizes[i].width;
+        final start = rtl
+            ? QuizScreen.worldWidth / 2 + total / 2
+            : QuizScreen.worldWidth / 2 - total / 2;
+        for (var k = 0; k < words.length; k++) {
+          final upTo = w(words.sublist(0, k + 1).join(' '));
+          final own = w(words[k]);
+          final cx = rtl ? start - upTo + own / 2 : start + upTo - own / 2;
+          final node = label(
+            words[k],
+            cx,
+            lineY,
+            size: _poemSize,
+            color: theme.accent,
+          );
+          node.text!.alpha = 0;
+          _view.addNode(node);
+          final word = _Word(node, wordNo++ * 0.11, lineY, finalColor);
+          // A word that has already been written (a redraw after a hint or
+          // an answer) must not throw its sparks again.
+          word.started = _time - _revealStart - word.delay > 0.4;
+          _words.add(word);
+        }
+      }
       y += sizes[i].height + gap;
     }
 
@@ -234,7 +291,7 @@ class QuizGameScreen extends QuizScreen {
       );
       b.enabled = !answered && !removed && !session.offeringContinue;
       if (removed) _fade(b, 0.3);
-      if (answered) _color(b, i, q, theme);
+      if (answered) _color(b, i, q, theme, optRect);
       oy += QuizScreen.buttonHeight + 8;
     }
 
@@ -280,6 +337,7 @@ class QuizGameScreen extends QuizScreen {
       final right = _optionRects[q.answerIndex];
       _burst(right.centerX, right.centerY, theme.correct, 26);
       _burst(right.centerX, right.centerY, theme.accent, 10);
+      _ring(right.centerX, right.centerY, theme.correct);
       final picked = session.picked;
       if (picked != null && picked != q.answerIndex) {
         final r = _optionRects[picked];
@@ -335,16 +393,95 @@ class QuizGameScreen extends QuizScreen {
     b.label.text!.alpha = alpha;
   }
 
-  void _color(UiButton b, int i, Question q, theme) {
+  void _color(UiButton b, int i, Question q, theme, UiRect rect) {
     if (i == q.answerIndex) {
-      b.bg.shape!.colorArgb = theme.correct;
-      b.label.text!.colorArgb = theme.background;
+      b.bg.shape!
+        ..colorArgb = theme.correct
+        ..alpha = 0.22;
+      b.label.text!.colorArgb = theme.correct;
+      _view.addNode(frame(rect, theme.correct, stroke: 2.5, radius: 14, z: 7));
+      _view.addId(lightAt(rect, theme.correct, intensity: 0.55));
     } else if (i == session.picked) {
-      b.bg.shape!.colorArgb = theme.wrong;
-      b.label.text!.colorArgb = theme.background;
+      b.bg.shape!
+        ..colorArgb = theme.wrong
+        ..alpha = 0.2;
+      b.label.text!.colorArgb = theme.wrong;
+      _view.addNode(
+        frame(
+          rect,
+          theme.wrong,
+          stroke: 2,
+          radius: 14,
+          alpha: 0.9,
+          z: 7,
+          dash: 4,
+        ),
+      );
+      _shaking = b;
+      _shakeAge = 0;
+      _shakeBgX = b.bg.pos.x;
+      _shakeLabelX = b.label.pos.x;
     } else {
       _fade(b, 0.45);
     }
+  }
+
+  /// Brings each word of the poem in, in turn: it rises a little, fades in and
+  /// turns from the accent gold to the ink colour, with a few sparks as it lands.
+  void _stepWords() {
+    final t = _time - _revealStart;
+    for (final w in _words) {
+      final k = ((t - w.delay) / 0.4).clamp(0.0, 1.0);
+      if (k > 0 && !w.started) {
+        w.started = true;
+        _burst(w.node.pos.x, w.y, theme.accent, 3);
+      }
+      final ease = 1 - math.pow(1 - k, 3).toDouble();
+      w.node.text!
+        ..alpha = ease
+        ..colorArgb = _mix(theme.accent, w.color, ease);
+      w.node.pos.y = w.y + (1 - ease) * 7;
+    }
+  }
+
+  static int _mix(int a, int b, double t) {
+    int ch(int shift) =>
+        (((a >> shift) & 0xFF) * (1 - t) + ((b >> shift) & 0xFF) * t).round();
+    return 0xFF000000 | ch(16) << 16 | ch(8) << 8 | ch(0);
+  }
+
+  /// A ring of light that spreads from ([x], [y]) and fades.
+  void _ring(double x, double y, int color) {
+    _rings.add(_Ring(ringAt(x, y, 20, color, stroke: 2.5, z: 20)));
+  }
+
+  void _stepRings(double dt) {
+    for (var i = _rings.length - 1; i >= 0; i--) {
+      final r = _rings[i];
+      r.age += dt;
+      final k = r.age / 0.8;
+      if (k >= 1) {
+        world.destroy(r.node.id);
+        _rings.removeAt(i);
+        continue;
+      }
+      r.node.shape!
+        ..width = 20 + 300 * (1 - math.pow(1 - k, 3).toDouble())
+        ..height = 20 + 300 * (1 - math.pow(1 - k, 3).toDouble())
+        ..alpha = 0.9 * (1 - k);
+    }
+  }
+
+  /// The wrong pick shudders for a moment.
+  void _stepShake(double dt) {
+    final b = _shaking;
+    if (b == null) return;
+    _shakeAge += dt;
+    final k = (_shakeAge / 0.5).clamp(0.0, 1.0);
+    final off = math.sin(_shakeAge * 60) * 6 * (1 - k);
+    b.bg.pos.x = _shakeBgX + off;
+    b.label.pos.x = _shakeLabelX + off;
+    if (k >= 1) _shaking = null;
   }
 
   /// Endless ran out of lives: offers one more for a rewarded ad. With no ad
@@ -430,5 +567,22 @@ class _Particle {
   double vx;
   double vy;
   final double life;
+  double age = 0;
+}
+
+class _Word {
+  _Word(this.node, this.delay, this.y, this.color);
+
+  final UiNode node;
+  final double delay;
+  final double y;
+  final int color;
+  bool started = false;
+}
+
+class _Ring {
+  _Ring(this.node);
+
+  final UiNode node;
   double age = 0;
 }

@@ -18,7 +18,8 @@ so those files exist only on the owner's machine).
 
 Sections: [Release](#release) ·
 [Wanted: engine gaps](#wanted-engine-gaps) ·
-[Wanted: idle gaps](#wanted-idle-gaps)
+[Wanted: idle gaps](#wanted-idle-gaps) ·
+[Wanted: quiz genre](#wanted-quiz-genre)
 
 ## Release
 
@@ -64,3 +65,26 @@ What `zarvan_idle` and the wave-combat layer still lack for a full idle game, mo
 - [ ] A visual balance-curve viewer on top of the existing simulator.
 - [ ] **Snapshot-free shader path.** Run the same `post_fx` shader through `ImageFilter.shader` on Impeller platforms, so
       the per-frame snapshot (the whole cost on the web, about 6 ms per megapixel; on an Android phone the shader work shows too) disappears on iOS and Android.
+
+## Wanted: quiz genre
+
+A multiple-choice / fill-in-the-blank genre, first used by the Persian poetry game "Shaer" (separate repo; its PRD is
+the source for the rules below). Same split as idle: Flutter-free rules in `zarvan_core` so the CLI and MCP can run
+them, widgets in a new leaf package. Nothing language- or poetry-specific goes into the engine: tokenizer, stop words
+and the item bank are passed in as data.
+
+- [x] **Core quiz rules** (`zarvan_core/lib/src/quiz/`, exported from `zarvan_core_quiz.dart`): item model (lines +
+      metadata + `tier`), seeded RNG, blank-word choice per tier (e.g. last word of a line vs. a random content word,
+      skipping caller-supplied stop words), distractor generation per tier (unrelated / same length / same rhyme,
+      same author), all JSON-serializable.
+- [ ] **Scoring and modes**: per-tier base score, streak multiplier, hint (remove two options, halves the score), lives,
+      countdown with time bonus/penalty; modes as data: staged levels (unlock threshold, stars), endless (tier steps
+      every N questions, one continue), timed race, daily set seeded by date.
+- [ ] **Progress model**: stars and unlocks per chapter/stage, records, currency balance; saved through the existing
+      save/`KeyValueStore` path.
+- [ ] **`zarvan_quiz` package** (depends on `zarvan_core` + `zarvan_flutter`): RTL-ready question card, option buttons,
+      answer feedback, HUD (currency, lives, timer), `QuizController`/`QuizSession` for lifecycle and saving.
+- [ ] **Agent operations**: `quiz.generate`, `quiz.answer`, `quiz.state`, `quiz.validate_bank` (blankable words exist,
+      no duplicate options, tier counts) in the operation registry, each with its `zarvan` command (1:1 rule), and
+      `docs/reference/operations.md` regenerated.
+- [ ] Add `zarvan_quiz` to the package map in CLAUDE.md and the README.

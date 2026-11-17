@@ -542,7 +542,7 @@ void main() {
         final fx = r.world.componentsOf<ShaderEffect>();
         final kinds = [for (var i = 0; i < fx.length; i++) fx.denseAt(i).kind];
         expect(kinds.where((k) => k == ShaderEffect.aurora), hasLength(1));
-        expect(kinds.where((k) => k == ShaderEffect.glow), hasLength(2));
+        expect(kinds.where((k) => k == ShaderEffect.glow), hasLength(4));
         final sky = [
           for (var i = 0; i < fx.length; i++) fx.denseAt(i),
         ].firstWhere((e) => e.kind == ShaderEffect.aurora);

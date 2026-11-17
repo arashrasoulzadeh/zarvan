@@ -48,6 +48,7 @@ class QuizHomeScreen extends QuizScreen {
 
     // Top bar: coins, the title plaque, settings.
     _coinPill(20, 20, '${s.number(progress.coins)} ${s.coins}');
+    lightAt(UiRect(110, 16, 140, 44), theme.accent, intensity: 0.35, z: 2);
     _twinkles.add(
       Twinkle(
         plaque(UiRect(110, 16, 140, 44), s.appName, size: 28),
@@ -185,6 +186,7 @@ class QuizHomeScreen extends QuizScreen {
         z: 3,
       );
       glow.shape!.alpha = 0.2;
+      lightAt(daily, theme.accent, intensity: 0.4);
       _twinkles.add(Twinkle(glow.shape!, low: 0.1, high: 0.35, speed: 1.3));
       button(daily, '${s.dailyChallenge} · ${s.dailyTodayPlay}', () {
         play(

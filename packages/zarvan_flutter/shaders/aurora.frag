@@ -113,6 +113,33 @@ void main() {
     }
   }
 
+  // Shooting stars: every few seconds one streaks across the upper sky.
+  for (int i = 0; i < 2; i++) {
+    float fi = float(i);
+    float period = 6.5 + 3.0 * fi;
+    float k = floor((t + fi * 3.1) / period);
+    float ph = fract((t + fi * 3.1) / period);
+    float r = hash(vec2(k, fi + 1.0));
+    vec2 head = vec2(mix(0.2, 1.4, r) * aspect - ph * 0.9, 0.05 + 0.3 * hash(vec2(k, 9.0)) + ph * 0.35);
+    vec2 dir = normalize(vec2(-0.9, 0.35));
+    vec2 rel = p - head;
+    float along = dot(rel, -dir);
+    float across = abs(dot(rel, vec2(dir.y, -dir.x)));
+    float tail = smoothstep(0.0, 0.01, along) * exp(-along * 22.0) * smoothstep(0.006, 0.0, across - 0.002 * along);
+    float vis = smoothstep(0.0, 0.1, ph) * smoothstep(0.7, 0.45, ph);
+    col += uCore.rgb * tail * vis * 1.3;
+  }
+
+  // Slow beams of light falling from the top, like light through a window.
+  float beam = 0.0;
+  for (int i = 0; i < 3; i++) {
+    float fi = float(i);
+    float x0 = 0.2 + 0.3 * fi + 0.04 * sin(t * 0.15 + fi * 2.0);
+    float dx = uv.x - x0 - uv.y * 0.25;
+    beam += smoothstep(0.09, 0.0, abs(dx)) * (1.0 - uv.y) * (0.6 + 0.4 * sin(t * 0.3 + fi * 1.9));
+  }
+  col += uArm.rgb * beam * 0.06;
+
   // Vignette keeps the middle (where the content is) the brightest.
   float v = smoothstep(1.15, 0.35, length((uv - 0.5) * vec2(1.0, 1.25)));
   col *= 0.55 + 0.45 * v;

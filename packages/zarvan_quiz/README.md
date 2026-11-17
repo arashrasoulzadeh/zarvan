@@ -4,7 +4,7 @@ Multiple-choice / fill-in-the-blank games on top of [zarvan_core](../zarvan_core
 [zarvan_flutter](../zarvan_flutter/README.md).
 
 The Flutter-free rules live in `zarvan_core` (`package:zarvan_core/zarvan_core_quiz.dart`): `QuizItem`,
-`QuizGenerator`, `ScoreRules`/`QuizRun`, `QuizMode`, `QuizProgress` and `validateQuizBank`. They are also exposed as
+`QuizGenerator`, `ScoreRules`/`SimpleQuizRun`, `QuizMode`, `QuizProgress` and `validateQuizBank`. They are also exposed as
 the `quiz.*` operations (`zarvan quiz generate`, `answer`, `state`, `validate-bank`). Nothing language-specific is in
 the engine: the tokenizer, stop words and item bank are data you pass in.
 

@@ -12,6 +12,7 @@ pubspec.yaml.
 - Rebuilt the MkDocs home as a focused ZARVAN landing page with direct paths to the generated docs, agent hub, tutorials, architecture, and Persian documentation. The full navigation and sidebar remain available on inner documentation pages.
 
 ### Added (engine)
+- Quiz scoring and run state for Shaer phase 03: `QuizScoring` (the one points formula) and an immutable `QuizRun` with `AnswerResult`/`AnswerRecord`. The earlier mutable `QuizRun`/`AnswerResult` are renamed `SimpleQuizRun`/`SimpleAnswerResult`.
 - Quiz question building for Shaer phase 02: `BlankPicker` (tier-aware blank, no repeated words), `Distractors` (staged wrong options per tier), `Question`/`QuestionFactory` (deterministic, JSON round trip) and a one-per-question hint.
 - Quiz genre foundations for Shaer phase 01: `SeededRandom` and `seedOf` (mulberry32 and FNV-1a, identical on the VM and in Chrome), `QuizText` (normalize, tokenize, render with a blank), `QuizBank`/`QuizTier`/`QuizAuthor` for the generic bank JSON, and `WordIndex`.
 - Added `LoginStreak` and `DailyQuests` to the idle rules (`zarvan_core_idle.dart`): date-keyed login rewards and a seeded daily quest set.

@@ -56,13 +56,13 @@ class ScoreRules {
 }
 
 /// What one answer did.
-class AnswerResult {
+class SimpleAnswerResult {
   final bool correct;
   final int pointsDelta;
   final int streak;
   final int livesLeft;
 
-  const AnswerResult({
+  const SimpleAnswerResult({
     required this.correct,
     required this.pointsDelta,
     required this.streak,
@@ -72,7 +72,7 @@ class AnswerResult {
 
 /// Mutable state of one play-through: score, streak, lives and hint use.
 /// Pure data plus rules, so a CLI or agent can drive it without Flutter.
-class QuizRun {
+class SimpleQuizRun {
   final ScoreRules rules;
   int score;
   int streak;
@@ -81,7 +81,7 @@ class QuizRun {
   int correctCount;
   bool _hintUsed = false;
 
-  QuizRun({
+  SimpleQuizRun({
     required this.rules,
     this.lives = 3,
     this.score = 0,
@@ -111,7 +111,11 @@ class QuizRun {
   }
 
   /// Applies an answer. [secondsLeft] is only used for the time bonus.
-  AnswerResult answer(QuizQuestion q, int optionIndex, {int secondsLeft = 0}) {
+  SimpleAnswerResult answer(
+    QuizQuestion q,
+    int optionIndex, {
+    int secondsLeft = 0,
+  }) {
     answered++;
     final correct = q.isCorrect(optionIndex);
     var delta = 0;
@@ -129,7 +133,7 @@ class QuizRun {
     }
     score += delta;
     _hintUsed = false;
-    return AnswerResult(
+    return SimpleAnswerResult(
       correct: correct,
       pointsDelta: delta,
       streak: streak,
@@ -137,7 +141,7 @@ class QuizRun {
     );
   }
 
-  factory QuizRun.fromJson(Map<String, dynamic> json) => QuizRun(
+  factory SimpleQuizRun.fromJson(Map<String, dynamic> json) => SimpleQuizRun(
     rules: ScoreRules.fromJson(json['rules'] as Map<String, dynamic>),
     lives: (json['lives'] as num).toInt(),
     score: (json['score'] as num).toInt(),

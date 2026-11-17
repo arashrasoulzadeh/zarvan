@@ -15,7 +15,7 @@ QuizController make({
     QuizController(
       generator: QuizGenerator(bank: bank(), seed: seed),
       mode: mode,
-      run: QuizRun(rules: const ScoreRules(), lives: lives),
+      run: SimpleQuizRun(rules: const ScoreRules(), lives: lives),
       seed: seed,
     );
 

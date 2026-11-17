@@ -14,20 +14,20 @@ QuizQuestion q({int tier = 1}) => QuizQuestion(
 
 void main() {
   test('streak raises the multiplier up to the cap', () {
-    final run = QuizRun(rules: const ScoreRules(streakStep: 0.5, maxMultiplier: 2.0));
+    final run = SimpleQuizRun(rules: const ScoreRules(streakStep: 0.5, maxMultiplier: 2.0));
     expect(run.answer(q(), 1).pointsDelta, 15); // streak 1 -> x1.5
     expect(run.answer(q(), 1).pointsDelta, 20); // x2.0
     expect(run.answer(q(), 1).pointsDelta, 20); // capped
   });
 
   test('per-tier base score', () {
-    final run = QuizRun(rules: const ScoreRules(baseByTier: {2: 50}, streakStep: 0));
+    final run = SimpleQuizRun(rules: const ScoreRules(baseByTier: {2: 50}, streakStep: 0));
     expect(run.answer(q(tier: 2), 1).pointsDelta, 50);
     expect(run.answer(q(tier: 1), 1).pointsDelta, 10);
   });
 
   test('wrong answer resets streak, costs a life, penalty floors at zero', () {
-    final run = QuizRun(rules: const ScoreRules(wrongPenalty: 100), lives: 2);
+    final run = SimpleQuizRun(rules: const ScoreRules(wrongPenalty: 100), lives: 2);
     run.answer(q(), 1);
     final r = run.answer(q(), 0);
     expect(r.correct, isFalse);
@@ -39,7 +39,7 @@ void main() {
   });
 
   test('hint hides two wrong options once and halves that question only', () {
-    final run = QuizRun(rules: const ScoreRules(streakStep: 0));
+    final run = SimpleQuizRun(rules: const ScoreRules(streakStep: 0));
     final hidden = run.useHint(q(), DeterministicRandom(1));
     expect(hidden.length, 2);
     expect(hidden.contains(1), isFalse);
@@ -49,13 +49,13 @@ void main() {
   });
 
   test('time bonus adds per second left', () {
-    final run = QuizRun(rules: const ScoreRules(streakStep: 0, timeBonusPerSecond: 2));
+    final run = SimpleQuizRun(rules: const ScoreRules(streakStep: 0, timeBonusPerSecond: 2));
     expect(run.answer(q(), 1, secondsLeft: 5).pointsDelta, 20);
   });
 
   test('run and rules round-trip through JSON', () {
-    final run = QuizRun(rules: const ScoreRules(baseByTier: {3: 7}), lives: 2)..answer(q(), 1);
-    expect(QuizRun.fromJson(run.toJson()).toJson(), run.toJson());
+    final run = SimpleQuizRun(rules: const ScoreRules(baseByTier: {3: 7}), lives: 2)..answer(q(), 1);
+    expect(SimpleQuizRun.fromJson(run.toJson()).toJson(), run.toJson());
   });
 
   group('modes', () {

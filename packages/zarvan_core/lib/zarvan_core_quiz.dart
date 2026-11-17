@@ -18,3 +18,5 @@ export 'src/quiz/word_index.dart';
 export 'src/quiz/blank_picker.dart';
 export 'src/quiz/distractors.dart';
 export 'src/quiz/question.dart';
+export 'src/quiz/run.dart';
+export 'src/quiz/scoring.dart';

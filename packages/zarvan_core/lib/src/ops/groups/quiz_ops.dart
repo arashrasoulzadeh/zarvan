@@ -197,8 +197,8 @@ List<Operation> quizOperations() => [
           );
         }
         final run = a['run'] is Map
-            ? QuizRun.fromJson((a['run']! as Map).cast<String, dynamic>())
-            : QuizRun(rules: const ScoreRules());
+            ? SimpleQuizRun.fromJson((a['run']! as Map).cast<String, dynamic>())
+            : SimpleQuizRun(rules: const ScoreRules());
         final r = run.answer(
           q,
           option,
@@ -263,7 +263,7 @@ List<Operation> quizOperations() => [
       try {
         final out = <String, Object?>{};
         if (a['run'] is Map) {
-          final run = QuizRun.fromJson(
+          final run = SimpleQuizRun.fromJson(
             (a['run']! as Map).cast<String, dynamic>(),
           );
           out['run'] = {

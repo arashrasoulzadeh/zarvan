@@ -42,6 +42,9 @@ class Question {
   /// Option indexes a hint took away (empty until [applyHint]).
   final List<int> removedByHint;
 
+  /// Whether option [choice] is the right one.
+  bool isCorrect(int choice) => choice == answerIndex;
+
   /// The lines as strings with the gap shown, marks restored.
   List<String> render() => [for (final line in lines) line.join(' ')];
 

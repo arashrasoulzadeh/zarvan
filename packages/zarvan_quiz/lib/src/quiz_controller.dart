@@ -3,7 +3,7 @@ import 'package:zarvan_core/zarvan_core_quiz.dart';
 import 'package:zarvan_core/zarvan_core.dart' show DeterministicRandom;
 
 /// Drives one play-through of a [QuizMode]: serves questions from a
-/// [QuizGenerator], applies answers to a [QuizRun], and notifies widgets.
+/// [QuizGenerator], applies answers to a [SimpleQuizRun], and notifies widgets.
 /// No timers inside: the host calls [tick], so tests and replays stay
 /// deterministic.
 class QuizController extends ChangeNotifier {
@@ -19,7 +19,7 @@ class QuizController extends ChangeNotifier {
 
   final QuizGenerator generator;
   final QuizMode mode;
-  final QuizRun run;
+  final SimpleQuizRun run;
   final DeterministicRandom _random;
 
   /// Countdown for [QuizModeKind.timedRace]; unused (0) otherwise.
@@ -38,7 +38,7 @@ class QuizController extends ChangeNotifier {
   int? picked;
 
   /// Outcome of the last answer, until [next].
-  AnswerResult? lastResult;
+  SimpleAnswerResult? lastResult;
 
   int _continuesUsed = 0;
   bool _finished = false;

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart' show ChangeNotifier;
 import 'package:zarvan_core/zarvan_core.dart' show KeyValueStore;
 import 'package:zarvan_core/zarvan_core_quiz.dart';
 
@@ -62,7 +62,6 @@ class QuizSession extends ChangeNotifier {
   QuizSession({
     required this.store,
     required this.progress,
-    this.clockTick = const Duration(milliseconds: 100),
     this.raceFeedback = const Duration(seconds: 1),
   });
 
@@ -76,9 +75,6 @@ class QuizSession extends ChangeNotifier {
 
   final KeyValueStore store;
   final QuizProgress progress;
-
-  /// How often the race clock is advanced.
-  final Duration clockTick;
 
   /// How long a race answer stays on screen before the next question.
   final Duration raceFeedback;
@@ -108,8 +104,9 @@ class QuizSession extends ChangeNotifier {
 
   bool _paused = false;
   bool _offering = false;
-  Timer? _clock;
-  Timer? _auto;
+
+  /// Time left before a race moves to the next question by itself.
+  Duration? _autoLeft;
 
   Question? _current;
 
@@ -159,14 +156,13 @@ class QuizSession extends ChangeNotifier {
     if (date != null && progress.hasPlayedDaily(date)) {
       throw StateError('The daily for $date was already played.');
     }
-    _stopTimers();
+    _autoLeft = null;
     round = r;
     _offering = false;
     picked = null;
     lastResult = null;
     reward = null;
     _current = r.nextQuestion();
-    if (r.mode is RaceMode) _startClock();
     _events.add(RoundStarted(r));
     notifyListeners();
   }
@@ -184,8 +180,7 @@ class QuizSession extends ChangeNotifier {
     _events.add(AnswerGiven(r, q, result));
     unawaited(_saveRun());
     if (r.mode is RaceMode && !r.isOver) {
-      _auto?.cancel();
-      _auto = Timer(raceFeedback, next);
+      _autoLeft = raceFeedback;
     }
     notifyListeners();
   }
@@ -217,7 +212,7 @@ class QuizSession extends ChangeNotifier {
   void next() {
     final r = round;
     if (r == null || !answered) return;
-    _auto?.cancel();
+    _autoLeft = null;
     if (r.isOver && canContinue && !finished) {
       _offering = true;
       _events.add(ContinueOffered(r));
@@ -261,45 +256,49 @@ class QuizSession extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Stops the race clock (the app went to the background).
-  void pause() {
-    if (_paused) return;
-    _paused = true;
-    _clock?.cancel();
-    _auto?.cancel();
-    unawaited(_saveRun());
-    notifyListeners();
-  }
-
-  /// Starts the race clock again.
-  void resume() {
-    if (!_paused) return;
-    _paused = false;
+  /// Advances time by [dt]: the race clock, and the pause before a race
+  /// moves on by itself. The screen calls this from its own update, which the
+  /// engine stops while the app is in the background, so the clock never runs
+  /// there. Does nothing while paused, offering a continue, or finished.
+  void tick(Duration dt) {
     final r = round;
-    if (r != null && r.mode is RaceMode && !finished) {
-      _startClock();
-      if (answered && !r.isOver) _auto = Timer(raceFeedback, next);
+    if (r == null || _paused || finished || _offering) return;
+    if (r.mode is! RaceMode) return;
+    r.tick(dt);
+    if (r.isOver) {
+      _finish();
+      notifyListeners();
+      return;
+    }
+    final left = _autoLeft;
+    if (left != null && answered) {
+      _autoLeft = left - dt;
+      if (_autoLeft! <= Duration.zero) {
+        _autoLeft = null;
+        next();
+      }
     }
     notifyListeners();
   }
 
-  void _startClock() {
-    _clock?.cancel();
-    _clock = Timer.periodic(clockTick, (_) {
-      final r = round;
-      if (r == null || _paused || finished) return;
-      r.tick(clockTick);
-      if (r.isOver) {
-        _clock?.cancel();
-        _finish();
-      }
-      notifyListeners();
-    });
+  /// Stops the clock and answers (a pause menu, or the app left the screen).
+  void pause() {
+    if (_paused) return;
+    _paused = true;
+    unawaited(_saveRun());
+    notifyListeners();
+  }
+
+  /// Lets the clock and answers run again.
+  void resume() {
+    if (!_paused) return;
+    _paused = false;
+    notifyListeners();
   }
 
   void _finish() {
     final r = round!;
-    _stopTimers();
+    _autoLeft = null;
     _current = null;
     picked = null;
     lastResult = null;
@@ -322,62 +321,9 @@ class QuizSession extends ChangeNotifier {
 
   Future<void> _saveProgress() => QuizProgressStore(store).save(progress);
 
-  void _stopTimers() {
-    _clock?.cancel();
-    _auto?.cancel();
-    _clock = null;
-    _auto = null;
-  }
-
   @override
   void dispose() {
-    _stopTimers();
     unawaited(_events.close());
     super.dispose();
   }
-}
-
-/// Pauses a [QuizSession] when the app leaves the foreground and resumes it
-/// when it returns, so a race clock does not run in the background.
-class QuizLifecycleHost extends StatefulWidget {
-  const QuizLifecycleHost({
-    super.key,
-    required this.session,
-    required this.child,
-  });
-
-  final QuizSession session;
-  final Widget child;
-
-  @override
-  State<QuizLifecycleHost> createState() => _QuizLifecycleHostState();
-}
-
-class _QuizLifecycleHostState extends State<QuizLifecycleHost>
-    with WidgetsBindingObserver {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      widget.session.resume();
-    } else if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.hidden) {
-      widget.session.pause();
-    }
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => widget.child;
 }

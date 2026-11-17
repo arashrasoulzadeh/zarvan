@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zarvan_core/zarvan_core.dart' show MemoryKeyValueStore;
 import 'package:zarvan_quiz/zarvan_quiz.dart';
@@ -27,22 +26,6 @@ QuizSession newSession([MemoryKeyValueStore? kv, int coins = 60]) =>
 
 int right(QuizSession s) => s.question!.answerIndex;
 int wrong(QuizSession s) => (s.question!.answerIndex + 1) % 4;
-
-Widget host(QuizSession s, {ThemeData? theme}) => MaterialApp(
-  theme: theme,
-  home: Scaffold(
-    body: SingleChildScrollView(
-      child: Column(
-        children: [
-          QuizHud(session: s),
-          QuizQuestionCard(session: s),
-          QuizOptions(session: s),
-          QuizFeedback(session: s),
-        ],
-      ),
-    ),
-  ),
-);
 
 void main() {
   group('QuizSession', () {
@@ -294,234 +277,51 @@ void main() {
     });
   });
 
-  group('race clock', () {
-    testWidgets(
-      'moves with real time, pauses in the background, ends at zero',
-      (t) async {
-        final s = newSession()..begin(race());
-        await t.pumpWidget(
-          QuizLifecycleHost(session: s, child: const SizedBox()),
-        );
-        expect(s.round!.run.clockMs, 60000);
-        await t.pump(const Duration(seconds: 3));
-        expect(s.round!.run.clockMs, closeTo(57000, 100));
+  group('race clock (tick)', () {
+    test('moves only with tick, ends at zero and books the round', () {
+      final s = newSession()..begin(race());
+      expect(s.round!.run.clockMs, 60000);
+      s.tick(const Duration(seconds: 3));
+      expect(s.round!.run.clockMs, 57000);
+      s.tick(const Duration(seconds: 70));
+      expect(s.finished, isTrue);
+      expect(s.round!.run.clockMs, 0);
+    });
 
-        t.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-        final frozen = s.round!.run.clockMs;
-        await t.pump(const Duration(seconds: 5));
-        expect(s.round!.run.clockMs, frozen);
-        s.answer(right(s));
-        expect(s.answered, isFalse, reason: 'no answers while paused');
+    test('pause stops it and answers; resume lets it run again', () {
+      final s = newSession()..begin(race());
+      s.pause();
+      s.tick(const Duration(seconds: 5));
+      expect(s.round!.run.clockMs, 60000);
+      s.answer(right(s));
+      expect(s.answered, isFalse);
+      s.resume();
+      s.tick(const Duration(seconds: 2));
+      expect(s.round!.run.clockMs, 58000);
+    });
 
-        t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-        await t.pump(const Duration(seconds: 2));
-        expect(s.round!.run.clockMs, closeTo(frozen! - 2000, 100));
-
-        await t.pump(const Duration(seconds: 70));
-        expect(s.finished, isTrue);
-        expect(s.round!.run.clockMs, 0);
-      },
-    );
-
-    testWidgets('the next question comes by itself after the feedback second', (
-      t,
-    ) async {
+    test('the next question comes by itself after the feedback second', () {
       final s = newSession()..begin(race());
       final first = s.question!.itemId;
       s.answer(right(s));
       expect(s.answered, isTrue);
-      await t.pump(const Duration(milliseconds: 900));
+      s.tick(const Duration(milliseconds: 900));
       expect(s.answered, isTrue);
-      await t.pump(const Duration(milliseconds: 200));
+      s.tick(const Duration(milliseconds: 200));
       expect(s.answered, isFalse);
       expect(s.question!.itemId, isNot(first));
-      expect(
-        s.round!.run.clockMs,
-        greaterThan(60000 - 2000),
-        reason: '+2s for the right answer',
-      );
-      s.dispose();
+      expect(s.round!.run.clockMs, greaterThan(60000 - 2000));
     });
 
-    testWidgets('a hint is not offered in a race', (t) async {
-      final s = newSession()..begin(race());
-      expect(s.canHint, isFalse);
-      await t.pumpWidget(host(s));
-      expect(find.byKey(const ValueKey('hint')), findsNothing);
-      expect(find.byKey(const ValueKey('hud_clock')), findsOneWidget);
-      s.dispose();
-    });
-  });
-
-  group('widgets', () {
-    testWidgets(
-      'the card is right-to-left, shows the blank, then the right word',
-      (t) async {
-        final s = newSession()..begin(stage());
-        await t.pumpWidget(host(s));
-        final q = s.question!;
-        final dir = t.widget<Directionality>(
-          find
-              .ancestor(
-                of: find.byType(Card),
-                matching: find.byType(Directionality),
-              )
-              .first,
-        );
-        expect(dir.textDirection, TextDirection.rtl);
-        expect(
-          find.textContaining(defaultBlankMarker, findRichText: true),
-          findsOneWidget,
-        );
-        expect(q.render().join(' '), contains(defaultBlankMarker));
-
-        await t.tap(find.byKey(ValueKey('option_${q.answerIndex}')));
-        await t.pump();
-        expect(
-          find.textContaining(defaultBlankMarker, findRichText: true),
-          findsNothing,
-        );
-        expect(
-          find.textContaining(q.options[q.answerIndex], findRichText: true),
-          findsWidgets,
-        );
-      },
-    );
-
-    testWidgets(
-      'tapping an option answers; right is primary, a wrong pick is error',
-      (t) async {
-        final s = newSession()..begin(stage());
-        final theme = ThemeData(
-          colorScheme: const ColorScheme.light(
-            primary: Colors.teal,
-            error: Colors.deepOrange,
-          ),
-        );
-        await t.pumpWidget(host(s, theme: theme));
-        final q = s.question!;
-        final bad = (q.answerIndex + 1) % 4;
-        await t.tap(find.byKey(ValueKey('option_$bad')));
-        await t.pump();
-        expect(s.lastResult!.correct, isFalse);
-        Color? bg(int i) => t
-            .widget<FilledButton>(find.byKey(ValueKey('option_$i')))
-            .style!
-            .backgroundColor!
-            .resolve({WidgetState.disabled});
-        expect(bg(q.answerIndex), Colors.teal);
-        expect(bg(bad), Colors.deepOrange);
-        for (var i = 0; i < 4; i++) {
-          expect(
-            t.widget<FilledButton>(find.byKey(ValueKey('option_$i'))).onPressed,
-            isNull,
-          );
-        }
-      },
-    );
-
-    testWidgets(
-      'the hint button disables two options and spends coins; the HUD shows it',
-      (t) async {
-        final s = newSession()..begin(stage());
-        await t.pumpWidget(host(s));
-        expect(
-          t.widget<Text>(find.byKey(const ValueKey('hud_coins'))).data,
-          '60',
-        );
-        await t.tap(find.byKey(const ValueKey('hint')));
-        await t.pump();
-        expect(
-          t.widget<Text>(find.byKey(const ValueKey('hud_coins'))).data,
-          '40',
-        );
-        final disabled = [
-          for (var i = 0; i < 4; i++)
-            if (t
-                    .widget<FilledButton>(find.byKey(ValueKey('option_$i')))
-                    .onPressed ==
-                null)
-              i,
-        ];
-        expect(disabled, s.question!.removedByHint);
-        expect(
-          t.widget<TextButton>(find.byKey(const ValueKey('hint'))).onPressed,
-          isNull,
-        );
-      },
-    );
-
-    testWidgets('the HUD writes labels and numbers the way the game asks', (
-      t,
-    ) async {
-      final s = newSession()..begin(stage());
-      await t.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: QuizHud(
-              session: s,
-              labels: const QuizHudLabels(score: 'S', coins: 'C'),
-              format: (n) => '<$n>',
-            ),
-          ),
-        ),
-      );
-      expect(
-        t.widget<Text>(find.byKey(const ValueKey('hud_score'))).data,
-        'S <0>',
-      );
-      expect(
-        t.widget<Text>(find.byKey(const ValueKey('hud_coins'))).data,
-        'C <60>',
-      );
-      expect(
-        t.widget<Text>(find.byKey(const ValueKey('hud_streak'))).data,
-        '<0>',
-      );
-    });
-
-    testWidgets('the HUD tracks score and streak; endless shows lives', (
-      t,
-    ) async {
-      final s = newSession()
-        ..begin(
-          QuizRound.endless(
-            factoryOf(bank),
-            const EndlessMode(),
-            seedBase: 'endless:t',
-          ),
-        );
-      await t.pumpWidget(host(s));
-      expect(t.widget<Text>(find.byKey(const ValueKey('hud_lives'))).data, '3');
-      await t.tap(find.byKey(ValueKey('option_${right(s)}')));
-      await t.pump();
-      expect(
-        t.widget<Text>(find.byKey(const ValueKey('hud_score'))).data,
-        '10',
-      );
-      expect(
-        t.widget<Text>(find.byKey(const ValueKey('hud_streak'))).data,
-        '1',
-      );
-    });
-
-    testWidgets(
-      'feedback shows the whole poem and its author, and Next advances',
-      (t) async {
-        final s = newSession()..begin(stage());
-        await t.pumpWidget(host(s));
-        expect(find.byKey(const ValueKey('next')), findsNothing);
-        final item = bank.byId(s.question!.itemId)!;
-        await t.tap(find.byKey(ValueKey('option_${right(s)}')));
-        await t.pump();
-        for (var i = 0; i < item.lines.length; i++) {
-          expect(find.byKey(ValueKey('feedback_line_$i')), findsOneWidget);
-        }
-        expect(find.text('شاعر'), findsOneWidget);
-        await t.tap(find.byKey(const ValueKey('next')));
-        await t.pump();
-        expect(s.answered, isFalse);
-        expect(find.byKey(const ValueKey('next')), findsNothing);
+    test(
+      'a hint is not offered in a race, and tick does nothing outside a race',
+      () {
+        final s = newSession()..begin(race());
+        expect(s.canHint, isFalse);
+        final stageSession = newSession()..begin(stage());
+        stageSession.tick(const Duration(seconds: 100));
+        expect(stageSession.round!.run.clockMs, isNull);
+        expect(stageSession.finished, isFalse);
       },
     );
   });

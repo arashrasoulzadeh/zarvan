@@ -20,3 +20,5 @@ export 'src/quiz/distractors.dart';
 export 'src/quiz/question.dart';
 export 'src/quiz/run.dart';
 export 'src/quiz/scoring.dart';
+export 'src/quiz/game_mode.dart';
+export 'src/quiz/round.dart';

@@ -1,12 +1,12 @@
 import 'package:zarvan_core/zarvan_core.dart' show UiRect, World;
 import 'package:zarvan_core/zarvan_core_quiz.dart';
 
+import '../medal_overlay.dart';
 import '../ornaments.dart';
 import '../quiz_screen.dart';
 import 'about_screen.dart';
 import 'game_screen.dart';
 import 'settings_screen.dart';
-import 'stages_screen.dart';
 
 /// The next stage to play: the first author (in the bank's order) that is not
 /// finished, and the first tier of theirs that has not been passed. When
@@ -34,6 +34,7 @@ class QuizHomeScreen extends QuizScreen {
 
   final List<Twinkle> _twinkles = [];
   double _time = 0;
+  late final MedalOverlay _medal = MedalOverlay(this);
 
   static const _gold = 0xFFE0A93B;
 
@@ -345,7 +346,7 @@ class QuizHomeScreen extends QuizScreen {
     final tap = button(
       UiRect(x, y, w, h),
       a.name,
-      () => goTo(QuizStagesScreen(kit, a)),
+      () => _medal.open(a, UiRect(x, y, w, h)),
       style: QuizButtonStyle.option,
       size: 12,
     );
@@ -359,6 +360,7 @@ class QuizHomeScreen extends QuizScreen {
   @override
   void update(double dt, World world) {
     _time += dt;
+    _medal.update(dt);
     for (final t in _twinkles) {
       t.apply(_time);
     }

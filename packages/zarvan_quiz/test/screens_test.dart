@@ -10,7 +10,13 @@ import 'package:zarvan_core/zarvan_core.dart'
         registerCoreComponents;
 import 'package:zarvan_flutter/zarvan_flutter.dart' as eng;
 import 'package:zarvan_flutter/zarvan_flutter.dart'
-    show Scene, SceneController, ShaderEffect, Shape, ShareOutcome;
+    show
+        BackdropBlur,
+        Scene,
+        SceneController,
+        ShaderEffect,
+        Shape,
+        ShareOutcome;
 import 'package:zarvan_quiz/zarvan_quiz.dart';
 
 import 'support.dart';
@@ -207,6 +213,9 @@ class Rig {
     final p = _at(text);
     scene.handleTap(world, controller, Offset(p.x, p.y));
   }
+
+  void tapAt(double x, double y) =>
+      scene.handleTap(world, controller, Offset(x, y));
 
   void run(double seconds, {double dt = 0.05}) {
     for (var t = 0.0; t < seconds; t += dt) {
@@ -550,11 +559,41 @@ void main() {
       },
     );
 
-    test('tapping a poet on the shelf opens their stages', () async {
+    test(
+      'tapping a poet blurs the screen and opens a medal with the levels',
+      () async {
+        final r = await Rig.make(bank: makeMultiBank());
+        await r.open(QuizHomeScreen(r.kit));
+        expect(r.world.componentsOf<BackdropBlur>().length, 0);
+        r.tap('Poet b');
+        expect(r.loaded, isNull);
+        expect(r.world.componentsOf<BackdropBlur>().length, 1);
+        expect(r.has('Stage Easy'), isFalse);
+        r.run(0.3);
+        final mid = r.world.componentsOf<BackdropBlur>().denseAt(0).sigma;
+        expect(mid, greaterThan(0));
+        r.run(0.6);
+        expect(r.world.componentsOf<BackdropBlur>().denseAt(0).sigma, 4);
+        expect(r.has('Stage Easy'), isTrue);
+        expect(r.has('Stage Literary'), isTrue);
+        r.tap('Stage Easy');
+        expect(r.loaded, isA<QuizGameScreen>());
+        expect(r.kit.session.round!.author, 'b');
+      },
+    );
+
+    test('tapping outside the medal spins it back to the shelf', () async {
       final r = await Rig.make(bank: makeMultiBank());
       await r.open(QuizHomeScreen(r.kit));
       r.tap('Poet b');
-      expect(r.loaded, isA<QuizStagesScreen>());
+      r.run(1);
+      r.tapAt(10, 620);
+      r.run(1);
+      expect(r.world.componentsOf<BackdropBlur>().length, 0);
+      expect(r.has('Stage Easy'), isFalse);
+      r.tap('Poet a');
+      r.run(1);
+      expect(r.has('Stage Easy'), isTrue);
     });
 
     test(

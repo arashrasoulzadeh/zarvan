@@ -569,7 +569,7 @@ void main() {
         expect(r.world.componentsOf<BackdropBlur>().length, 1);
         expect(r.has('Stage Easy'), isFalse);
         final fx = r.world.componentsOf<ShaderEffect>();
-        expect(fx.length, 5, reason: 'the medal brings its own light');
+        expect(fx.length, 6, reason: 'the medal brings its own light');
         r.run(0.3);
         final mid = r.world.componentsOf<BackdropBlur>().denseAt(0).sigma;
         expect(mid, greaterThan(0));

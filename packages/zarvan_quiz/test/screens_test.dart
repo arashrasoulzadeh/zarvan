@@ -567,7 +567,18 @@ void main() {
         r.tap('Poet b');
         expect(r.loaded, isNull);
         expect(r.world.componentsOf<BackdropBlur>().length, 1);
-        expect(r.has('Stage Easy'), isFalse);
+        expect(
+          r.has('Stage Easy'),
+          isTrue,
+          reason:
+              'the levels are on the medal from the first moment of the spin',
+        );
+        r.tap('Stage Easy');
+        expect(
+          r.loaded,
+          isNull,
+          reason: 'but cannot be pressed while it turns',
+        );
         final fx = r.world.componentsOf<ShaderEffect>();
         expect(fx.length, 6, reason: 'the medal brings its own light');
         r.run(0.3);

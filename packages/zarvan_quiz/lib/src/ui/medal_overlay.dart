@@ -45,6 +45,8 @@ class MedalOverlay {
   final List<EntityId> _ids = [];
   final List<_Piece> _pieces = [];
   final List<_Spark> _sparks = [];
+  final List<_Item> _items = [];
+  final List<(UiButton, bool)> _buttons = [];
   ShaderEffect? _glow;
   Position? _glowPos;
   Shape? _ring;
@@ -181,6 +183,7 @@ class MedalOverlay {
     _ringNode = ring;
     _ids.add(ring.id);
 
+    _buildContent();
     _t = 0;
     _dir = 1;
     _apply();
@@ -222,7 +225,9 @@ class MedalOverlay {
   void close() {
     if (_dir != 0 && !_contentShown) return;
     if (_t <= 0) return;
-    _content.clear();
+    for (final (b, _) in _buttons) {
+      b.enabled = false;
+    }
     _destroy(_veilButton);
     _veilButton = null;
     _contentShown = false;
@@ -280,6 +285,11 @@ class MedalOverlay {
         ..width = w * p.wFrac * spin
         ..height = h * p.hFrac;
     }
+    final sx = w / medalW * spin;
+    final sy = h / medalH;
+    for (final it in _items) {
+      it.place(cx, cy, sx, sy, spin);
+    }
     _veil?.alpha = 0.6 * e;
     _blur?.sigma = 4 * e;
 
@@ -314,25 +324,27 @@ class MedalOverlay {
     }
   }
 
-  void _showContent() {
+  /// Lays the title and the level buttons out in their final place, but
+  /// registers them as [_items] so every frame moves and squeezes them with the
+  /// medal: they turn with it from the first moment of the spin.
+  void _buildContent() {
     final author = _author!;
     final s = screen.kit.strings;
     final theme = screen.theme;
     final p = screen.kit.session.progress;
-    _contentShown = true;
     const left = centerX - medalW / 2 + 20;
     const width = medalW - 40;
 
-    _content.addNode(
-      screen.label(
-        author.name,
-        centerX,
-        centerY - medalH / 2 + 38,
-        size: 24,
-        color: theme.accent,
-        z: _z + 6,
-      ),
+    final title = screen.label(
+      author.name,
+      centerX,
+      centerY - medalH / 2 + 38,
+      size: 24,
+      color: theme.accent,
+      z: _z + 6,
     );
+    _content.addNode(title);
+    _items.add(_Item.text(title, centerX, centerY));
     var y = centerY - medalH / 2 + 80;
     for (final tier in QuizTier.values) {
       final unlocked = p.isUnlocked(author.id, tier);
@@ -354,31 +366,42 @@ class MedalOverlay {
         size: 18,
         group: _content,
       );
-      b.bg.shape!.zIndex = _z + 5;
       b.bg.shape!
+        ..zIndex = _z + 5
         ..colorArgb = theme.accent
-        ..alpha = 0.16;
+        ..alpha = unlocked ? 0.16 : 0.06;
       b.label.text!.zIndex = _z + 6;
       b.label.pos.y -= 8;
-      b.enabled = unlocked;
-      final info = unlocked
-          ? List.generate(3, (i) => i < (entry?.stars ?? 0) ? '★' : '☆').join()
-          : s.stageLockedHint;
-      _content.addNode(
-        screen.label(
-          info,
-          centerX,
-          y + 37,
-          size: 13,
-          color: unlocked ? theme.accent : theme.soft,
-          z: _z + 6,
-        ),
+      if (!unlocked) b.label.text!.alpha = 0.5;
+      b.enabled = false;
+      _buttons.add((b, unlocked));
+      final info = screen.label(
+        unlocked
+            ? List.generate(
+                3,
+                (i) => i < (entry?.stars ?? 0) ? '★' : '☆',
+              ).join()
+            : s.stageLockedHint,
+        centerX,
+        y + 37,
+        size: 13,
+        color: unlocked ? theme.accent : theme.soft,
+        z: _z + 6,
       );
-      if (!unlocked) {
-        b.bg.shape!.alpha = 0.06;
-        b.label.text!.alpha = 0.5;
-      }
+      _content.addNode(info);
+      _items
+        ..add(_Item.box(b.bg, centerX, centerY))
+        ..add(_Item.text(b.label, centerX, centerY))
+        ..add(_Item.text(info, centerX, centerY));
       y += 60;
+    }
+  }
+
+  /// The medal has landed: the levels can be pressed, and a tap outside closes.
+  void _showContent() {
+    _contentShown = true;
+    for (final (b, unlocked) in _buttons) {
+      b.enabled = unlocked;
     }
     _veilButton = screen.button(
       UiRect(
@@ -400,6 +423,9 @@ class MedalOverlay {
       screen.world.destroy(id);
     }
     _ids.clear();
+    _content.clear();
+    _items.clear();
+    _buttons.clear();
     _pieces.clear();
     _sparks.clear();
     _glow = null;
@@ -437,4 +463,57 @@ class _Spark {
   final double angle;
   final double reach;
   final double phase;
+}
+
+/// A piece of the medal's face (the title, a level button, its stars) that
+/// keeps its place relative to the medal's centre and turns with it: its
+/// offset is squeezed by the spin, a box narrows, and text shrinks and fades
+/// as it goes edge-on (the engine's text cannot be squashed on one axis).
+class _Item {
+  _Item._(this.node, this.dx, this.dy, this.w, this.h, this.alpha, this.size);
+
+  factory _Item.text(UiNode n, double cx, double cy) => _Item._(
+    n,
+    n.pos.x - cx,
+    n.pos.y - cy,
+    0,
+    0,
+    n.text!.alpha,
+    n.text!.fontSize,
+  );
+
+  factory _Item.box(UiNode n, double cx, double cy) => _Item._(
+    n,
+    n.pos.x - cx,
+    n.pos.y - cy,
+    n.shape!.width,
+    n.shape!.height,
+    n.shape!.alpha,
+    0,
+  );
+
+  final UiNode node;
+  final double dx;
+  final double dy;
+  final double w;
+  final double h;
+  final double alpha;
+  final double size;
+
+  void place(double cx, double cy, double sx, double sy, double spin) {
+    node.pos
+      ..x = cx + dx * sx
+      ..y = cy + dy * sy;
+    final shape = node.shape;
+    if (shape != null) {
+      shape
+        ..width = w * sx
+        ..height = h * sy;
+      return;
+    }
+    final text = node.text!;
+    text
+      ..textScale = (sy * spin).clamp(0.05, 1.2)
+      ..alpha = alpha * ((spin - 0.25) / 0.75).clamp(0.0, 1.0);
+  }
 }

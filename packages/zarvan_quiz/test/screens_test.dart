@@ -10,7 +10,7 @@ import 'package:zarvan_core/zarvan_core.dart'
         registerCoreComponents;
 import 'package:zarvan_flutter/zarvan_flutter.dart' as eng;
 import 'package:zarvan_flutter/zarvan_flutter.dart'
-    show Scene, SceneController, Shape;
+    show Scene, SceneController, Shape, ShareOutcome;
 import 'package:zarvan_quiz/zarvan_quiz.dart';
 
 import 'support.dart';
@@ -45,6 +45,7 @@ const strings = QuizStrings(
   playAgain: 'Again',
   share: 'Share',
   copied: 'Copied',
+  shareFailed: 'Could not share',
   continueWithAd: 'Continue with an ad',
   continueQuestion: 'Out of lives. One more for an ad?',
   noThanks: 'No, finish',
@@ -145,7 +146,7 @@ class Rig {
       ads: ads ? gate : null,
       share: (t) async {
         sharedTexts.add(t);
-        return sharedOk;
+        return outcome;
       },
       now: () => now ?? DateTime(2026, 11, 17, 10),
     );
@@ -154,7 +155,7 @@ class Rig {
   }
 
   static final sharedTexts = <String>[];
-  static bool sharedOk = true;
+  static ShareOutcome outcome = ShareOutcome.shared;
   static final gates = <QuizKit, FakeAds>{};
   FakeAds get ads => gates[kit]!;
 
@@ -229,7 +230,7 @@ class Rig {
 void main() {
   setUp(() {
     Rig.sharedTexts.clear();
-    Rig.sharedOk = true;
+    Rig.outcome = ShareOutcome.shared;
   });
 
   group('game screen', () {
@@ -639,10 +640,14 @@ void main() {
         r.tap('Share');
         await Future<void>.delayed(Duration.zero);
         expect(Rig.sharedTexts.single, contains('2026-11-17'));
-        Rig.sharedOk = false;
+        Rig.outcome = ShareOutcome.copied;
         r.tap('Share');
         await Future<void>.delayed(Duration.zero);
         expect(r.has('Copied'), isTrue);
+        Rig.outcome = ShareOutcome.failed;
+        r.tap('Share');
+        await Future<void>.delayed(Duration.zero);
+        expect(r.has('Could not share'), isTrue);
       },
     );
 

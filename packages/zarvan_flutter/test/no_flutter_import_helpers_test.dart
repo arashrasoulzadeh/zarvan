@@ -3,7 +3,13 @@ import 'dart:typed_data';
 import 'package:flutter/services.dart' show AssetBundle;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zarvan_flutter/zarvan_flutter.dart'
-    show isWeb, loadTextAsset, measureText, platformName, shareText;
+    show
+        ShareOutcome,
+        isWeb,
+        loadTextAsset,
+        measureText,
+        platformName,
+        shareText;
 
 class _Bundle extends AssetBundle {
   @override
@@ -35,7 +41,7 @@ void main() {
           sharer: (_) async {},
           copier: (t) async => copied.add(t),
         ),
-        isTrue,
+        ShareOutcome.shared,
       );
       expect(copied, isEmpty);
     });
@@ -47,9 +53,21 @@ void main() {
         sharer: (_) async => throw StateError('no Web Share API'),
         copier: (t) async => copied.add(t),
       );
-      expect(ok, isFalse);
+      expect(ok, ShareOutcome.copied);
       expect(copied, ['متن']);
     });
+
+    test(
+      'shareText reports failure, without throwing, when the clipboard is refused too',
+      () async {
+        final ok = await shareText(
+          'x',
+          sharer: (_) async => throw StateError('no sheet'),
+          copier: (_) async => throw StateError('clipboard denied'),
+        );
+        expect(ok, ShareOutcome.failed);
+      },
+    );
 
     test('measureText grows with the text and wraps at the width', () {
       final short = measureText('ab', fontSize: 20);

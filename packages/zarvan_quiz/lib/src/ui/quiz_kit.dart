@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:zarvan_core/zarvan_core.dart' show KeyValueStore;
 import 'package:zarvan_core/zarvan_core_quiz.dart';
+import 'package:zarvan_flutter/zarvan_flutter.dart' show ShareOutcome;
 
 import '../quiz_session.dart';
 import 'quiz_strings.dart';
@@ -122,9 +123,9 @@ class QuizKit {
   final QuizAbout about;
   final QuizAdGate? ads;
 
-  /// Shares a text; true when the system sheet took it, false when it was
-  /// copied instead. Null hides the share button.
-  final Future<bool> Function(String text)? share;
+  /// Shares a text and says what happened (shared, copied or failed). Null
+  /// hides the share button.
+  final Future<ShareOutcome> Function(String text)? share;
 
   /// Builds the text shared after a daily from its date and results; null
   /// shares a plain default.

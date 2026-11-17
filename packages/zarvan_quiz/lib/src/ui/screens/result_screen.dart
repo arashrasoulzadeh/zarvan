@@ -1,5 +1,7 @@
 import 'package:zarvan_core/zarvan_core_quiz.dart';
 
+import 'package:zarvan_flutter/zarvan_flutter.dart' show ShareOutcome;
+
 import '../quiz_screen.dart';
 import 'game_screen.dart';
 import 'home_screen.dart';
@@ -59,8 +61,12 @@ class QuizResultScreen extends QuizScreen {
     var by = 500.0;
     if (mode is DailyMode && round.date != null && kit.share != null) {
       button(row(by - 60), s.share, () async {
-        final copied = !(await kit.share!(_shareText(round)));
-        if (copied) _note.text!.text = s.copied;
+        final outcome = await kit.share!(_shareText(round));
+        _note.text!.text = switch (outcome) {
+          ShareOutcome.shared => '',
+          ShareOutcome.copied => s.copied,
+          ShareOutcome.failed => s.shareFailed,
+        };
       });
     } else if (mode is! DailyMode) {
       button(row(by - 60), s.playAgain, () => _again(round));

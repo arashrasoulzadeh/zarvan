@@ -31,6 +31,7 @@ class QuizStrings {
     required this.playAgain,
     required this.share,
     required this.copied,
+    required this.shareFailed,
     required this.continueWithAd,
     required this.continueQuestion,
     required this.noThanks,
@@ -142,6 +143,9 @@ class QuizStrings {
   /// Shown when the text was copied instead of shared.
   final String copied;
 
+  /// Shown when the text could neither be shared nor copied.
+  final String shareFailed;
+
   /// Button that continues endless by watching an ad.
   final String continueWithAd;
 
@@ -242,6 +246,7 @@ class QuizStrings {
     'playAgain': playAgain,
     'share': share,
     'copied': copied,
+    'shareFailed': shareFailed,
     'continueWithAd': continueWithAd,
     'continueQuestion': continueQuestion,
     'noThanks': noThanks,

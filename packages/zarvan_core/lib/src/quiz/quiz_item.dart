@@ -26,18 +26,18 @@ class QuizItem {
   });
 
   factory QuizItem.fromJson(Map<String, dynamic> json) => QuizItem(
-        id: json['id'] as String,
-        lines: (json['lines'] as List).cast<String>(),
-        tier: (json['tier'] as num?)?.toInt() ?? 1,
-        author: json['author'] as String?,
-        meta: ((json['meta'] as Map?) ?? const {}).cast<String, String>(),
-      );
+    id: json['id'] as String,
+    lines: (json['lines'] as List).cast<String>(),
+    tier: (json['tier'] as num?)?.toInt() ?? 1,
+    author: json['author'] as String?,
+    meta: ((json['meta'] as Map?) ?? const {}).cast<String, String>(),
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'lines': lines,
-        'tier': tier,
-        if (author != null) 'author': author,
-        if (meta.isNotEmpty) 'meta': meta,
-      };
+    'id': id,
+    'lines': lines,
+    'tier': tier,
+    if (author != null) 'author': author,
+    if (meta.isNotEmpty) 'meta': meta,
+  };
 }

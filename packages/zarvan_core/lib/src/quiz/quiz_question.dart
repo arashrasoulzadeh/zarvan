@@ -29,22 +29,22 @@ class QuizQuestion {
   bool isCorrect(int optionIndex) => optionIndex == correctIndex;
 
   factory QuizQuestion.fromJson(Map<String, dynamic> json) => QuizQuestion(
-        itemId: json['itemId'] as String,
-        tier: (json['tier'] as num).toInt(),
-        lines: (json['lines'] as List).cast<String>(),
-        blankLine: (json['blankLine'] as num).toInt(),
-        answer: json['answer'] as String,
-        options: (json['options'] as List).cast<String>(),
-        correctIndex: (json['correctIndex'] as num).toInt(),
-      );
+    itemId: json['itemId'] as String,
+    tier: (json['tier'] as num).toInt(),
+    lines: (json['lines'] as List).cast<String>(),
+    blankLine: (json['blankLine'] as num).toInt(),
+    answer: json['answer'] as String,
+    options: (json['options'] as List).cast<String>(),
+    correctIndex: (json['correctIndex'] as num).toInt(),
+  );
 
   Map<String, dynamic> toJson() => {
-        'itemId': itemId,
-        'tier': tier,
-        'lines': lines,
-        'blankLine': blankLine,
-        'answer': answer,
-        'options': options,
-        'correctIndex': correctIndex,
-      };
+    'itemId': itemId,
+    'tier': tier,
+    'lines': lines,
+    'blankLine': blankLine,
+    'answer': answer,
+    'options': options,
+    'correctIndex': correctIndex,
+  };
 }

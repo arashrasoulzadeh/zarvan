@@ -10,6 +10,7 @@ import 'groups/level_write_ops.dart';
 import 'groups/prefab_ops.dart';
 import 'groups/problems_ops.dart';
 import 'groups/project_ops.dart';
+import 'groups/quiz_ops.dart';
 import 'groups/release_ops.dart';
 import 'groups/save_ops.dart';
 import 'groups/schema_ops.dart';
@@ -40,6 +41,7 @@ OperationRegistry buildRegistry({ProposalFinisher? finisher}) {
     ...saveOperations(),
     ...schemaOperations(),
     ...idleOperations(),
+    ...quizOperations(),
     ...i18nOperations(),
     ...strategyOperations(),
     ...releaseOperations(),

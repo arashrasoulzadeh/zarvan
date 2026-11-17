@@ -42,17 +42,18 @@ class QuizTierRules {
   });
 
   factory QuizTierRules.fromJson(Map<String, dynamic> json) => QuizTierRules(
-        blank: BlankStrategy.values.byName(json['blank'] as String? ?? 'lastWord'),
-        distractors: DistractorStrategy.values
-            .byName(json['distractors'] as String? ?? 'unrelated'),
-        optionCount: (json['optionCount'] as num?)?.toInt() ?? 4,
-        rhymeSuffixLength: (json['rhymeSuffixLength'] as num?)?.toInt() ?? 2,
-      );
+    blank: BlankStrategy.values.byName(json['blank'] as String? ?? 'lastWord'),
+    distractors: DistractorStrategy.values.byName(
+      json['distractors'] as String? ?? 'unrelated',
+    ),
+    optionCount: (json['optionCount'] as num?)?.toInt() ?? 4,
+    rhymeSuffixLength: (json['rhymeSuffixLength'] as num?)?.toInt() ?? 2,
+  );
 
   Map<String, dynamic> toJson() => {
-        'blank': blank.name,
-        'distractors': distractors.name,
-        'optionCount': optionCount,
-        'rhymeSuffixLength': rhymeSuffixLength,
-      };
+    'blank': blank.name,
+    'distractors': distractors.name,
+    'optionCount': optionCount,
+    'rhymeSuffixLength': rhymeSuffixLength,
+  };
 }

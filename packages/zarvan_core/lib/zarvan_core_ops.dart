@@ -38,6 +38,7 @@ export 'src/ops/release_plan.dart';
 export 'src/ops/level_check.dart';
 export 'src/ops/groups/project_ops.dart' show projectOperations;
 export 'src/ops/groups/idle_ops.dart' show idleOperations;
+export 'src/ops/groups/quiz_ops.dart' show quizOperations;
 export 'src/ops/groups/i18n_ops.dart' show i18nOperations;
 export 'src/ops/groups/asset_ops.dart' show assetOperations;
 export 'src/ops/groups/animation_ops.dart' show animationOperations;

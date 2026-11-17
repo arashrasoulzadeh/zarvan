@@ -53,7 +53,8 @@ class QuizGenerator {
         for (final w in blankableIndexes(item.lines[l], rules)) (l, w),
     ];
     if (candidates.isEmpty) return null;
-    final (lineIndex, wordIndex) = candidates[random.nextInt(candidates.length)];
+    final (lineIndex, wordIndex) =
+        candidates[random.nextInt(candidates.length)];
     final words = tokenize(item.lines[lineIndex]);
     final answer = words[wordIndex];
 
@@ -76,7 +77,11 @@ class QuizGenerator {
     );
   }
 
-  List<String> _distractorPool(QuizItem item, String answer, QuizTierRules rules) {
+  List<String> _distractorPool(
+    QuizItem item,
+    String answer,
+    QuizTierRules rules,
+  ) {
     final source = rules.distractors == DistractorStrategy.sameAuthor
         ? bank.where((i) => i.author != null && i.author == item.author)
         : bank;
@@ -105,7 +110,8 @@ class QuizGenerator {
         final n = rules.rhymeSuffixLength;
         return word.length >= n &&
             answer.length >= n &&
-            word.substring(word.length - n) == answer.substring(answer.length - n);
+            word.substring(word.length - n) ==
+                answer.substring(answer.length - n);
     }
   }
 }

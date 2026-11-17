@@ -2859,6 +2859,92 @@ zarvan project validate
 
 REST: `POST /v1/project/validate` · MCP tool: `project.validate` · JSON-RPC method: `project.validate`
 
+## quiz
+
+### `quiz.answer`
+
+Apply one answer to a run and return the updated run and result.
+
+Give the `question` (from quiz.generate), the chosen option index and the current `run` (omit to start a fresh one with default rules). Returns the new `run` to pass to the next call.
+
+*read*.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `question` | json; required | |
+| `option` | integer; required; 0 to ∞ | |
+| `run` | json | Run state from a previous call. |
+| `secondsLeft` | integer; default `0`; 0 to ∞ | |
+
+```bash
+zarvan quiz answer
+```
+
+REST: `POST /v1/quiz/answer` · MCP tool: `quiz.answer` · JSON-RPC method: `quiz.answer`
+
+### `quiz.generate`
+
+Generate seeded fill-in-the-blank questions from a bank.
+
+Bank shape: `{items: [{id, lines, tier, author?}], tiers: {"1": {blank, distractors, optionCount}}, stopWords: []}`. Same bank, seed and arguments give the same questions. Items that cannot make a question are skipped and listed in `skipped`.
+
+*read*, idempotent.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `path` | path | Bank file in the project. |
+| `json` | json | The bank inline, instead of a file. |
+| `seed` | integer; default `1` | |
+| `count` | integer; default `10`; 1 to 500 | |
+| `tier` | integer; 1 to ∞ | Only items of this tier. |
+
+Errors: `validation_failed`.
+
+```bash
+zarvan quiz generate <path>
+```
+
+REST: `POST /v1/quiz/generate` · MCP tool: `quiz.generate` · JSON-RPC method: `quiz.generate`
+
+### `quiz.state`
+
+Summarize a run and, optionally, saved progress.
+
+Reads `run` and `progress` JSON (as returned by quiz.answer and saved by the game); changes nothing.
+
+*read*, idempotent.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `run` | json | |
+| `progress` | json | |
+
+```bash
+zarvan quiz state
+```
+
+REST: `POST /v1/quiz/state` · MCP tool: `quiz.state` · JSON-RPC method: `quiz.state`
+
+### `quiz.validate_bank`
+
+Check a quiz bank: blankable words, enough distractors, no duplicate ids, tier counts.
+
+Nothing is generated for play or written. `minPerTier` is an object like `{"1": 20}` requiring at least that many items in a tier.
+
+*read*, idempotent.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `path` | path | Bank file in the project. |
+| `json` | json | The bank inline, instead of a file. |
+| `minPerTier` | object | |
+
+```bash
+zarvan quiz validate-bank <path>
+```
+
+REST: `POST /v1/quiz/validate_bank` · MCP tool: `quiz.validate_bank` · JSON-RPC method: `quiz.validate_bank`
+
 ## release
 
 ### `release.build`

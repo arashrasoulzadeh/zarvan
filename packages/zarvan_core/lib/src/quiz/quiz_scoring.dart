@@ -33,25 +33,26 @@ class ScoreRules {
   });
 
   factory ScoreRules.fromJson(Map<String, dynamic> json) => ScoreRules(
-        baseByTier: ((json['baseByTier'] as Map?) ?? const {})
-            .map((k, v) => MapEntry(int.parse(k as String), (v as num).toInt())),
-        defaultBase: (json['defaultBase'] as num?)?.toInt() ?? 10,
-        streakStep: (json['streakStep'] as num?)?.toDouble() ?? 0.1,
-        maxMultiplier: (json['maxMultiplier'] as num?)?.toDouble() ?? 3.0,
-        hintFactor: (json['hintFactor'] as num?)?.toDouble() ?? 0.5,
-        timeBonusPerSecond: (json['timeBonusPerSecond'] as num?)?.toInt() ?? 0,
-        wrongPenalty: (json['wrongPenalty'] as num?)?.toInt() ?? 0,
-      );
+    baseByTier: ((json['baseByTier'] as Map?) ?? const {}).map(
+      (k, v) => MapEntry(int.parse(k as String), (v as num).toInt()),
+    ),
+    defaultBase: (json['defaultBase'] as num?)?.toInt() ?? 10,
+    streakStep: (json['streakStep'] as num?)?.toDouble() ?? 0.1,
+    maxMultiplier: (json['maxMultiplier'] as num?)?.toDouble() ?? 3.0,
+    hintFactor: (json['hintFactor'] as num?)?.toDouble() ?? 0.5,
+    timeBonusPerSecond: (json['timeBonusPerSecond'] as num?)?.toInt() ?? 0,
+    wrongPenalty: (json['wrongPenalty'] as num?)?.toInt() ?? 0,
+  );
 
   Map<String, dynamic> toJson() => {
-        'baseByTier': baseByTier.map((k, v) => MapEntry('$k', v)),
-        'defaultBase': defaultBase,
-        'streakStep': streakStep,
-        'maxMultiplier': maxMultiplier,
-        'hintFactor': hintFactor,
-        'timeBonusPerSecond': timeBonusPerSecond,
-        'wrongPenalty': wrongPenalty,
-      };
+    'baseByTier': baseByTier.map((k, v) => MapEntry('$k', v)),
+    'defaultBase': defaultBase,
+    'streakStep': streakStep,
+    'maxMultiplier': maxMultiplier,
+    'hintFactor': hintFactor,
+    'timeBonusPerSecond': timeBonusPerSecond,
+    'wrongPenalty': wrongPenalty,
+  };
 }
 
 /// What one answer did.
@@ -129,26 +130,30 @@ class QuizRun {
     score += delta;
     _hintUsed = false;
     return AnswerResult(
-        correct: correct, pointsDelta: delta, streak: streak, livesLeft: lives);
+      correct: correct,
+      pointsDelta: delta,
+      streak: streak,
+      livesLeft: lives,
+    );
   }
 
   factory QuizRun.fromJson(Map<String, dynamic> json) => QuizRun(
-        rules: ScoreRules.fromJson(json['rules'] as Map<String, dynamic>),
-        lives: (json['lives'] as num).toInt(),
-        score: (json['score'] as num).toInt(),
-        streak: (json['streak'] as num).toInt(),
-        answered: (json['answered'] as num).toInt(),
-        correctCount: (json['correctCount'] as num).toInt(),
-      );
+    rules: ScoreRules.fromJson(json['rules'] as Map<String, dynamic>),
+    lives: (json['lives'] as num).toInt(),
+    score: (json['score'] as num).toInt(),
+    streak: (json['streak'] as num).toInt(),
+    answered: (json['answered'] as num).toInt(),
+    correctCount: (json['correctCount'] as num).toInt(),
+  );
 
   Map<String, dynamic> toJson() => {
-        'rules': rules.toJson(),
-        'lives': lives,
-        'score': score,
-        'streak': streak,
-        'answered': answered,
-        'correctCount': correctCount,
-      };
+    'rules': rules.toJson(),
+    'lives': lives,
+    'score': score,
+    'streak': streak,
+    'answered': answered,
+    'correctCount': correctCount,
+  };
 }
 
 class _Rng implements Random {

@@ -12,13 +12,16 @@ class StageRecord {
   const StageRecord({this.stars = 0, this.bestScore = 0, this.plays = 0});
 
   factory StageRecord.fromJson(Map<String, dynamic> json) => StageRecord(
-        stars: (json['stars'] as num?)?.toInt() ?? 0,
-        bestScore: (json['bestScore'] as num?)?.toInt() ?? 0,
-        plays: (json['plays'] as num?)?.toInt() ?? 0,
-      );
+    stars: (json['stars'] as num?)?.toInt() ?? 0,
+    bestScore: (json['bestScore'] as num?)?.toInt() ?? 0,
+    plays: (json['plays'] as num?)?.toInt() ?? 0,
+  );
 
-  Map<String, dynamic> toJson() =>
-      {'stars': stars, 'bestScore': bestScore, 'plays': plays};
+  Map<String, dynamic> toJson() => {
+    'stars': stars,
+    'bestScore': bestScore,
+    'plays': plays,
+  };
 }
 
 /// Everything a player keeps between sessions: stage stars and unlocks,
@@ -37,9 +40,9 @@ class QuizProgress {
     Set<String>? unlocked,
     Map<String, int>? records,
     this.currency = 0,
-  })  : stages = stages ?? {},
-        unlocked = unlocked ?? {},
-        records = records ?? {};
+  }) : stages = stages ?? {},
+       unlocked = unlocked ?? {},
+       records = records ?? {};
 
   bool isUnlocked(String stageId) => unlocked.contains(stageId);
 
@@ -77,33 +80,40 @@ class QuizProgress {
   }
 
   void earn(int amount) {
-    if (amount < 0) throw ArgumentError.value(amount, 'amount', 'must not be negative');
+    if (amount < 0)
+      throw ArgumentError.value(amount, 'amount', 'must not be negative');
     currency += amount;
   }
 
   /// Takes [amount] if affordable; false (and no change) otherwise.
   bool spend(int amount) {
-    if (amount < 0) throw ArgumentError.value(amount, 'amount', 'must not be negative');
+    if (amount < 0)
+      throw ArgumentError.value(amount, 'amount', 'must not be negative');
     if (amount > currency) return false;
     currency -= amount;
     return true;
   }
 
   factory QuizProgress.fromJson(Map<String, dynamic> json) => QuizProgress(
-        stages: ((json['stages'] as Map?) ?? const {}).map((k, v) =>
-            MapEntry(k as String, StageRecord.fromJson(v as Map<String, dynamic>))),
-        unlocked: {...((json['unlocked'] as List?) ?? const []).cast<String>()},
-        records: ((json['records'] as Map?) ?? const {})
-            .map((k, v) => MapEntry(k as String, (v as num).toInt())),
-        currency: (json['currency'] as num?)?.toInt() ?? 0,
-      );
+    stages: ((json['stages'] as Map?) ?? const {}).map(
+      (k, v) => MapEntry(
+        k as String,
+        StageRecord.fromJson(v as Map<String, dynamic>),
+      ),
+    ),
+    unlocked: {...((json['unlocked'] as List?) ?? const []).cast<String>()},
+    records: ((json['records'] as Map?) ?? const {}).map(
+      (k, v) => MapEntry(k as String, (v as num).toInt()),
+    ),
+    currency: (json['currency'] as num?)?.toInt() ?? 0,
+  );
 
   Map<String, dynamic> toJson() => {
-        'stages': stages.map((k, v) => MapEntry(k, v.toJson())),
-        'unlocked': unlocked.toList()..sort(),
-        'records': records,
-        'currency': currency,
-      };
+    'stages': stages.map((k, v) => MapEntry(k, v.toJson())),
+    'unlocked': unlocked.toList()..sort(),
+    'records': records,
+    'currency': currency,
+  };
 
   /// Writes this progress under [key].
   Future<void> save(KeyValueStore store, {String key = 'quiz_progress'}) =>
@@ -112,8 +122,10 @@ class QuizProgress {
   /// Reads progress from [key]; a missing entry gives a fresh one. An
   /// unreadable entry is copied to `$key.corrupt` before a fresh one is
   /// returned, so a bad save is never silently destroyed.
-  static Future<QuizProgress> load(KeyValueStore store,
-      {String key = 'quiz_progress'}) async {
+  static Future<QuizProgress> load(
+    KeyValueStore store, {
+    String key = 'quiz_progress',
+  }) async {
     final raw = await store.getString(key);
     if (raw == null) return QuizProgress();
     try {

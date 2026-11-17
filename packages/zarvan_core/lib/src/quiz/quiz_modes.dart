@@ -63,31 +63,32 @@ class QuizMode {
 
   /// Seed for the daily set: the same for everyone on one calendar date, so
   /// the date alone reproduces the questions.
-  static int dailySeed(DateTime date) => date.year * 10000 + date.month * 100 + date.day;
+  static int dailySeed(DateTime date) =>
+      date.year * 10000 + date.month * 100 + date.day;
 
   factory QuizMode.fromJson(Map<String, dynamic> json) => QuizMode(
-        kind: QuizModeKind.values.byName(json['kind'] as String),
-        questionCount: (json['questionCount'] as num?)?.toInt() ?? 10,
-        unlockThreshold: (json['unlockThreshold'] as num?)?.toDouble() ?? 0.6,
-        starThresholds: ((json['starThresholds'] as List?) ?? const [0.6, 0.8, 1.0])
-            .map((e) => (e as num).toDouble())
-            .toList(),
-        tierStepEvery: (json['tierStepEvery'] as num?)?.toInt() ?? 5,
-        continues: (json['continues'] as num?)?.toInt() ?? 1,
-        durationSeconds: (json['durationSeconds'] as num?)?.toInt() ?? 60,
-        startTier: (json['startTier'] as num?)?.toInt() ?? 1,
-        maxTier: (json['maxTier'] as num?)?.toInt() ?? 3,
-      );
+    kind: QuizModeKind.values.byName(json['kind'] as String),
+    questionCount: (json['questionCount'] as num?)?.toInt() ?? 10,
+    unlockThreshold: (json['unlockThreshold'] as num?)?.toDouble() ?? 0.6,
+    starThresholds: ((json['starThresholds'] as List?) ?? const [0.6, 0.8, 1.0])
+        .map((e) => (e as num).toDouble())
+        .toList(),
+    tierStepEvery: (json['tierStepEvery'] as num?)?.toInt() ?? 5,
+    continues: (json['continues'] as num?)?.toInt() ?? 1,
+    durationSeconds: (json['durationSeconds'] as num?)?.toInt() ?? 60,
+    startTier: (json['startTier'] as num?)?.toInt() ?? 1,
+    maxTier: (json['maxTier'] as num?)?.toInt() ?? 3,
+  );
 
   Map<String, dynamic> toJson() => {
-        'kind': kind.name,
-        'questionCount': questionCount,
-        'unlockThreshold': unlockThreshold,
-        'starThresholds': starThresholds,
-        'tierStepEvery': tierStepEvery,
-        'continues': continues,
-        'durationSeconds': durationSeconds,
-        'startTier': startTier,
-        'maxTier': maxTier,
-      };
+    'kind': kind.name,
+    'questionCount': questionCount,
+    'unlockThreshold': unlockThreshold,
+    'starThresholds': starThresholds,
+    'tierStepEvery': tierStepEvery,
+    'continues': continues,
+    'durationSeconds': durationSeconds,
+    'startTier': startTier,
+    'maxTier': maxTier,
+  };
 }

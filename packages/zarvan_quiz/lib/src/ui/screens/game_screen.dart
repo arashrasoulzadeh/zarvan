@@ -217,12 +217,6 @@ class QuizGameScreen extends QuizScreen {
         _view.addNode(diamondAt(dx, dy, 9, theme.accent, z: 8));
       }
     }
-    final oneRow = measureText(
-      'ا',
-      fontSize: _poemSize,
-      fontFamily: theme.fontFamily,
-      rtl: rtl,
-    ).height;
     // Writing the whole poem takes at most 1.5 s, however many verses it has.
     final count = lines.fold<int>(
       0,
@@ -236,8 +230,15 @@ class QuizGameScreen extends QuizScreen {
     for (var i = 0; i < lines.length; i++) {
       final lineY = y + sizes[i].height / 2;
       final finalColor = answered ? theme.correct : theme.ink;
-      // A line that broke over several rows cannot be placed word by word.
-      final wrapped = sizes[i].height > oneRow * 1.5;
+      // A line that does not fit in one row cannot be placed word by word.
+      final wrapped =
+          measureText(
+            lines[i],
+            fontSize: _poemSize,
+            fontFamily: theme.fontFamily,
+            rtl: rtl,
+          ).width >
+          textWidth;
       final words = lines[i].split(' ').where((w) => w.isNotEmpty).toList();
       if (wrapped || words.isEmpty) {
         _view.addNode(
@@ -455,9 +456,31 @@ class QuizGameScreen extends QuizScreen {
     final x = rtl ? rect.right - 24 : rect.x + 24;
     _view.addNode(dot(x, rect.centerY, 32, color, alpha: 0.35, z: 8));
     _view.addNode(dot(x, rect.centerY, 24, color, z: 9));
-    _view.addNode(
-      label(mark, x, rect.centerY, size: 16, color: theme.background, z: 10),
-    );
+    // Drawn from dots, not a glyph: a tick or cross may be missing from the font.
+    final path = mark == '✓'
+        ? const [(-6.0, 0.5), (-2.0, 5.0), (7.0, -5.5)]
+        : const [
+            (-5.5, -5.5),
+            (5.5, 5.5),
+            (0.0, 0.0),
+            (5.5, -5.5),
+            (-5.5, 5.5),
+          ];
+    for (var i = 0; i + 1 < path.length; i += mark == '✓' ? 1 : 2) {
+      final (ax, ay) = path[i];
+      final (bx, by) = path[i + 1];
+      for (var t = 0.0; t <= 1.0; t += 0.12) {
+        _view.addNode(
+          dot(
+            x + ax + (bx - ax) * t,
+            rect.centerY + ay + (by - ay) * t,
+            3.4,
+            theme.background,
+            z: 10,
+          ),
+        );
+      }
+    }
   }
 
   /// Brings each word of the poem in, in turn: it rises a little, fades in and

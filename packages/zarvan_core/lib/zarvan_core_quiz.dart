@@ -9,3 +9,4 @@ export 'src/quiz/quiz_question.dart';
 export 'src/quiz/quiz_rules.dart';
 export 'src/quiz/quiz_modes.dart';
 export 'src/quiz/quiz_scoring.dart';
+export 'src/quiz/quiz_progress.dart';

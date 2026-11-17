@@ -80,7 +80,7 @@ and the item bank are passed in as data.
 - [x] **Scoring and modes**: per-tier base score, streak multiplier, hint (remove two options, halves the score), lives,
       countdown with time bonus/penalty; modes as data: staged levels (unlock threshold, stars), endless (tier steps
       every N questions, one continue), timed race, daily set seeded by date.
-- [ ] **Progress model**: stars and unlocks per chapter/stage, records, currency balance; saved through the existing
+- [x] **Progress model**: stars and unlocks per chapter/stage, records, currency balance; saved through the existing
       save/`KeyValueStore` path.
 - [ ] **`zarvan_quiz` package** (depends on `zarvan_core` + `zarvan_flutter`): RTL-ready question card, option buttons,
       answer feedback, HUD (currency, lives, timer), `QuizController`/`QuizSession` for lifecycle and saving.

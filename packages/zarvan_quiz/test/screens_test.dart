@@ -335,6 +335,35 @@ void main() {
       expect(poem().every((a) => a == 1), isTrue);
     });
 
+    test('a verse too long for one row is written word by word too', () async {
+      final r = await Rig.make(bank: makeBank(wordsPerLine: 14));
+      r.kit.session.begin(
+        QuizRound.stage(
+          r.kit.factory,
+          const StageMode(),
+          author: 'a',
+          tier: QuizTier.easy,
+        ),
+      );
+      await r.open(QuizGameScreen(r.kit));
+      List<double> poem() {
+        final t = r.world.componentsOf<eng.Text>();
+        return [
+          for (var i = 0; i < t.length; i++)
+            if (t.denseAt(i).fontSize == 20 &&
+                !r.kit.session.question!.options.contains(t.denseAt(i).text))
+              t.denseAt(i).alpha,
+        ];
+      }
+
+      r.run(0.2);
+      final early = poem();
+      expect(early.length, greaterThan(20));
+      expect(early.last, 0, reason: 'the end of the poem is not written yet');
+      r.run(1.6);
+      expect(poem().every((a) => a == 1), isTrue);
+    });
+
     test('a hint redraw does not restart the writing', () async {
       final r = await stage();
       r.run(4);

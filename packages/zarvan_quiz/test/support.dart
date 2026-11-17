@@ -7,7 +7,7 @@ String word(int n) {
   return letters[n % b] + letters[(n ~/ b) % b] + letters[(n ~/ (b * b)) % b];
 }
 
-QuizBank makeBank({int perTier = 30}) {
+QuizBank makeBank({int perTier = 30, int wordsPerLine = 2}) {
   var w = 0;
   final items = <Map<String, dynamic>>[];
   for (final t in QuizTier.values) {
@@ -17,7 +17,10 @@ QuizBank makeBank({int perTier = 30}) {
         'author': 'a',
         'tier': t.name,
         'fame': 100 - i,
-        'lines': ['${word(w++)} ${word(w++)}', '${word(w++)} ${word(w++)}'],
+        'lines': [
+          for (var l = 0; l < 2; l++)
+            [for (var k = 0; k < wordsPerLine; k++) word(w++)].join(' '),
+        ],
       });
     }
   }

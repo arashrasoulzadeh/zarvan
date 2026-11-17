@@ -225,59 +225,55 @@ class QuizGameScreen extends QuizScreen {
     final step = count > 1
         ? math.min(0.11, (_writeSeconds - _wordFade) / (count - 1))
         : 0.0;
+    double wordsWidth(List<String> ws) => measureText(
+      ws.join(' '),
+      fontSize: _poemSize,
+      fontFamily: theme.fontFamily,
+      rtl: rtl,
+    ).width;
+    final finalColor = answered ? theme.correct : theme.ink;
     var y = cardTop + 16;
     var wordNo = 0;
     for (var i = 0; i < lines.length; i++) {
-      final lineY = y + sizes[i].height / 2;
-      final finalColor = answered ? theme.correct : theme.ink;
-      // A line that does not fit in one row cannot be placed word by word.
-      final wrapped =
-          measureText(
-            lines[i],
-            fontSize: _poemSize,
-            fontFamily: theme.fontFamily,
-            rtl: rtl,
-          ).width >
-          textWidth;
       final words = lines[i].split(' ').where((w) => w.isNotEmpty).toList();
-      if (wrapped || words.isEmpty) {
-        _view.addNode(
-          label(
-            lines[i],
-            QuizScreen.worldWidth / 2,
-            lineY,
-            size: _poemSize,
-            maxWidth: textWidth,
-            color: finalColor,
-          ),
-        );
-      } else {
-        // Written word by word, like a pen: each word is placed where it sits
-        // in the finished line and appears in turn.
-        double w(String t) => measureText(
-          t,
-          fontSize: _poemSize,
-          fontFamily: theme.fontFamily,
-          rtl: rtl,
-        ).width;
-        final total = sizes[i].width;
+      if (words.isEmpty) {
+        y += sizes[i].height + gap;
+        continue;
+      }
+      // A verse too long for one row is broken into rows here, the same way
+      // the engine would, so that every row is written word by word.
+      final rows = <List<String>>[[]];
+      for (final w in words) {
+        final next = [...rows.last, w];
+        if (rows.last.isNotEmpty && wordsWidth(next) > textWidth) {
+          rows.add([w]);
+        } else {
+          rows.last.add(w);
+        }
+      }
+      final rowHeight = sizes[i].height / rows.length;
+      for (var r = 0; r < rows.length; r++) {
+        final rowY = y + rowHeight * (r + 0.5);
+        final row = rows[r];
+        // Each word is placed where it sits in the finished row.
+        final total = wordsWidth(row);
         final start = rtl
             ? QuizScreen.worldWidth / 2 + total / 2
             : QuizScreen.worldWidth / 2 - total / 2;
-        for (var k = 0; k < words.length; k++) {
-          final upTo = w(words.sublist(0, k + 1).join(' '));
-          final own = w(words[k]);
+        for (var k = 0; k < row.length; k++) {
+          final upTo = wordsWidth(row.sublist(0, k + 1));
+          final own = wordsWidth([row[k]]);
           final cx = rtl ? start - upTo + own / 2 : start + upTo - own / 2;
           final node = label(
-            words[k],
+            row[k],
             cx,
-            lineY,
+            rowY,
             size: _poemSize,
             color: theme.accent,
           );
           node.text!.alpha = 0;
           _view.addNode(node);
-          final word = _Word(node, wordNo++ * step, lineY, finalColor);
+          final word = _Word(node, wordNo++ * step, rowY, finalColor);
           // A word that has already been written (a redraw after a hint or
           // an answer) must not throw its sparks again.
           word.started = _time - _revealStart - word.delay > _wordFade;
@@ -457,18 +453,10 @@ class QuizGameScreen extends QuizScreen {
     _view.addNode(dot(x, rect.centerY, 32, color, alpha: 0.35, z: 8));
     _view.addNode(dot(x, rect.centerY, 24, color, z: 9));
     // Drawn from dots, not a glyph: a tick or cross may be missing from the font.
-    final path = mark == '✓'
-        ? const [(-6.0, 0.5), (-2.0, 5.0), (7.0, -5.5)]
-        : const [
-            (-5.5, -5.5),
-            (5.5, 5.5),
-            (0.0, 0.0),
-            (5.5, -5.5),
-            (-5.5, 5.5),
-          ];
-    for (var i = 0; i + 1 < path.length; i += mark == '✓' ? 1 : 2) {
-      final (ax, ay) = path[i];
-      final (bx, by) = path[i + 1];
+    final segments = mark == '✓'
+        ? const [((-6.0, 0.5), (-2.0, 5.0)), ((-2.0, 5.0), (7.0, -5.5))]
+        : const [((-5.5, -5.5), (5.5, 5.5)), ((5.5, -5.5), (-5.5, 5.5))];
+    for (final ((ax, ay), (bx, by)) in segments) {
       for (var t = 0.0; t <= 1.0; t += 0.12) {
         _view.addNode(
           dot(

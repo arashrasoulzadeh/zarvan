@@ -1,6 +1,7 @@
 import 'dart:ui' show Offset;
 
-import 'package:zarvan_core/zarvan_core_quiz.dart' show QuizRound;
+import 'package:zarvan_core/zarvan_core_quiz.dart'
+    show QuizRound, defaultBlankMarker;
 import 'package:zarvan_core/zarvan_core.dart'
     show EntityId, GameState, UiRect, World;
 import 'package:zarvan_flutter/zarvan_flutter.dart' as eng;
@@ -218,6 +219,14 @@ abstract class QuizScreen extends Scene {
       b.label.text!.rtl = false;
     }
   }
+
+  /// [line] with the blank marker made unbreakable: the marker is three
+  /// full-width underscores and a line may otherwise break between them,
+  /// splitting the gap across two lines.
+  String keepBlankTogether(String line) => line.replaceAll(
+    defaultBlankMarker,
+    defaultBlankMarker.split('').join('\u2060'),
+  );
 
   /// A new group for things that change.
   QuizGroup group() => QuizGroup(this);

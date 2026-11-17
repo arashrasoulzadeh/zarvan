@@ -247,7 +247,7 @@ void main() {
 
     test('shows the HUD, the poem with its blank and four options', () async {
       final r = await stage();
-      expect(r.hasPart(defaultBlankMarker), isTrue);
+      expect(r.hasPart('＿'), isTrue);
       for (final o in r.kit.session.question!.options) {
         expect(r.has(o), isTrue, reason: o);
       }
@@ -257,12 +257,31 @@ void main() {
       expect(r.hasPart('Hint'), isTrue);
     });
 
+    test(
+      'a stage shows no lives or clock, only score, streak and coins',
+      () async {
+        final r = await stage();
+        expect(r.hasPart('Lives'), isFalse);
+        expect(r.hasPart('Time'), isFalse);
+      },
+    );
+
+    test(
+      'the blank is kept in one piece so a line cannot break inside it',
+      () async {
+        final r = await stage();
+        final line = r.texts.firstWhere((t) => t.contains('＿'));
+        expect(line.contains('＿＿＿'), isFalse);
+        expect(line.contains('＿\u2060＿\u2060＿'), isTrue);
+      },
+    );
+
     test('the right answer fills the blank, scores, and offers Next', () async {
       final r = await stage();
       final right = r.optionRight;
       r.tap(right);
       r.run(0.1);
-      expect(r.hasPart(defaultBlankMarker), isFalse);
+      expect(r.hasPart('＿'), isFalse);
       expect(r.has('Score 10'), isTrue);
       expect(r.has('Streak 1'), isTrue);
       expect(r.has('Next'), isTrue);
@@ -552,7 +571,7 @@ void main() {
       () async {
         final r = await Rig.make(tutorialDone: false);
         await r.open(QuizTutorialScreen(r.kit));
-        expect(r.hasPart(defaultBlankMarker), isTrue);
+        expect(r.hasPart('＿'), isTrue);
         r.tap('Start');
         expect(r.loaded, isNull);
         final q = r.kit.factory.create(
@@ -561,7 +580,7 @@ void main() {
           1,
         )!;
         r.tap(q.options[0]);
-        expect(r.hasPart(defaultBlankMarker), isFalse);
+        expect(r.hasPart('＿'), isFalse);
         r.tap('Start');
         await Future<void>.delayed(const Duration(milliseconds: 10));
         expect(r.kit.session.progress.flags['tutorialDone'], isTrue);

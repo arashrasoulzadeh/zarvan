@@ -67,13 +67,17 @@ class QuizGameScreen extends QuizScreen {
     if (round == null) return;
     final s = kit.strings;
     final run = round.run;
+    final clock = run.clockMs;
     final items = <String>[
       '${s.score} ${s.number(run.score)}',
       '${s.streak} ${s.number(run.streak)}',
+      // A stage has neither lives nor a clock, so that slot stays empty.
       if (run.lives != null)
         '${s.lives} ${s.number(run.lives!)}'
+      else if (clock != null)
+        '${s.clock} ${s.number(clock ~/ 1000 + (clock % 1000 > 0 ? 1 : 0))}'
       else
-        '${s.clock} ${s.number((run.clockMs ?? 0) ~/ 1000 + ((run.clockMs ?? 0) % 1000 > 0 ? 1 : 0))}',
+        '',
       '${s.coins} ${s.number(session.progress.coins)}',
     ];
     for (var i = 0; i < 4; i++) {
@@ -101,7 +105,9 @@ class QuizGameScreen extends QuizScreen {
     final answer = q.options[q.answerIndex];
     final lines = [
       for (final l in q.render())
-        answered ? l.replaceFirst(defaultBlankMarker, answer) : l,
+        answered
+            ? l.replaceFirst(defaultBlankMarker, answer)
+            : keepBlankTogether(l),
     ];
     final sizes = [
       for (final l in lines)

@@ -40,7 +40,9 @@ class QuizTutorialScreen extends QuizScreen {
     final answer = q.options[q.answerIndex];
     final lines = [
       for (final l in q.render())
-        answered ? l.replaceFirst(defaultBlankMarker, answer) : l,
+        answered
+            ? l.replaceFirst(defaultBlankMarker, answer)
+            : keepBlankTogether(l),
     ];
     const w = QuizScreen.worldWidth - 72;
     final sizes = [

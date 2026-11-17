@@ -23,3 +23,5 @@ export 'src/quiz/scoring.dart';
 export 'src/quiz/game_mode.dart';
 export 'src/quiz/round.dart';
 export 'src/quiz/progress.dart';
+export 'src/quiz/simulate.dart';
+export 'src/quiz/validation.dart';

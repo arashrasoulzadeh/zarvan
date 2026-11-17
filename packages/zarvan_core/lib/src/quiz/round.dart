@@ -224,6 +224,59 @@ class QuizRound {
     );
   }
 
+  /// Picks a saved [run] up again in [mode]: rebuilds the plan from the
+  /// run's own `seedBase` (`stage:author:tier:attempt`, `daily:date`, or the
+  /// endless/race seed), so a stateless caller (an agent, a server) needs
+  /// only the bank, the mode and the run JSON. Throws [FormatException]
+  /// when the run does not belong to [mode].
+  factory QuizRound.resume(
+    QuestionFactory factory,
+    GameMode mode,
+    QuizRun run,
+  ) {
+    if (run.mode != mode.type) {
+      throw FormatException('The run is a ${run.mode} run, not ${mode.type}.');
+    }
+    final QuizRound round;
+    switch (mode) {
+      case StageMode():
+        final parts = run.seedBase.split(':');
+        final tier = parts.length == 4 ? QuizTier.byName(parts[2]) : null;
+        final attempt = parts.length == 4 ? int.tryParse(parts[3]) : null;
+        if (parts[0] != 'stage' || tier == null || attempt == null) {
+          throw FormatException('Not a stage seedBase: "${run.seedBase}".');
+        }
+        round = QuizRound.stage(
+          factory,
+          mode,
+          author: parts[1],
+          tier: tier,
+          attempt: attempt,
+        );
+        final plan = round._plan as _StagePlan;
+        var cursor = 0;
+        for (var i = 0; i < plan.items.length; i++) {
+          if (run.usedItemIds.contains(plan.items[i].id)) cursor = i + 1;
+        }
+        round._cursor = cursor;
+      case EndlessMode():
+        round = QuizRound.endless(factory, mode, seedBase: run.seedBase);
+      case RaceMode():
+        round = QuizRound.race(factory, mode, seedBase: run.seedBase);
+      case DailyMode():
+        if (!run.seedBase.startsWith('daily:')) {
+          throw FormatException('Not a daily seedBase: "${run.seedBase}".');
+        }
+        round = QuizRound.daily(
+          factory,
+          mode,
+          date: run.seedBase.substring('daily:'.length),
+        );
+    }
+    round._run = run;
+    return round;
+  }
+
   /// True when no more questions are accepted: stage or daily finished, no
   /// lives left, or the clock at zero.
   bool get isOver {

@@ -2873,18 +2873,24 @@ REST: `POST /v1/project/validate` · MCP tool: `project.validate` · JSON-RPC me
 
 ### `quiz.answer`
 
-Apply one answer to a run and return the updated run and result.
+Answer the current question; get the new run, the result and the next question.
 
-Give the `question` (from quiz.generate), the chosen option index and the current `run` (omit to start a fresh one with default rules). Returns the new `run` to pass to the next call.
+Give the same bank and mode as quiz.start and the `run` it returned. With `hint` the hint is taken first (once per question; not in a race). The returned run already holds the next question unless the round is over.
 
 *read*.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `question` | json; required | |
-| `option` | integer; required; 0 to ∞ | |
-| `run` | json | Run state from a previous call. |
-| `secondsLeft` | integer; default `0`; 0 to ∞ | |
+| `bank` | path | The bank file in the project (bank.json). |
+| `json` | json | The bank inline, instead of a file. |
+| `stopwords` | path | Stop-word file (`{"words": [...]}`). |
+| `stopWords` | array | Stop words inline. |
+| `mode` | json; required | stage, endless, race, daily, or a mode object such as {"type": "endless", "lives": 5}. |
+| `run` | json; required | |
+| `choice` | integer; required; 0 to 3 | |
+| `hint` | boolean; default `false` | |
+
+Errors: `invalid_params`, `conflict`.
 
 ```bash
 zarvan quiz answer
@@ -2894,40 +2900,106 @@ REST: `POST /v1/quiz/answer` · MCP tool: `quiz.answer` · JSON-RPC method: `qui
 
 ### `quiz.generate`
 
-Generate seeded fill-in-the-blank questions from a bank.
+Make the question a player would see for an item, tier and seed.
 
-Bank shape: `{items: [{id, lines, tier, author?}], tiers: {"1": {blank, distractors, optionCount}}, stopWords: []}`. Same bank, seed and arguments give the same questions. Items that cannot make a question are skipped and listed in `skipped`.
+Same as the game: the same bank, stop words, item, tier and seed always give the same `Question`. `tier` defaults to the item\'s own tier.
 
 *read*, idempotent.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path | Bank file in the project. |
+| `bank` | path | The bank file in the project (bank.json). |
 | `json` | json | The bank inline, instead of a file. |
-| `seed` | integer; default `1` | |
-| `count` | integer; default `10`; 1 to 500 | |
-| `tier` | integer; 1 to ∞ | Only items of this tier. |
+| `stopwords` | path | Stop-word file (`{"words": [...]}`). |
+| `stopWords` | array | Stop words inline. |
+| `itemId` | string; required | |
+| `tier` | enumeration; one of `easy`, `medium`, `hard`, `literary` | |
+| `seed` | integer; default `0` | |
 
-Errors: `validation_failed`.
+Errors: `not_found`, `validation_failed`.
 
 ```bash
-zarvan quiz generate <path>
+zarvan quiz generate
 ```
 
 REST: `POST /v1/quiz/generate` · MCP tool: `quiz.generate` · JSON-RPC method: `quiz.generate`
 
-### `quiz.state`
+### `quiz.simulate`
 
-Summarize a run and, optionally, saved progress.
+Play many rounds with a fixed policy and report the score, stars and pass rate.
 
-Reads `run` and `progress` JSON (as returned by quiz.answer and saved by the game); changes nothing.
+`policy` is `always_correct`, `random` (uniform over the options) or `accuracy:<p>`. Round r of a stage is attempt r+1; endless and race use `<seedBase>:<r>`; daily uses `date` plus r days. In a race each question advances the clock by `secondsPerQuestion`. Same inputs, same report. Use it to tune difficulty and the coin economy without playing.
 
 *read*, idempotent.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `run` | json | |
-| `progress` | json | |
+| `bank` | path | The bank file in the project (bank.json). |
+| `json` | json | The bank inline, instead of a file. |
+| `stopwords` | path | Stop-word file (`{"words": [...]}`). |
+| `stopWords` | array | Stop words inline. |
+| `mode` | json; required | stage, endless, race, daily, or a mode object such as {"type": "endless", "lives": 5}. |
+| `author` | string | Stage: the chapter (default: the first author). |
+| `tier` | enumeration; one of `easy`, `medium`, `hard`, `literary` | Stage: the tier (default easy). |
+| `attempt` | integer; 1 to ∞ | Stage: attempt number; it changes which word is hidden. |
+| `date` | string | Daily: the local date, YYYY-MM-DD. |
+| `seedBase` | string | Endless and race: text the question seeds come from. |
+| `policy` | string; default `"always_correct"` | |
+| `runs` | integer; default `100`; 1 to 10000 | |
+| `seed` | integer; default `1` | |
+| `secondsPerQuestion` | integer; default `4`; 0 to ∞ | |
+
+```bash
+zarvan quiz simulate
+```
+
+REST: `POST /v1/quiz/simulate` · MCP tool: `quiz.simulate` · JSON-RPC method: `quiz.simulate`
+
+### `quiz.start`
+
+Start a round in a mode and return the run with its first question.
+
+The run is plain JSON (`QuizRun`): keep it and pass it to quiz.answer. Stage needs `author` and `tier`, daily needs `date`, endless and race may take a `seedBase`.
+
+*read*, idempotent.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `bank` | path | The bank file in the project (bank.json). |
+| `json` | json | The bank inline, instead of a file. |
+| `stopwords` | path | Stop-word file (`{"words": [...]}`). |
+| `stopWords` | array | Stop words inline. |
+| `mode` | json; required | stage, endless, race, daily, or a mode object such as {"type": "endless", "lives": 5}. |
+| `author` | string | Stage: the chapter (default: the first author). |
+| `tier` | enumeration; one of `easy`, `medium`, `hard`, `literary` | Stage: the tier (default easy). |
+| `attempt` | integer; 1 to ∞ | Stage: attempt number; it changes which word is hidden. |
+| `date` | string | Daily: the local date, YYYY-MM-DD. |
+| `seedBase` | string | Endless and race: text the question seeds come from. |
+
+Errors: `invalid_params`.
+
+```bash
+zarvan quiz start
+```
+
+REST: `POST /v1/quiz/start` · MCP tool: `quiz.start` · JSON-RPC method: `quiz.start`
+
+### `quiz.state`
+
+Summarize a run: score, streak, lives, clock, stars, and whether it is over.
+
+Reads the bank, mode and run; changes nothing.
+
+*read*, idempotent.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `bank` | path | The bank file in the project (bank.json). |
+| `json` | json | The bank inline, instead of a file. |
+| `stopwords` | path | Stop-word file (`{"words": [...]}`). |
+| `stopWords` | array | Stop words inline. |
+| `mode` | json; required | stage, endless, race, daily, or a mode object such as {"type": "endless", "lives": 5}. |
+| `run` | json; required | |
 
 ```bash
 zarvan quiz state
@@ -2937,20 +3009,22 @@ REST: `POST /v1/quiz/state` · MCP tool: `quiz.state` · JSON-RPC method: `quiz.
 
 ### `quiz.validate_bank`
 
-Check a quiz bank: blankable words, enough distractors, no duplicate ids, tier counts.
+Check a quiz bank: ids, tiers, blankable words, wrong-option supply, stage sizes.
 
-Nothing is generated for play or written. `minPerTier` is an object like `{"1": 20}` requiring at least that many items in a tier.
+Reports (never throws) `errors` that make the bank unusable (duplicate id, empty lines, invalid tier, an item with no word to hide) and `warnings` (an item whose wrong options need the any-word fallback; an author and tier with fewer items than a stage needs), plus counts per author and tier. `ok` is false when there are errors, so the command exits 1.
 
 *read*, idempotent.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path | Bank file in the project. |
+| `bank` | path | The bank file in the project (bank.json). |
 | `json` | json | The bank inline, instead of a file. |
-| `minPerTier` | object | |
+| `stopwords` | path | Stop-word file (`{"words": [...]}`). |
+| `stopWords` | array | Stop words inline. |
+| `stageSize` | integer; default `25`; 1 to ∞ | Items a stage needs. |
 
 ```bash
-zarvan quiz validate-bank <path>
+zarvan quiz validate-bank
 ```
 
 REST: `POST /v1/quiz/validate_bank` · MCP tool: `quiz.validate_bank` · JSON-RPC method: `quiz.validate_bank`

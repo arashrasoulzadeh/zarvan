@@ -52,7 +52,7 @@ What `zarvan_idle` and the wave-combat layer still lack for a full idle game, mo
       cast skills, retry and ascend. Add auto-buy, auto-cast, auto-retry and auto-ascend toggles (generic, config-driven).
 - [x] **Flutter widgets for the UI toolkit models** (see above): scrolling lists, tabs, popups and tooltips for shops,
       inventories and skill trees.
-- [ ] **Meta-progression beyond one prestige.** A talent or skill tree bought with prestige currency, achievements with
+- [x] **Meta-progression beyond one prestige.** A talent or skill tree bought with prestige currency, achievements with
       permanent bonuses, daily quests and login streaks.
 - [ ] **Many heroes.** Party or companions, summon or collection, and a gear inventory screen with rarity and merging
       (loot drops exist; browsing and comparing gear does not).

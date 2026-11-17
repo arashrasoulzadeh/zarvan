@@ -1143,6 +1143,11 @@ about cheating (see Trust below); `syncCloud` alone is for convenience, not anti
   affordable purchase with the best payback on a timer; add `AutoBuySystem()` after `IdleSystem()`, flip `enabled` when
   the player unlocks it, and pass `whileAway:` that reads the buyer and calls `runAutoBuyer(world, wallet, buyer)` so
   offline catch-up also buys. `bestPurchase(world, wallet)` is the same recommendation as a function (for a "buy this next" hint).
+- **Meta-progression:** a *talent tree* is `ResearchNode`s priced in the prestige currency (`cost: {"stars": "1"}`, `requires` to chain
+  them), bought with `buyResearch`; achievements with a `reward` above 1 already give permanent multipliers. For return-visit loops,
+  `LoginStreak(rewards: [...])` and `DailyQuests(pool: [...], perDay: 3, seed: s)` are plain saved data: call `streak.claim(now)` and
+  `quests.rollover(now)` on start and resume, report game events with `quests.record(\'enemy_killed\')`, and credit the `Rewards` they
+  return to the wallet yourself. The same date and seed give every device the same quests; a clock set backwards never resets a streak.
 - **Wave-combat automation:** pass `WaveCombatConfig(automation: WaveAutomation(autoBuy: true, autoCast: true, autoRetry: true, autoAscend: true))`.
   Auto-buy takes the cheapest affordable upgrade every `buyIntervalSeconds`; auto-cast fires strikes when ready and heals/guards when
   the hero\'s hp falls below `healBelow`/`guardBelow`; auto-retry and auto-ascend leave the result screen after `endingDelaySeconds`

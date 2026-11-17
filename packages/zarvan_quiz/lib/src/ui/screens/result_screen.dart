@@ -11,7 +11,7 @@ import 'home_screen.dart';
 class QuizResultScreen extends QuizScreen {
   QuizResultScreen(super.kit);
 
-  late final _note = label('', QuizScreen.worldWidth / 2, 470, size: 14);
+  late final _note = label('', QuizScreen.worldWidth / 2, 416, size: 14);
 
   @override
   void build() {

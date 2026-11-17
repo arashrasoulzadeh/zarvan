@@ -1,9 +1,12 @@
+import 'dart:math' as math;
+
 import 'package:zarvan_core/zarvan_core.dart' show UiRect, World;
 import 'package:zarvan_core/zarvan_core_quiz.dart';
 import 'package:zarvan_flutter/zarvan_flutter.dart'
     show UiButton, UiNode, measureText;
 
 import '../../quiz_session.dart';
+import '../ornaments.dart';
 import '../quiz_screen.dart';
 import 'home_screen.dart';
 import 'result_screen.dart';
@@ -24,11 +27,19 @@ class QuizGameScreen extends QuizScreen {
   Object? _stamp;
   bool _left = false;
   bool _asked = false;
+  bool _wasAnswered = false;
+  double _time = 0;
+  final List<Twinkle> _twinkles = [];
+  final List<_Particle> _bursts = [];
+  final List<UiRect> _optionRects = [];
+  final math.Random _rng = math.Random(3);
 
   QuizSession get session => kit.session;
 
   @override
   void build() {
+    nightSky();
+    _twinkles.addAll(sparkles(14));
     titleBar(kit.strings.appName, onBack: () => goTo(QuizHomeScreen(kit)));
     _hud = [
       for (var i = 0; i < 4; i++)
@@ -45,6 +56,11 @@ class QuizGameScreen extends QuizScreen {
 
   @override
   void update(double dt, World world) {
+    _time += dt;
+    for (final t in _twinkles) {
+      t.apply(_time);
+    }
+    _stepBursts(dt);
     session.tick(Duration(microseconds: (dt * 1e6).round()));
     if (session.finished && !_left) {
       _left = true;
@@ -137,6 +153,47 @@ class QuizGameScreen extends QuizScreen {
         radius: 16,
       ),
     );
+    final cardRect = UiRect(
+      QuizScreen.margin,
+      cardTop,
+      QuizScreen.worldWidth - 2 * QuizScreen.margin,
+      cardHeight,
+    );
+    _view.addId(
+      lightAt(
+        cardRect,
+        answered ? theme.correct : theme.accent,
+        intensity: answered ? 0.5 : 0.3,
+        z: 3,
+      ),
+    );
+    _view.addNode(
+      frame(
+        cardRect,
+        answered ? theme.correct : theme.accent,
+        alpha: 0.85,
+        radius: 16,
+      ),
+    );
+    _view.addNode(
+      frame(
+        UiRect(
+          cardRect.x + 6,
+          cardRect.y + 6,
+          cardRect.width - 12,
+          cardRect.height - 12,
+        ),
+        theme.accent,
+        alpha: 0.25,
+        radius: 12,
+        dash: 3,
+      ),
+    );
+    for (final dx in [cardRect.x + 14, cardRect.right - 14]) {
+      for (final dy in [cardRect.y, cardRect.bottom]) {
+        _view.addNode(diamondAt(dx, dy, 9, theme.accent, z: 8));
+      }
+    }
     var y = cardTop + 16;
     for (var i = 0; i < lines.length; i++) {
       _view.addNode(
@@ -153,16 +210,22 @@ class QuizGameScreen extends QuizScreen {
     }
 
     // The four options.
-    var oy = cardTop + cardHeight + 14;
+    var oy = cardTop + cardHeight + 18;
+    _optionRects.clear();
     for (var i = 0; i < q.options.length; i++) {
       final removed = q.removedByHint.contains(i);
+      final optRect = UiRect(
+        QuizScreen.margin,
+        oy,
+        QuizScreen.worldWidth - 2 * QuizScreen.margin,
+        QuizScreen.buttonHeight,
+      );
+      _optionRects.add(optRect);
+      if (!removed && !answered) {
+        _view.addNode(frame(optRect, theme.accent, alpha: 0.4, radius: 14));
+      }
       final b = button(
-        UiRect(
-          QuizScreen.margin,
-          oy,
-          QuizScreen.worldWidth - 2 * QuizScreen.margin,
-          QuizScreen.buttonHeight,
-        ),
+        optRect,
         q.options[i],
         () => session.answer(i),
         style: QuizButtonStyle.option,
@@ -213,8 +276,58 @@ class QuizGameScreen extends QuizScreen {
       if (!hint.enabled) _fade(hint, 0.4);
     }
 
+    if (answered && !_wasAnswered) {
+      final right = _optionRects[q.answerIndex];
+      _burst(right.centerX, right.centerY, theme.correct, 26);
+      _burst(right.centerX, right.centerY, theme.accent, 10);
+      final picked = session.picked;
+      if (picked != null && picked != q.answerIndex) {
+        final r = _optionRects[picked];
+        _burst(r.centerX, r.centerY, theme.wrong, 8);
+      }
+    }
+    _wasAnswered = answered;
+
     if (session.offeringContinue && !_asked) _askContinue();
     if (!session.offeringContinue) _dialog.clear();
+  }
+
+  /// A burst of light at ([x], [y]): sparks fly out, fall a little and fade.
+  void _burst(double x, double y, int color, int count) {
+    for (var i = 0; i < count; i++) {
+      final a = _rng.nextDouble() * 2 * math.pi;
+      final speed = 50 + _rng.nextDouble() * 130;
+      final size = 3 + _rng.nextDouble() * 5;
+      final node = i % 3 == 0
+          ? diamondAt(x, y, size * 1.6, color, z: 20)
+          : dot(x, y, size, color, z: 20);
+      _bursts.add(
+        _Particle(
+          node,
+          math.cos(a) * speed,
+          math.sin(a) * speed - 40,
+          0.8 + _rng.nextDouble() * 0.6,
+        ),
+      );
+    }
+  }
+
+  void _stepBursts(double dt) {
+    for (var i = _bursts.length - 1; i >= 0; i--) {
+      final p = _bursts[i];
+      p.age += dt;
+      if (p.age >= p.life) {
+        world.destroy(p.node.id);
+        _bursts.removeAt(i);
+        continue;
+      }
+      p.vy += 140 * dt;
+      p.node.pos
+        ..x += p.vx * dt
+        ..y += p.vy * dt;
+      p.vx *= 0.985;
+      p.node.shape!.alpha = 1 - p.age / p.life;
+    }
   }
 
   void _fade(UiButton b, double alpha) {
@@ -308,4 +421,14 @@ class QuizGameScreen extends QuizScreen {
       if (b != yes && b != no) b.enabled = false;
     }
   }
+}
+
+class _Particle {
+  _Particle(this.node, this.vx, this.vy, this.life);
+
+  final UiNode node;
+  double vx;
+  double vy;
+  final double life;
+  double age = 0;
 }

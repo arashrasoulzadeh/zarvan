@@ -290,6 +290,25 @@ void main() {
       },
     );
 
+    test('the game has the night sky and lights the poem card', () async {
+      final r = await stage();
+      final fx = r.world.componentsOf<ShaderEffect>();
+      final kinds = [for (var i = 0; i < fx.length; i++) fx.denseAt(i).kind];
+      expect(kinds, contains(ShaderEffect.aurora));
+      expect(kinds.where((k) => k == ShaderEffect.glow), hasLength(1));
+    });
+
+    test('an answer throws a burst of sparks that then fades away', () async {
+      final r = await stage();
+      int shapes() => r.world.componentsOf<Shape>().length;
+      final before = shapes();
+      r.tap(r.optionRight);
+      r.run(0.1);
+      expect(shapes(), greaterThan(before + 20));
+      r.run(2);
+      expect(shapes(), lessThan(before + 20));
+    });
+
     test('the right answer fills the blank, scores, and offers Next', () async {
       final r = await stage();
       final right = r.optionRight;

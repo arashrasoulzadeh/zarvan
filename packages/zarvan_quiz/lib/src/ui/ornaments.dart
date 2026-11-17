@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:zarvan_core/zarvan_core.dart' show Position, UiRect;
+import 'package:zarvan_core/zarvan_core.dart' show EntityId, Position, UiRect;
 import 'package:zarvan_flutter/zarvan_flutter.dart'
     show Shape, ShapeKind, ShaderEffect, UiNode;
 
@@ -58,7 +58,12 @@ extension QuizOrnaments on QuizScreen {
 
   /// A soft additive light of [color] centred in [rect] (bleeding past it),
   /// breathing by itself, drawn by the engine's `glow` shader.
-  void lightAt(UiRect rect, int color, {double intensity = 0.6, int z = 4}) {
+  EntityId lightAt(
+    UiRect rect,
+    int color, {
+    double intensity = 0.6,
+    int z = 4,
+  }) {
     final id = world.spawn();
     world.componentsOf<Position>().set(
       id,
@@ -75,6 +80,7 @@ extension QuizOrnaments on QuizScreen {
         coreArgb: color,
       ),
     );
+    return id;
   }
 
   /// A [size] diamond at ([x], [y]).

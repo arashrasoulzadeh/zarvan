@@ -42,6 +42,9 @@ class QuizGroup {
 
   void addNode(UiNode n) => _ids.add(n.id);
 
+  /// Adds an entity that is not a node (a shader light) to the group.
+  void addId(EntityId id) => _ids.add(id);
+
   void addButton(UiButton b) {
     _ids
       ..add(b.bg.id)

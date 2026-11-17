@@ -124,7 +124,7 @@ class QuizHomeScreen extends QuizScreen {
       final x = rtl
           ? QuizScreen.worldWidth - left - cardW - col * (cardW + gap)
           : left + col * (cardW + gap);
-      final y = 152.0 + row * 132;
+      final y = 154.0 + row * 128;
       if (col == 0) {
         final plank = box(
           UiRect(14, y + cardH + 4, QuizScreen.worldWidth - 28, 10),
@@ -149,7 +149,7 @@ class QuizHomeScreen extends QuizScreen {
     final played = progress.hasPlayedDaily(today);
     final daily = UiRect(
       QuizScreen.margin,
-      424,
+      418,
       QuizScreen.worldWidth - 2 * QuizScreen.margin,
       48,
     );
@@ -165,20 +165,7 @@ class QuizHomeScreen extends QuizScreen {
       final marks = (progress.daily.results[today] ?? const [])
           .map((r) => r ? '✅' : '❌')
           .join();
-      final now = kit.now();
-      final leftTime = DateTime(
-        now.year,
-        now.month,
-        now.day + 1,
-      ).difference(now);
-      label(marks, cx, daily.y + 16, size: 17);
-      label(
-        '${s.dailyNextIn}: ${s.number(leftTime.inHours)}:${(leftTime.inMinutes % 60).toString().padLeft(2, '0')}',
-        cx,
-        daily.y + 36,
-        size: 12,
-        color: theme.soft,
-      );
+      label(marks, cx, daily.centerY, size: 20);
     } else {
       final glow = box(
         UiRect(daily.x - 4, daily.y - 4, daily.width + 8, daily.height + 8),
@@ -198,7 +185,7 @@ class QuizHomeScreen extends QuizScreen {
     }
     const half = (QuizScreen.worldWidth - 2 * QuizScreen.margin - 12) / 2;
     button(
-      UiRect(QuizScreen.margin, 484, half, 44),
+      UiRect(QuizScreen.margin, 478, half, 44),
       s.endless,
       () {
         play(
@@ -214,7 +201,7 @@ class QuizHomeScreen extends QuizScreen {
       size: 16,
     );
     button(
-      UiRect(QuizScreen.margin + half + 12, 484, half, 44),
+      UiRect(QuizScreen.margin + half + 12, 478, half, 44),
       s.race,
       () {
         play(
@@ -233,7 +220,7 @@ class QuizHomeScreen extends QuizScreen {
     // Continue, and the quiet About link.
     final cont = UiRect(
       QuizScreen.margin,
-      538,
+      534,
       QuizScreen.worldWidth - 2 * QuizScreen.margin,
       52,
     );
@@ -265,7 +252,7 @@ class QuizHomeScreen extends QuizScreen {
       size: 17,
     );
     final about = button(
-      UiRect(cx - 50, 600, 100, 28),
+      UiRect(cx - 50, 598, 100, 28),
       s.about,
       () => goTo(QuizAboutScreen(kit)),
       style: QuizButtonStyle.option,

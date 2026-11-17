@@ -1,10 +1,11 @@
 import 'dart:math' as math;
 
-import 'package:zarvan_core/zarvan_core.dart' show EntityId, UiRect;
+import 'package:zarvan_core/zarvan_core.dart' show EntityId, Position, UiRect;
 import 'package:zarvan_core/zarvan_core_quiz.dart';
 import 'package:zarvan_flutter/zarvan_flutter.dart'
-    show BackdropBlur, Shape, ShapeKind, UiButton, UiNode;
+    show BackdropBlur, ShaderEffect, Shape, ShapeKind, UiButton, UiNode;
 
+import 'ornaments.dart';
 import 'quiz_screen.dart';
 import 'screens/game_screen.dart';
 
@@ -43,6 +44,12 @@ class MedalOverlay {
 
   final List<EntityId> _ids = [];
   final List<_Piece> _pieces = [];
+  final List<_Spark> _sparks = [];
+  ShaderEffect? _glow;
+  Position? _glowPos;
+  Shape? _ring;
+  UiNode? _ringNode;
+  double _time = 0;
   final List<UiButton> _suspended = [];
   UiButton? _veilButton;
   late QuizGroup _content;
@@ -114,15 +121,65 @@ class MedalOverlay {
       dash: 5,
       z: _z + 3,
     );
-    _piece(
-      theme.accent,
-      0.22,
-      0.8,
-      0.5,
-      ShapeKind.diamond,
-      stroke: 1.5,
-      z: _z + 3,
+
+    _glow = ShaderEffect(
+      kind: ShaderEffect.glow,
+      width: 10,
+      height: 10,
+      zIndex: _z + 1,
+      intensity: 0.9,
+      coreArgb: theme.accent,
     );
+    final glowId = screen.world.spawn();
+    _glowPos = Position(_from.centerX, _from.centerY);
+    screen.world.componentsOf<Position>().set(glowId, _glowPos!);
+    screen.world.componentsOf<ShaderEffect>().set(glowId, _glow!);
+    _ids.add(glowId);
+
+    final rng = math.Random(7);
+    for (var i = 0; i < 22; i++) {
+      final big = i % 3 == 0;
+      final size = big ? 11.0 : 4.0 + rng.nextDouble() * 3;
+      final color = i.isEven ? theme.accent : theme.ink;
+      final node = big
+          ? screen.diamondAt(
+              _from.centerX,
+              _from.centerY,
+              size,
+              color,
+              z: _z + 4,
+              alpha: 0,
+            )
+          : screen.dot(
+              _from.centerX,
+              _from.centerY,
+              size,
+              color,
+              z: _z + 4,
+              alpha: 0,
+            );
+      _ids.add(node.id);
+      _sparks.add(
+        _Spark(
+          node,
+          angle: i / 22 * 2 * math.pi + rng.nextDouble() * 0.3,
+          reach: 0.56 + rng.nextDouble() * 0.2,
+          phase: rng.nextDouble() * 6,
+        ),
+      );
+    }
+    final ring = screen.ringAt(
+      _from.centerX,
+      _from.centerY,
+      10,
+      theme.accent,
+      stroke: 2,
+      z: _z + 4,
+      alpha: 0,
+    );
+    _ring = ring.shape;
+    _ringNode = ring;
+    _ids.add(ring.id);
 
     _t = 0;
     _dir = 1;
@@ -181,9 +238,21 @@ class MedalOverlay {
 
   static double _ease(double t) => 1 - math.pow(1 - t, 3).toDouble();
 
+  /// Like [_ease] but overshoots a little before settling, so the medal lands
+  /// with a bounce.
+  static double _back(double t) {
+    const c1 = 1.9, c3 = c1 + 1;
+    final u = t - 1;
+    return 1 + c3 * u * u * u + c1 * u * u;
+  }
+
   /// Moves the animation along by [dt] seconds.
   void update(double dt) {
-    if (_dir == 0) return;
+    _time += dt;
+    if (_dir == 0) {
+      if (_pieces.isNotEmpty) _apply();
+      return;
+    }
     _t = (_t + _dir * dt / seconds).clamp(0.0, 1.0);
     _apply();
     if (_dir == 1 && _t >= 1) {
@@ -197,11 +266,12 @@ class MedalOverlay {
 
   void _apply() {
     final e = _ease(_t);
+    final bounce = _back(_t);
     final cx = _from.centerX + (centerX - _from.centerX) * e;
     final cy = _from.centerY + (centerY - _from.centerY) * e;
-    final w = _from.width + (medalW - _from.width) * e;
-    final h = _from.height + (medalH - _from.height) * e;
-    final spin = math.cos(e * 2 * math.pi).abs().clamp(0.03, 1.0);
+    final w = _from.width + (medalW - _from.width) * bounce;
+    final h = _from.height + (medalH - _from.height) * bounce;
+    final spin = math.cos(e * 4 * math.pi).abs().clamp(0.03, 1.0);
     for (final p in _pieces) {
       p.node.pos
         ..x = cx
@@ -212,6 +282,36 @@ class MedalOverlay {
     }
     _veil?.alpha = 0.6 * e;
     _blur?.sigma = 4 * e;
+
+    final breathe = _dir == 0 ? 0.85 + 0.15 * math.sin(_time * 2.2) : 1.0;
+    _glowPos
+      ?..x = cx
+      ..y = cy;
+    _glow
+      ?..width = w * 1.7
+      ..height = h * 1.5
+      ..intensity = 0.9 * e * breathe;
+
+    for (final sp in _sparks) {
+      final a = sp.angle + _time * 0.35 * (sp.phase > 3 ? 1 : -1);
+      sp.node.pos
+        ..x = cx + math.cos(a) * medalW * sp.reach * bounce
+        ..y = cy + math.sin(a) * medalH * sp.reach * bounce;
+      final tw = 0.55 + 0.45 * math.sin(_time * 3 + sp.phase * 3);
+      sp.node.shape!.alpha = (e * tw).clamp(0.0, 1.0);
+    }
+
+    final ring = _ring;
+    if (ring != null) {
+      _ringNode!.pos
+        ..x = cx
+        ..y = cy;
+      final k = ((_t - 0.55) / 0.45).clamp(0.0, 1.0);
+      ring
+        ..width = medalW * (0.8 + 0.9 * k)
+        ..height = medalW * (0.8 + 0.9 * k)
+        ..alpha = _dir == 1 && k > 0 ? 0.8 * (1 - k) : 0;
+    }
   }
 
   void _showContent() {
@@ -233,12 +333,12 @@ class MedalOverlay {
         z: _z + 6,
       ),
     );
-    var y = centerY - medalH / 2 + 74;
+    var y = centerY - medalH / 2 + 80;
     for (final tier in QuizTier.values) {
       final unlocked = p.isUnlocked(author.id, tier);
       final entry = p.stages[author.id]?[tier.name];
       final b = screen.button(
-        UiRect(left, y, width, 54),
+        UiRect(left, y, width, 52),
         '${s.stage} ${s.tierName(tier.level)}',
         () => screen.play(
           QuizRound.stage(
@@ -259,7 +359,7 @@ class MedalOverlay {
         ..colorArgb = theme.accent
         ..alpha = 0.16;
       b.label.text!.zIndex = _z + 6;
-      b.label.pos.y -= 9;
+      b.label.pos.y -= 8;
       b.enabled = unlocked;
       final info = unlocked
           ? List.generate(3, (i) => i < (entry?.stars ?? 0) ? '★' : '☆').join()
@@ -268,7 +368,7 @@ class MedalOverlay {
         screen.label(
           info,
           centerX,
-          y + 38,
+          y + 37,
           size: 13,
           color: unlocked ? theme.accent : theme.soft,
           z: _z + 6,
@@ -278,7 +378,7 @@ class MedalOverlay {
         b.bg.shape!.alpha = 0.06;
         b.label.text!.alpha = 0.5;
       }
-      y += 62;
+      y += 60;
     }
     _veilButton = screen.button(
       UiRect(
@@ -301,6 +401,11 @@ class MedalOverlay {
     }
     _ids.clear();
     _pieces.clear();
+    _sparks.clear();
+    _glow = null;
+    _glowPos = null;
+    _ring = null;
+    _ringNode = null;
     for (final b in _suspended) {
       b.enabled = true;
     }
@@ -318,4 +423,18 @@ class _Piece {
   final UiNode node;
   final double wFrac;
   final double hFrac;
+}
+
+class _Spark {
+  _Spark(
+    this.node, {
+    required this.angle,
+    required this.reach,
+    required this.phase,
+  });
+
+  final UiNode node;
+  final double angle;
+  final double reach;
+  final double phase;
 }

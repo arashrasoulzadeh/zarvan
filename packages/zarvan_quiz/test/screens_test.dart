@@ -29,7 +29,6 @@ const strings = QuizStrings(
   dailyChallenge: 'Daily',
   dailyDone: 'Done',
   dailyTodayPlay: 'Five new poems',
-  dailyNextIn: 'Next in',
   chapters: 'Chapters',
   wallTitle: 'Wall of divans',
   chaptersDone: 'complete',
@@ -460,7 +459,7 @@ void main() {
         );
         await played.open(QuizHomeScreen(played.kit));
         expect(played.has('✅✅❌✅✅'), isTrue);
-        expect(played.hasPart('Next in'), isTrue);
+        expect(played.hasPart('Next in'), isFalse);
         expect(played.hasPart('Five new poems'), isFalse);
       },
     );
@@ -569,6 +568,8 @@ void main() {
         expect(r.loaded, isNull);
         expect(r.world.componentsOf<BackdropBlur>().length, 1);
         expect(r.has('Stage Easy'), isFalse);
+        final fx = r.world.componentsOf<ShaderEffect>();
+        expect(fx.length, 5, reason: 'the medal brings its own light');
         r.run(0.3);
         final mid = r.world.componentsOf<BackdropBlur>().denseAt(0).sigma;
         expect(mid, greaterThan(0));

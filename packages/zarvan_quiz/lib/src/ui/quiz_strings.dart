@@ -9,7 +9,6 @@ class QuizStrings {
     required this.dailyChallenge,
     required this.dailyDone,
     required this.dailyTodayPlay,
-    required this.dailyNextIn,
     required this.chapters,
     required this.wallTitle,
     required this.chaptersDone,
@@ -80,9 +79,6 @@ class QuizStrings {
 
   /// Line under the daily title before it is played.
   final String dailyTodayPlay;
-
-  /// Label before the countdown to the next daily.
-  final String dailyNextIn;
 
   /// Chapters screen title and menu button.
   final String chapters;
@@ -240,7 +236,6 @@ class QuizStrings {
     'dailyChallenge': dailyChallenge,
     'dailyDone': dailyDone,
     'dailyTodayPlay': dailyTodayPlay,
-    'dailyNextIn': dailyNextIn,
     'chapters': chapters,
     'wallTitle': wallTitle,
     'chaptersDone': chaptersDone,

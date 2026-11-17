@@ -27,7 +27,7 @@ class StageRecord {
 /// Everything a player keeps between sessions: stage stars and unlocks,
 /// high scores per mode, and a currency balance. Plain data, saved as one
 /// JSON string through a [KeyValueStore].
-class QuizProgress {
+class SimpleQuizProgress {
   final Map<String, StageRecord> stages;
   final Set<String> unlocked;
 
@@ -35,7 +35,7 @@ class QuizProgress {
   final Map<String, int> records;
   int currency;
 
-  QuizProgress({
+  SimpleQuizProgress({
     Map<String, StageRecord>? stages,
     Set<String>? unlocked,
     Map<String, int>? records,
@@ -94,19 +94,20 @@ class QuizProgress {
     return true;
   }
 
-  factory QuizProgress.fromJson(Map<String, dynamic> json) => QuizProgress(
-    stages: ((json['stages'] as Map?) ?? const {}).map(
-      (k, v) => MapEntry(
-        k as String,
-        StageRecord.fromJson(v as Map<String, dynamic>),
-      ),
-    ),
-    unlocked: {...((json['unlocked'] as List?) ?? const []).cast<String>()},
-    records: ((json['records'] as Map?) ?? const {}).map(
-      (k, v) => MapEntry(k as String, (v as num).toInt()),
-    ),
-    currency: (json['currency'] as num?)?.toInt() ?? 0,
-  );
+  factory SimpleQuizProgress.fromJson(Map<String, dynamic> json) =>
+      SimpleQuizProgress(
+        stages: ((json['stages'] as Map?) ?? const {}).map(
+          (k, v) => MapEntry(
+            k as String,
+            StageRecord.fromJson(v as Map<String, dynamic>),
+          ),
+        ),
+        unlocked: {...((json['unlocked'] as List?) ?? const []).cast<String>()},
+        records: ((json['records'] as Map?) ?? const {}).map(
+          (k, v) => MapEntry(k as String, (v as num).toInt()),
+        ),
+        currency: (json['currency'] as num?)?.toInt() ?? 0,
+      );
 
   Map<String, dynamic> toJson() => {
     'stages': stages.map((k, v) => MapEntry(k, v.toJson())),
@@ -122,17 +123,19 @@ class QuizProgress {
   /// Reads progress from [key]; a missing entry gives a fresh one. An
   /// unreadable entry is copied to `$key.corrupt` before a fresh one is
   /// returned, so a bad save is never silently destroyed.
-  static Future<QuizProgress> load(
+  static Future<SimpleQuizProgress> load(
     KeyValueStore store, {
     String key = 'quiz_progress',
   }) async {
     final raw = await store.getString(key);
-    if (raw == null) return QuizProgress();
+    if (raw == null) return SimpleQuizProgress();
     try {
-      return QuizProgress.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+      return SimpleQuizProgress.fromJson(
+        jsonDecode(raw) as Map<String, dynamic>,
+      );
     } catch (_) {
       await store.setString('$key.corrupt', raw);
-      return QuizProgress();
+      return SimpleQuizProgress();
     }
   }
 }

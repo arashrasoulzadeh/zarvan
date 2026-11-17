@@ -22,3 +22,4 @@ export 'src/quiz/run.dart';
 export 'src/quiz/scoring.dart';
 export 'src/quiz/game_mode.dart';
 export 'src/quiz/round.dart';
+export 'src/quiz/progress.dart';

@@ -12,6 +12,7 @@ pubspec.yaml.
 - Rebuilt the MkDocs home as a focused ZARVAN landing page with direct paths to the generated docs, agent hub, tutorials, architecture, and Persian documentation. The full navigation and sidebar remain available on inner documentation pages.
 
 ### Added (engine)
+- Quiz progress for Shaer phase 05: `QuizProgress` (stage stars and unlocks, records, daily history and streak, coins with the R-PROG rules), `applyRun(QuizRound)`, and `QuizProgressStore` over `KeyValueStore`. The earlier `QuizProgress` is renamed `SimpleQuizProgress`.
 - Quiz game modes for Shaer phase 04: data-defined `StageMode`, `EndlessMode`, `RaceMode`, `DailyMode` (`GameMode.fromJson`) and `QuizRound`, which plays a round in a mode over an immutable `QuizRun`.
 - Quiz scoring and run state for Shaer phase 03: `QuizScoring` (the one points formula) and an immutable `QuizRun` with `AnswerResult`/`AnswerRecord`. The earlier mutable `QuizRun`/`AnswerResult` are renamed `SimpleQuizRun`/`SimpleAnswerResult`.
 - Quiz question building for Shaer phase 02: `BlankPicker` (tier-aware blank, no repeated words), `Distractors` (staged wrong options per tier), `Question`/`QuestionFactory` (deterministic, JSON round trip) and a one-per-question hint.

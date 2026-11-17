@@ -277,7 +277,7 @@ List<Operation> quizOperations() => [
           };
         }
         if (a['progress'] is Map) {
-          final p = QuizProgress.fromJson(
+          final p = SimpleQuizProgress.fromJson(
             (a['progress']! as Map).cast<String, dynamic>(),
           );
           out['progress'] = {

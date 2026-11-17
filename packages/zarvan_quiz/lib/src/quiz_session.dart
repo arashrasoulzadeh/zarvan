@@ -3,17 +3,17 @@ import 'package:zarvan_core/zarvan_core_quiz.dart';
 
 import 'quiz_controller.dart';
 
-/// Owns the saved [QuizProgress] and books finished runs into it.
+/// Owns the saved [SimpleQuizProgress] and books finished runs into it.
 class QuizSession {
   QuizSession._(this.store, this.progress, this.key);
 
   final KeyValueStore store;
-  final QuizProgress progress;
+  final SimpleQuizProgress progress;
   final String key;
 
   /// Loads the saved progress (fresh if none, corrupt copy kept aside).
   static Future<QuizSession> open(KeyValueStore store, {String key = 'quiz_progress'}) async =>
-      QuizSession._(store, await QuizProgress.load(store, key: key), key);
+      QuizSession._(store, await SimpleQuizProgress.load(store, key: key), key);
 
   /// Coins earned per this many score points when a run is booked.
   static const scorePerCoin = 10;

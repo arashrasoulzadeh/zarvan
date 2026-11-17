@@ -113,13 +113,28 @@ class _DailyPlan extends _Plan {
 /// (`run`) that can be saved at any step; the rules and the numbers come from
 /// the [GameMode].
 class QuizRound {
-  QuizRound._(this._factory, this.mode, this._plan, this._run);
+  QuizRound._(
+    this._factory,
+    this.mode,
+    this._plan,
+    this._run, {
+    this.author,
+    this.tier,
+    this.date,
+  });
 
   final QuestionFactory _factory;
   final GameMode mode;
   final _Plan _plan;
   QuizRun _run;
   int _cursor = 0;
+
+  /// The chapter and tier of a stage round; null in other modes.
+  final String? author;
+  final QuizTier? tier;
+
+  /// The `YYYY-MM-DD` date of a daily round; null in other modes.
+  final String? date;
 
   /// The saved-able state of the round.
   QuizRun get run => _run;
@@ -146,6 +161,8 @@ class QuizRound {
         mode: mode.type,
         seedBase: 'stage:$author:${tier.name}:$attempt',
       ),
+      author: author,
+      tier: tier,
     );
   }
 
@@ -203,6 +220,7 @@ class QuizRound {
       mode,
       _DailyPlan(factory.bank, mode.tiers, date),
       QuizRun.start(mode: mode.type, seedBase: 'daily:$date'),
+      date: date,
     );
   }
 

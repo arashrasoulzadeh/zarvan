@@ -5,6 +5,55 @@ import 'package:flutter/widgets.dart';
 import 'package:zarvan_core/zarvan_core.dart' show KeyValueStore;
 import 'package:zarvan_core/zarvan_core_quiz.dart';
 
+/// Something that happened in a [QuizSession], for the app to record (for
+/// example as analytics) without the session knowing about the recorder.
+sealed class QuizEvent {
+  const QuizEvent(this.round);
+
+  /// The round it happened in.
+  final QuizRound round;
+}
+
+/// A round began.
+class RoundStarted extends QuizEvent {
+  const RoundStarted(super.round);
+}
+
+/// An answer was given. [result] says whether it was right and its points;
+/// [question] is the question it answered.
+class AnswerGiven extends QuizEvent {
+  const AnswerGiven(super.round, this.question, this.result);
+
+  final Question question;
+  final AnswerResult result;
+}
+
+/// The hint was bought for [question].
+class HintUsed extends QuizEvent {
+  const HintUsed(super.round, this.question);
+
+  final Question question;
+}
+
+/// An endless round ran out of lives and a continue is being offered.
+class ContinueOffered extends QuizEvent {
+  const ContinueOffered(super.round);
+}
+
+/// The offered continue was taken ([taken] true) or declined.
+class ContinueResolved extends QuizEvent {
+  const ContinueResolved(super.round, {required this.taken});
+
+  final bool taken;
+}
+
+/// The round ended and was booked; [reward] is what it paid.
+class RoundEnded extends QuizEvent {
+  const RoundEnded(super.round, this.reward);
+
+  final RunReward reward;
+}
+
 /// Connects the quiz rules to Flutter: it owns the [QuizRound] being played
 /// and the player's [QuizProgress], gives the race its real clock, saves
 /// after every answer, and stops when the app goes to the background.
@@ -48,6 +97,14 @@ class QuizSession extends ChangeNotifier {
 
   /// What the finished round paid, once it is over and booked.
   RunReward? reward;
+
+  final StreamController<QuizEvent> _events = StreamController.broadcast(
+    sync: true,
+  );
+
+  /// Everything that happens in the session, in order. Nothing is emitted
+  /// until someone listens.
+  Stream<QuizEvent> get events => _events.stream;
 
   bool _paused = false;
   bool _offering = false;
@@ -110,6 +167,7 @@ class QuizSession extends ChangeNotifier {
     reward = null;
     _current = r.nextQuestion();
     if (r.mode is RaceMode) _startClock();
+    _events.add(RoundStarted(r));
     notifyListeners();
   }
 
@@ -120,8 +178,10 @@ class QuizSession extends ChangeNotifier {
     final q = question;
     if (r == null || q == null || answered || _paused) return;
     if (q.removedByHint.contains(choice)) return;
-    lastResult = r.answer(choice);
+    final result = r.answer(choice);
+    lastResult = result;
     picked = choice;
+    _events.add(AnswerGiven(r, q, result));
     unawaited(_saveRun());
     if (r.mode is RaceMode && !r.isOver) {
       _auto?.cancel();
@@ -142,9 +202,11 @@ class QuizSession extends ChangeNotifier {
   /// it cannot be had (see [canHint]).
   bool useHint() {
     if (!canHint) return false;
+    final asked = question!;
     progress.buyHint();
     round!.useHint();
     _current = round!.run.current;
+    _events.add(HintUsed(round!, asked));
     unawaited(_saveProgress());
     notifyListeners();
     return true;
@@ -158,6 +220,7 @@ class QuizSession extends ChangeNotifier {
     _auto?.cancel();
     if (r.isOver && canContinue && !finished) {
       _offering = true;
+      _events.add(ContinueOffered(r));
       notifyListeners();
       return;
     }
@@ -182,6 +245,7 @@ class QuizSession extends ChangeNotifier {
     picked = null;
     lastResult = null;
     _current = r.nextQuestion();
+    _events.add(ContinueResolved(r, taken: true));
     notifyListeners();
     return true;
   }
@@ -192,6 +256,7 @@ class QuizSession extends ChangeNotifier {
     _offering = false;
     picked = null;
     lastResult = null;
+    _events.add(ContinueResolved(round!, taken: false));
     _finish();
     notifyListeners();
   }
@@ -238,7 +303,9 @@ class QuizSession extends ChangeNotifier {
     _current = null;
     picked = null;
     lastResult = null;
-    reward = progress.applyRun(r);
+    final paid = progress.applyRun(r);
+    reward = paid;
+    _events.add(RoundEnded(r, paid));
     unawaited(store.remove(runKey));
     unawaited(_saveProgress());
   }
@@ -265,6 +332,7 @@ class QuizSession extends ChangeNotifier {
   @override
   void dispose() {
     _stopTimers();
+    unawaited(_events.close());
     super.dispose();
   }
 }

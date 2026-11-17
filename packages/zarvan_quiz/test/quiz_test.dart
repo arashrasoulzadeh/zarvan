@@ -186,6 +186,81 @@ void main() {
       expect(back.progress.coins, 75);
     });
 
+    group('events', () {
+      test('a stage play-through is reported in order, with its details', () {
+        final s = newSession();
+        final seen = <QuizEvent>[];
+        s.events.listen(seen.add);
+        s.begin(stage());
+        expect(s.useHint(), isTrue);
+        s.answer(right(s));
+        s.next();
+        s.answer(wrong(s));
+        for (var i = 0; i < 23; i++) {
+          s.next();
+          s.answer(right(s));
+        }
+        s.next();
+        expect(s.finished, isTrue);
+        expect(seen.first, isA<RoundStarted>());
+        expect(seen[1], isA<HintUsed>());
+        final answers = seen.whereType<AnswerGiven>().toList();
+        expect(answers.length, 25);
+        expect(answers.first.result.correct, isTrue);
+        expect(answers.first.result.record.hint, isTrue);
+        expect(answers[1].result.correct, isFalse);
+        expect(answers.first.question.itemId, isNotEmpty);
+        final end = seen.last as RoundEnded;
+        expect(end.reward.coins, greaterThanOrEqualTo(0));
+        expect(seen.whereType<RoundEnded>().length, 1);
+      });
+
+      test('a continue is reported as offered, then taken or declined', () {
+        final seen = <QuizEvent>[];
+        final s = newSession()
+          ..begin(
+            QuizRound.endless(
+              factoryOf(bank),
+              const EndlessMode(lives: 1),
+              seedBase: 'endless:e',
+            ),
+          );
+        s.events.listen(seen.add);
+        s.answer(wrong(s));
+        s.next();
+        expect(seen.whereType<ContinueOffered>().length, 1);
+        s.continueRound();
+        expect((seen.last as ContinueResolved).taken, isTrue);
+        s.answer(wrong(s));
+        s.next();
+        expect(seen.whereType<RoundEnded>().length, 1);
+        final s2 = newSession()
+          ..begin(
+            QuizRound.endless(
+              factoryOf(bank),
+              const EndlessMode(lives: 1),
+              seedBase: 'endless:f',
+            ),
+          );
+        final seen2 = <QuizEvent>[];
+        s2.events.listen(seen2.add);
+        s2.answer(wrong(s2));
+        s2.next();
+        s2.declineContinue();
+        expect(seen2.whereType<ContinueResolved>().single.taken, isFalse);
+        expect(seen2.last, isA<RoundEnded>());
+      });
+
+      test('nothing is emitted for a refused action', () {
+        final s = newSession(null, 5)..begin(stage());
+        final seen = <QuizEvent>[];
+        s.events.listen(seen.add);
+        expect(s.useHint(), isFalse);
+        s.next();
+        expect(seen, isEmpty);
+      });
+    });
+
     test('a daily already played is refused', () {
       final s = newSession();
       final d = QuizRound.daily(

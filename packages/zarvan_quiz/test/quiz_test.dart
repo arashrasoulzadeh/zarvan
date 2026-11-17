@@ -174,6 +174,18 @@ void main() {
       );
     });
 
+    test('a rewarded ad pays 15 coins, saves, and tells listeners', () async {
+      final kv = MemoryKeyValueStore();
+      final s = newSession(kv);
+      var heard = 0;
+      s.addListener(() => heard++);
+      await s.rewardForAd();
+      expect(s.progress.coins, 75);
+      expect(heard, 1);
+      final back = await QuizProgressStore(kv).load();
+      expect(back.progress.coins, 75);
+    });
+
     test('a daily already played is refused', () {
       final s = newSession();
       final d = QuizRound.daily(

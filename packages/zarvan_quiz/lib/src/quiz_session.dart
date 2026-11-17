@@ -130,6 +130,14 @@ class QuizSession extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Pays the rewarded-ad coins (the app calls this only after its ad was
+  /// watched to the end), saves, and tells listeners.
+  Future<void> rewardForAd() async {
+    progress.rewardedAd();
+    notifyListeners();
+    await _saveProgress();
+  }
+
   /// Buys and applies the hint (20 coins). False, with nothing changed, when
   /// it cannot be had (see [canHint]).
   bool useHint() {

@@ -11,3 +11,7 @@ export 'src/quiz/quiz_modes.dart';
 export 'src/quiz/quiz_scoring.dart';
 export 'src/quiz/quiz_progress.dart';
 export 'src/quiz/quiz_validation.dart';
+export 'src/quiz/quiz_text.dart';
+export 'src/quiz/seeded_random.dart';
+export 'src/quiz/quiz_bank.dart';
+export 'src/quiz/word_index.dart';

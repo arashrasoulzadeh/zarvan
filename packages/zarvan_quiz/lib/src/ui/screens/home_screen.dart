@@ -162,10 +162,7 @@ class QuizHomeScreen extends QuizScreen {
       );
       glow.shape!.alpha = 0.1;
       frame(daily, theme.accent, alpha: 0.7, radius: 14);
-      final marks = (progress.daily.results[today] ?? const [])
-          .map((r) => r ? '✅' : '❌')
-          .join();
-      label(marks, cx, daily.centerY, size: 20);
+      label(s.dailyDone, cx, daily.centerY, size: 17, color: theme.soft);
     } else {
       final glow = box(
         UiRect(daily.x - 4, daily.y - 4, daily.width + 8, daily.height + 8),

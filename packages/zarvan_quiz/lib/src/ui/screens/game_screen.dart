@@ -212,14 +212,21 @@ class QuizGameScreen extends QuizScreen {
         _view.addNode(diamondAt(dx, dy, 9, theme.accent, z: 8));
       }
     }
+    final oneRow = measureText(
+      'ا',
+      fontSize: _poemSize,
+      fontFamily: theme.fontFamily,
+      rtl: rtl,
+    ).height;
     var y = cardTop + 16;
     var wordNo = 0;
     for (var i = 0; i < lines.length; i++) {
       final lineY = y + sizes[i].height / 2;
       final finalColor = answered ? theme.correct : theme.ink;
-      final wrapped = sizes[i].height > _poemSize * 1.9;
+      // A line that broke over several rows cannot be placed word by word.
+      final wrapped = sizes[i].height > oneRow * 1.5;
       final words = lines[i].split(' ').where((w) => w.isNotEmpty).toList();
-      if (wrapped || words.length < 2) {
+      if (wrapped || words.isEmpty) {
         _view.addNode(
           label(
             lines[i],

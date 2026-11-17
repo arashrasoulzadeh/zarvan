@@ -530,7 +530,9 @@ void main() {
               p.daily.results['2026-11-17'] = [true, true, false, true, true],
         );
         await played.open(QuizHomeScreen(played.kit));
-        expect(played.has('✅✅❌✅✅'), isTrue);
+        expect(played.has('Done'), isTrue);
+        expect(played.hasPart('✅'), isFalse);
+        expect(played.hasPart('❌'), isFalse);
         expect(played.hasPart('Next in'), isFalse);
         expect(played.hasPart('Five new poems'), isFalse);
       },

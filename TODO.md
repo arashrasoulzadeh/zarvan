@@ -41,7 +41,7 @@ ship, with a test and docs.
 - [x] **Flat shape primitives** (`Shape`: circle, rounded rect, ring, dashes, screen space) for art-free games such as Adad Bazi; tests in `shape_test.dart`, benchmark in `benchmark/`.
 - [x] **Render a world to PNG** (`captureWorldToPng`) for share cards; tests in `capture_world_test.dart`.
 - [x] **Key-value store for save blobs** (`KeyValueStore`, `MemoryKeyValueStore`, `PreferencesKeyValueStore`) so a game keeps plain data without a platform import; tests in `key_value_store_test.dart`.
-- [ ] **UI toolkit: Flutter widgets for the new models.** `layoutStack`, `anchorRect`, `ScrollListModel` and
+- [x] **UI toolkit: Flutter widgets for the new models.** `layoutStack`, `anchorRect`, `ScrollListModel` and
       `TextInputModel` exist as pure models; scenes still need widgets that render and drive them.
 
 ## Wanted: idle gaps
@@ -50,7 +50,7 @@ What `zarvan_idle` and the wave-combat layer still lack for a full idle game, mo
 
 - [ ] **Automation in wave combat.** `AutoBuyer` exists in core, but the wave scene still needs taps to buy upgrades,
       cast skills, retry and ascend. Add auto-buy, auto-cast, auto-retry and auto-ascend toggles (generic, config-driven).
-- [ ] **Flutter widgets for the UI toolkit models** (see above): scrolling lists, tabs, popups and tooltips for shops,
+- [x] **Flutter widgets for the UI toolkit models** (see above): scrolling lists, tabs, popups and tooltips for shops,
       inventories and skill trees.
 - [ ] **Meta-progression beyond one prestige.** A talent or skill tree bought with prestige currency, achievements with
       permanent bonuses, daily quests and login streaks.

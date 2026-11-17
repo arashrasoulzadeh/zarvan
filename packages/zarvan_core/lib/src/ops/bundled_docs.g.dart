@@ -881,7 +881,7 @@ destroyed far end leaves the joint inert.
 
 ## UI toolkit models
 
-Pure-Dart building blocks for in-game UI: `layoutStack(bounds, [40, null, null], gap:, padding:, vertical:)` splits space between fixed and flexible children; `anchorRect(parent, UiAnchor.bottomRight, w, h, dx:, dy:)` pins a box to a corner, edge or centre; `ScrollListModel` handles clamped scrolling, fling inertia, hit-testing and keyboard selection; `TextInputModel` holds text, caret, length limit and character filter. Widgets that render them are still to do.
+Pure-Dart building blocks for in-game UI: `layoutStack(bounds, [40, null, null], gap:, padding:, vertical:)` splits space between fixed and flexible children; `anchorRect(parent, UiAnchor.bottomRight, w, h, dx:, dy:)` pins a box to a corner, edge or centre; `ScrollListModel` handles clamped scrolling, fling inertia, hit-testing and keyboard selection; `TextInputModel` holds text, caret, length limit and character filter. `zarvan_flutter` renders them as widgets: `ModelScrollList` (drag, fling, wheel, arrow-key selection, tap hit-testing; builds only visible rows), `ModelTextField`, `GameTabs`, `showGamePopup` (pinned with `anchorRect`) and `GameTooltip`.
 ''',
 
   'concepts/idle-games.md': '''# Idle games

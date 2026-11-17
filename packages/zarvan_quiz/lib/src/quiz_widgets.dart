@@ -202,12 +202,45 @@ class QuizFeedback extends StatelessWidget {
   );
 }
 
+/// Words shown before each HUD number. Empty (the default) shows the bare
+/// number; a game fills them in its own language.
+class QuizHudLabels {
+  const QuizHudLabels({
+    this.score = '',
+    this.streak = '',
+    this.lives = '',
+    this.clock = '',
+    this.coins = '',
+  });
+
+  final String score;
+  final String streak;
+  final String lives;
+  final String clock;
+  final String coins;
+}
+
+String _plain(int n) => '$n';
+
 /// Score, streak, lives (or the race clock), coins and the hint button.
+/// [labels] name the numbers and [format] writes them (for example with
+/// Persian digits); both are the game's choice, the engine has no language.
 class QuizHud extends StatelessWidget {
-  const QuizHud({super.key, required this.session, this.hintLabel = 'Hint'});
+  const QuizHud({
+    super.key,
+    required this.session,
+    this.hintLabel = 'Hint',
+    this.labels = const QuizHudLabels(),
+    this.format = _plain,
+  });
 
   final QuizSession session;
   final String hintLabel;
+  final QuizHudLabels labels;
+  final String Function(int value) format;
+
+  String _text(String label, int value) =>
+      label.isEmpty ? format(value) : '$label ${format(value)}';
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -221,13 +254,28 @@ class QuizHud extends StatelessWidget {
         spacing: 16,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          Text('${run.score}', key: const ValueKey('hud_score')),
-          Text('${run.streak}', key: const ValueKey('hud_streak')),
+          Text(
+            _text(labels.score, run.score),
+            key: const ValueKey('hud_score'),
+          ),
+          Text(
+            _text(labels.streak, run.streak),
+            key: const ValueKey('hud_streak'),
+          ),
           if (run.lives != null)
-            Text('${run.lives}', key: const ValueKey('hud_lives')),
+            Text(
+              _text(labels.lives, run.lives!),
+              key: const ValueKey('hud_lives'),
+            ),
           if (clock != null)
-            Text('${(clock / 1000).ceil()}', key: const ValueKey('hud_clock')),
-          Text('${session.progress.coins}', key: const ValueKey('hud_coins')),
+            Text(
+              _text(labels.clock, (clock / 1000).ceil()),
+              key: const ValueKey('hud_clock'),
+            ),
+          Text(
+            _text(labels.coins, session.progress.coins),
+            key: const ValueKey('hud_coins'),
+          ),
           if (round.mode is! RaceMode)
             TextButton(
               key: const ValueKey('hint'),

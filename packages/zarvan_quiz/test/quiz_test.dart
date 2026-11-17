@@ -293,6 +293,35 @@ void main() {
       },
     );
 
+    testWidgets('the HUD writes labels and numbers the way the game asks', (
+      t,
+    ) async {
+      final s = newSession()..begin(stage());
+      await t.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: QuizHud(
+              session: s,
+              labels: const QuizHudLabels(score: 'S', coins: 'C'),
+              format: (n) => '<$n>',
+            ),
+          ),
+        ),
+      );
+      expect(
+        t.widget<Text>(find.byKey(const ValueKey('hud_score'))).data,
+        'S <0>',
+      );
+      expect(
+        t.widget<Text>(find.byKey(const ValueKey('hud_coins'))).data,
+        'C <60>',
+      );
+      expect(
+        t.widget<Text>(find.byKey(const ValueKey('hud_streak'))).data,
+        '<0>',
+      );
+    });
+
     testWidgets('the HUD tracks score and streak; endless shows lives', (
       t,
     ) async {

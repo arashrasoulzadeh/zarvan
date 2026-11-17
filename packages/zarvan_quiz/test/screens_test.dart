@@ -25,6 +25,10 @@ const strings = QuizStrings(
   dailyTodayPlay: 'Five new poems',
   dailyNextIn: 'Next in',
   chapters: 'Chapters',
+  wallTitle: 'Wall of divans',
+  chaptersDone: 'complete',
+  outOf: 'of',
+  continueGame: 'Continue',
   endless: 'Endless',
   race: 'Race',
   stageLockedHint: '18 of 25 before',
@@ -422,14 +426,25 @@ void main() {
 
   group('menu screens', () {
     test(
-      'home: coins, the daily card and the modes; a played daily shows its marks',
+      'home: coins, the poets shelf, the daily card and the modes',
       () async {
-        final r = await Rig.make();
+        final r = await Rig.make(bank: makeMultiBank());
         await r.open(QuizHomeScreen(r.kit));
         expect(r.has('60 coins'), isTrue);
-        for (final t in ['Daily', 'Chapters', 'Endless', 'Race', 'About']) {
+        for (final t in [
+          'Wall of divans',
+          'Endless',
+          'Race',
+          'About',
+          'Poet a',
+          'Poet b',
+          'Poet c',
+        ]) {
           expect(r.has(t), isTrue, reason: t);
         }
+        expect(r.has('0 of 3 complete'), isTrue);
+        expect(r.hasPart('Daily'), isTrue);
+        expect(r.hasPart('Continue · Poet a · Easy'), isTrue);
         final played = await Rig.make(
           setup: (p) =>
               p.daily.results['2026-11-17'] = [true, true, false, true, true],
@@ -437,12 +452,61 @@ void main() {
         await played.open(QuizHomeScreen(played.kit));
         expect(played.has('✅✅❌✅✅'), isTrue);
         expect(played.hasPart('Next in'), isTrue);
-        expect(played.has('Five new poems'), isFalse);
+        expect(played.hasPart('Five new poems'), isFalse);
       },
     );
 
     test(
-      'home buttons start the daily, endless and race, and open the other screens',
+      'Continue goes on with the first stage not yet passed, and the shelf shows progress',
+      () async {
+        final r = await Rig.make(
+          bank: makeMultiBank(),
+          setup: (p) {
+            p.stages['a'] = {
+              for (final t in QuizTier.values)
+                t.name: StageProgress(stars: 3, attempts: 1, passedOnce: true),
+            };
+            p.stages['b'] = {
+              'easy': StageProgress(stars: 2, attempts: 2, passedOnce: true),
+            };
+          },
+        );
+        await r.open(QuizHomeScreen(r.kit));
+        expect(r.has('1 of 3 complete'), isTrue);
+        expect(r.hasPart('Continue · Poet b · Medium'), isTrue);
+        r.tap('Continue · Poet b · Medium');
+        expect(r.loaded, isA<QuizGameScreen>());
+        expect(r.kit.session.round!.author, 'b');
+        expect(r.kit.session.round!.tier, QuizTier.medium);
+        expect(r.kit.session.round!.run.seedBase, endsWith(':1'));
+      },
+    );
+
+    test(
+      'nextStage falls back to the last author hardest stage when everything is passed',
+      () async {
+        final r = await Rig.make(
+          bank: makeMultiBank(authors: 2),
+          setup: (p) {
+            for (final a in ['a', 'b']) {
+              p.stages[a] = {
+                for (final t in QuizTier.values)
+                  t.name: StageProgress(
+                    stars: 3,
+                    attempts: 1,
+                    passedOnce: true,
+                  ),
+              };
+            }
+          },
+        );
+        final n = nextStage(r.kit.bank, r.kit.session.progress);
+        expect((n.author.id, n.tier), ('b', QuizTier.literary));
+      },
+    );
+
+    test(
+      'home buttons start the daily, endless and race, and open settings and about',
       () async {
         Future<Scene?> press(String t) async {
           final r = await Rig.make(ads: true);
@@ -452,12 +516,11 @@ void main() {
           return r.loaded;
         }
 
-        expect(await press('Chapters'), isA<QuizChaptersScreen>());
         expect(await press('About'), isA<QuizAboutScreen>());
         expect(await press('⚙'), isA<QuizSettingsScreen>());
         final daily = await Rig.make();
         await daily.open(QuizHomeScreen(daily.kit));
-        daily.tap('Daily');
+        daily.tap('Daily · Five new poems');
         expect(daily.loaded, isA<QuizGameScreen>());
         expect(daily.kit.session.round!.date, '2026-11-17');
         final endless = await Rig.make();
@@ -468,6 +531,33 @@ void main() {
         await race.open(QuizHomeScreen(race.kit));
         race.tap('Race');
         expect(race.kit.session.round!.mode, isA<RaceMode>());
+      },
+    );
+
+    test('tapping a poet on the shelf opens their stages', () async {
+      final r = await Rig.make(bank: makeMultiBank());
+      await r.open(QuizHomeScreen(r.kit));
+      r.tap('Poet b');
+      expect(r.loaded, isA<QuizStagesScreen>());
+    });
+
+    test(
+      'the menu animates: glows and sparkles change opacity over time',
+      () async {
+        final r = await Rig.make(bank: makeMultiBank());
+        await r.open(QuizHomeScreen(r.kit));
+        double sum() {
+          final shapes = r.world.componentsOf<Shape>();
+          var s = 0.0;
+          for (var i = 0; i < shapes.length; i++) {
+            s += shapes.denseAt(i).alpha;
+          }
+          return s;
+        }
+
+        final before = sum();
+        r.run(0.8);
+        expect(sum(), isNot(before));
       },
     );
 
@@ -490,25 +580,6 @@ void main() {
         expect(skip.kit.session.progress.coins, 60);
       },
     );
-
-    test('chapters: one card per author with stars out of twelve', () async {
-      final r = await Rig.make(
-        bank: makeMultiBank(),
-        setup: (p) {
-          p.stages['a'] = {
-            'easy': StageProgress(stars: 2, attempts: 1, passedOnce: true),
-          };
-        },
-      );
-      await r.open(QuizChaptersScreen(r.kit));
-      for (final a in ['a', 'b', 'c']) {
-        expect(r.has('Poet $a'), isTrue);
-      }
-      expect(r.has('2 / 12 stars'), isTrue);
-      expect(r.has('0 / 12 stars'), isTrue);
-      r.tap('Poet b');
-      expect(r.loaded, isA<QuizStagesScreen>());
-    });
 
     test(
       'stages: later ones are locked with the hint until the one before is passed',

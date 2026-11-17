@@ -11,6 +11,10 @@ class QuizStrings {
     required this.dailyTodayPlay,
     required this.dailyNextIn,
     required this.chapters,
+    required this.wallTitle,
+    required this.chaptersDone,
+    required this.outOf,
+    required this.continueGame,
     required this.endless,
     required this.race,
     required this.stageLockedHint,
@@ -82,6 +86,18 @@ class QuizStrings {
 
   /// Chapters screen title and menu button.
   final String chapters;
+
+  /// Heading above the shelf of authors on the menu.
+  final String wallTitle;
+
+  /// Word after "2 of 10" ("complete").
+  final String chaptersDone;
+
+  /// The word between the two numbers of "2 of 10".
+  final String outOf;
+
+  /// The big button that goes on with the next stage.
+  final String continueGame;
 
   /// Endless mode button.
   final String endless;
@@ -226,6 +242,10 @@ class QuizStrings {
     'dailyTodayPlay': dailyTodayPlay,
     'dailyNextIn': dailyNextIn,
     'chapters': chapters,
+    'wallTitle': wallTitle,
+    'chaptersDone': chaptersDone,
+    'outOf': outOf,
+    'continueGame': continueGame,
     'endless': endless,
     'race': race,
     'stageLockedHint': stageLockedHint,

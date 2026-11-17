@@ -2,7 +2,7 @@ import 'package:zarvan_core/zarvan_core.dart' show UiRect;
 import 'package:zarvan_core/zarvan_core_quiz.dart';
 
 import '../quiz_screen.dart';
-import 'chapters_screen.dart';
+import 'home_screen.dart';
 import 'game_screen.dart';
 
 /// The four stages of a chapter, in tier order. A stage opens when the one
@@ -16,7 +16,7 @@ class QuizStagesScreen extends QuizScreen {
   void build() {
     final s = kit.strings;
     final p = kit.session.progress;
-    titleBar(author.name, onBack: () => goTo(QuizChaptersScreen(kit)));
+    titleBar(author.name, onBack: () => goTo(QuizHomeScreen(kit)));
     var y = 96.0;
     for (final tier in QuizTier.values) {
       final unlocked = p.isUnlocked(author.id, tier);

@@ -82,9 +82,9 @@ and the item bank are passed in as data.
       every N questions, one continue), timed race, daily set seeded by date.
 - [x] **Progress model**: stars and unlocks per chapter/stage, records, currency balance; saved through the existing
       save/`KeyValueStore` path.
-- [ ] **`zarvan_quiz` package** (depends on `zarvan_core` + `zarvan_flutter`): RTL-ready question card, option buttons,
+- [x] **`zarvan_quiz` package** (depends on `zarvan_core` + `zarvan_flutter`): RTL-ready question card, option buttons,
       answer feedback, HUD (currency, lives, timer), `QuizController`/`QuizSession` for lifecycle and saving.
 - [x] **Agent operations**: `quiz.generate`, `quiz.answer`, `quiz.state`, `quiz.validate_bank` (blankable words exist,
       no duplicate options, tier counts) in the operation registry, each with its `zarvan` command (1:1 rule), and
       `docs/reference/operations.md` regenerated.
-- [ ] Add `zarvan_quiz` to the package map in CLAUDE.md and the README.
+- [x] Add `zarvan_quiz` to the package map in CLAUDE.md and the README.

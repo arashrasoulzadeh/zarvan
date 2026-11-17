@@ -11,6 +11,7 @@
 [![zarvan_platformer](https://github.com/arashrasoulzadeh/zarvan/actions/workflows/zarvan_platformer.yml/badge.svg)](https://github.com/arashrasoulzadeh/zarvan/actions/workflows/zarvan_platformer.yml)
 [![zarvan_strategy](https://github.com/arashrasoulzadeh/zarvan/actions/workflows/zarvan_strategy.yml/badge.svg)](https://github.com/arashrasoulzadeh/zarvan/actions/workflows/zarvan_strategy.yml)
 [![zarvan_idle](https://github.com/arashrasoulzadeh/zarvan/actions/workflows/zarvan_idle.yml/badge.svg)](https://github.com/arashrasoulzadeh/zarvan/actions/workflows/zarvan_idle.yml)
+[![zarvan_quiz](https://github.com/arashrasoulzadeh/zarvan/actions/workflows/zarvan_quiz.yml/badge.svg)](https://github.com/arashrasoulzadeh/zarvan/actions/workflows/zarvan_quiz.yml)
 [![zarvan_studio](https://github.com/arashrasoulzadeh/zarvan/actions/workflows/zarvan_studio.yml/badge.svg)](https://github.com/arashrasoulzadeh/zarvan/actions/workflows/zarvan_studio.yml)
 [![zarvan_api](https://github.com/arashrasoulzadeh/zarvan/actions/workflows/zarvan_api.yml/badge.svg)](https://github.com/arashrasoulzadeh/zarvan/actions/workflows/zarvan_api.yml)
 [![zarvan_cli](https://github.com/arashrasoulzadeh/zarvan/actions/workflows/zarvan_cli.yml/badge.svg)](https://github.com/arashrasoulzadeh/zarvan/actions/workflows/zarvan_cli.yml)
@@ -83,6 +84,7 @@ ZARVAN با الهام از این ایده، یک **موتور بازی عام�
 | [`packages/zarvan_flutter`](packages/zarvan_flutter/README.md) | The Flutter shell: `Game`/`GameRunner` app framework, sprite rendering, camera, input, audio, save/load. No gameplay logic. |
 | [`packages/zarvan_platformer`](packages/zarvan_platformer/README.md) | 2D-platformer-genre gameplay: gravity, jump, tile/platform collision, player/enemy spawn helpers, patrol/follow AI behaviors, facing + movement-driven animation. Kept separate from `zarvan_core` so a non-platformer 2D game isn't forced to depend on gravity/jump concepts. |
 | [`packages/zarvan_idle`](packages/zarvan_idle/README.md) | Idle / incremental-game layer: a whole game as one JSON file (generators, upgrades, prestige, achievements, offline progress, golden events), the widgets, saving/cloud/web stores and the `idle_game` starter. The Flutter-free rules live in `zarvan_core` (`zarvan_core_idle.dart`); `zarvan idle simulate` balances a definition. |
+| [`packages/zarvan_quiz`](packages/zarvan_quiz/README.md) | Quiz / fill-in-the-blank layer: question card, option buttons with feedback, HUD, `QuizController` and `QuizSession` (saved progress). The Flutter-free rules (seeded question generator, scoring, modes, progress, bank validation) live in `zarvan_core` (`zarvan_core_quiz.dart`) and the `quiz.*` operations. |
 | [`packages/zarvan_strategy`](packages/zarvan_strategy/README.md) | Turn-based strategy assembly: `installStrategySystems`, `spawnStrategyUnit`, plus the `strategy_game` starter. The rules themselves (turn clock, orders, grid navigation, combat, fog of war, AI turns) live in `zarvan_core/lib/src/turn/`. |
 | [`packages/zarvan_api`](packages/zarvan_api/README.md) | MCP server and HTTP / JSON-RPC API over one operation registry (`zarvan_core`); every operation is also a `zarvan` command. Spec in [engine_mcp.md](engine_mcp.md), walkthrough in [tutorial 6](docs/tutorials/06-agent-api.md). |
 | [`packages/zarvan_cli`](packages/zarvan_cli/README.md) | The `zarvan` CLI — scaffolds new Flutter games wired to the engine, updates their pinned version, lints content files. |
@@ -223,6 +225,7 @@ Each package is tested independently:
 (cd packages/zarvan_platformer && flutter test && flutter analyze --fatal-infos)
 (cd packages/zarvan_strategy && flutter test && flutter analyze --fatal-infos)
 (cd packages/zarvan_idle && flutter test && flutter analyze --fatal-infos)
+(cd packages/zarvan_quiz && flutter test && flutter analyze --fatal-infos)
 (cd packages/zarvan_cli && dart test && dart analyze --fatal-infos)
 
 # docs site (needs: pip install -r docs/requirements.txt)

@@ -1,0 +1,43 @@
+name: zarvan_quiz
+description: >
+  Quiz-genre layer on top of zarvan_core/zarvan_flutter: question card,
+  option buttons with answer feedback, HUD, and the controller/session that
+  drive a run and save progress. The Flutter-free rules live in zarvan_core
+  (zarvan_core_quiz.dart) so the CLI and MCP can use them.
+version: 0.1.0
+homepage: https://github.com/arashrasoulzadeh/zarvan
+repository: https://github.com/arashrasoulzadeh/zarvan
+publish_to: none
+
+environment:
+  sdk: ^3.9.0
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Self-referencing git dependencies, same pattern (and same
+  # ref-must-match-consumer limitation) as zarvan_idle — see
+  # zarvan_flutter's pubspec.yaml comment.
+  zarvan_schema:
+    git:
+      url: https://github.com/arashrasoulzadeh/zarvan.git
+      path: packages/zarvan_schema
+      ref: main
+  zarvan_core:
+    git:
+      url: https://github.com/arashrasoulzadeh/zarvan.git
+      path: packages/zarvan_core
+      ref: main
+  zarvan_flutter:
+    git:
+      url: https://github.com/arashrasoulzadeh/zarvan.git
+      path: packages/zarvan_flutter
+      ref: main
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:

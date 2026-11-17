@@ -1,0 +1,34 @@
+name: zarvan_quiz
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/zarvan_quiz/**'
+      - 'packages/zarvan_core/**'
+      - 'packages/zarvan_flutter/**'
+      - 'packages/zarvan_schema/**'
+      - '.github/workflows/zarvan_quiz.yml'
+  pull_request:
+    paths:
+      - 'packages/zarvan_quiz/**'
+      - 'packages/zarvan_core/**'
+      - 'packages/zarvan_flutter/**'
+      - 'packages/zarvan_schema/**'
+      - '.github/workflows/zarvan_quiz.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/zarvan_quiz
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.38.9
+      - run: flutter pub get
+      - run: flutter analyze --fatal-infos
+      - run: flutter test

@@ -255,6 +255,9 @@ class MedalOverlay {
         group: _content,
       );
       b.bg.shape!.zIndex = _z + 5;
+      b.bg.shape!
+        ..colorArgb = theme.accent
+        ..alpha = 0.16;
       b.label.text!.zIndex = _z + 6;
       b.label.pos.y -= 9;
       b.enabled = unlocked;
@@ -272,7 +275,7 @@ class MedalOverlay {
         ),
       );
       if (!unlocked) {
-        b.bg.shape!.alpha = 0.5;
+        b.bg.shape!.alpha = 0.06;
         b.label.text!.alpha = 0.5;
       }
       y += 62;

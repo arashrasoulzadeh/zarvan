@@ -48,7 +48,7 @@ ship, with a test and docs.
 
 What `zarvan_idle` and the wave-combat layer still lack for a full idle game, most important first:
 
-- [ ] **Automation in wave combat.** `AutoBuyer` exists in core, but the wave scene still needs taps to buy upgrades,
+- [x] **Automation in wave combat.** `AutoBuyer` exists in core, but the wave scene still needs taps to buy upgrades,
       cast skills, retry and ascend. Add auto-buy, auto-cast, auto-retry and auto-ascend toggles (generic, config-driven).
 - [x] **Flutter widgets for the UI toolkit models** (see above): scrolling lists, tabs, popups and tooltips for shops,
       inventories and skill trees.

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' show Offset, Rect, Size;
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:zarvan_core/zarvan_core.dart';
 import 'package:zarvan_flutter/zarvan_flutter.dart' hide Text;
 import 'package:zarvan_flutter/zarvan_flutter.dart' as eng show Text;
@@ -16,6 +17,7 @@ import '../combat/skill_runner.dart';
 import '../hud/wave_strings.dart';
 import '../progress/loot.dart';
 import '../progress/hero_skill.dart';
+import '../progress/wave_automation.dart';
 import '../progress/offline_rule.dart';
 import '../combat/enemy_powers.dart';
 import '../level/wave_plan.dart';
@@ -97,6 +99,7 @@ class WaveCombatConfig {
     this.hints = true,
     this.timing,
     this.squad,
+    this.automation,
   });
 
   /// Asset stem of the hero sheets (`<stem>_idle.png`, `_attack`, `_death`).
@@ -239,6 +242,11 @@ class WaveCombatConfig {
   /// Several enemies per wave; null = always one-on-one.
   final SquadRule? squad;
 
+  /// Auto-buy, auto-cast, auto-retry and auto-ascend toggles; null = all
+  /// manual. The object is read every frame, so flipping a toggle takes
+  /// effect at once.
+  final WaveAutomation? automation;
+
   /// Builds the spark emitter each fighter gets.
   final ParticleEmitter Function() impactParticles;
 
@@ -347,6 +355,14 @@ class WaveCombatScene extends Scene {
   double _iconCell = 32;
   bool _heroWon = false;
   SkillRunner? _skills;
+
+  /// Set once the automation has left this scene, so a scene that lingers a
+  /// frame after `loadScene` cannot ascend or retry twice.
+  bool _autoEnded = false;
+
+  /// The skill cooldowns, for tests to see which skills fired.
+  @visibleForTesting
+  SkillCooldowns? get skillCooldowns => _skills?.cooldowns;
   EntityId? _condLabel;
   EntityId? _gearLabel;
   double _barSync = 0;
@@ -1371,6 +1387,7 @@ class WaveCombatScene extends Scene {
     if (_modalOpen) return;
     _hitStop?.update(dt);
     _skills?.tick(dt);
+    _runAutomation(world, dt);
     _barSync += dt;
     if (_barSync >= 0.2) {
       _barSync = 0;
@@ -1438,6 +1455,62 @@ class WaveCombatScene extends Scene {
     waves.advance();
     progress.reachWave(waves.index);
     _spawnEnemy(world);
+  }
+
+  /// Applies [WaveCombatConfig.automation]: purchases, skill casts and the
+  /// automatic retry/ascend after a finished run.
+  void _runAutomation(World world, double dt) {
+    final auto = config.automation;
+    if (auto == null) return;
+    final bar = _upgradeBar;
+    if (auto.buyDue(dt)) {
+      final upgrade = auto.pickPurchase(progress, config.upgrades);
+      if (upgrade != null && progress.buy(upgrade)) {
+        final h = heroId;
+        if (h != null) _loadout.apply(world, h);
+        bar?.sync(world);
+      }
+    }
+    final h = heroId;
+    final skills = _skills;
+    final fighting =
+        !finished && !_walk.active && _fightDelayLeft <= 0 && enemyId != null;
+    if (fighting && h != null && skills != null && auto.autoCast) {
+      final hp = world.componentsOf<Health>().get(h);
+      final fraction = hp == null || hp.max <= 0 ? 1.0 : hp.current / hp.max;
+      for (final skill in config.skills) {
+        if (!auto.wantsCast(skill, fraction)) continue;
+        skills.use(
+          world,
+          skill,
+          hero: h,
+          enemy: enemyId,
+          enemies: _livingEnemies(world),
+        );
+      }
+    }
+    final scenes = _scenes;
+    if (_autoEnded) return;
+    switch (auto.endingDue(
+      dt,
+      finished: finished,
+      won: _heroWon,
+      canAscend: config.prestigeBonusPerStar > 0,
+    )) {
+      case AutoEnding.none:
+        break;
+      case AutoEnding.retry:
+        if (scenes != null) {
+          _autoEnded = true;
+          _restart(scenes);
+        }
+      case AutoEnding.ascend:
+        if (scenes != null) {
+          _autoEnded = true;
+          progress.ascend();
+          _restart(scenes);
+        }
+    }
   }
 
   /// Keeps the hero's condition line (Bleed 2s...) over its head.

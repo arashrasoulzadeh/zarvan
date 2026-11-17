@@ -1143,6 +1143,11 @@ about cheating (see Trust below); `syncCloud` alone is for convenience, not anti
   affordable purchase with the best payback on a timer; add `AutoBuySystem()` after `IdleSystem()`, flip `enabled` when
   the player unlocks it, and pass `whileAway:` that reads the buyer and calls `runAutoBuyer(world, wallet, buyer)` so
   offline catch-up also buys. `bestPurchase(world, wallet)` is the same recommendation as a function (for a "buy this next" hint).
+- **Wave-combat automation:** pass `WaveCombatConfig(automation: WaveAutomation(autoBuy: true, autoCast: true, autoRetry: true, autoAscend: true))`.
+  Auto-buy takes the cheapest affordable upgrade every `buyIntervalSeconds`; auto-cast fires strikes when ready and heals/guards when
+  the hero\'s hp falls below `healBelow`/`guardBelow`; auto-retry and auto-ascend leave the result screen after `endingDelaySeconds`
+  (a cleared boss ascends when `autoAscend` is on, otherwise it retries). The object is read every frame, so a game flips the
+  toggles when the player unlocks them.
 - **Synergy upgrades:** `"bonusPerOwned": "0.01", "synergyOf": "grandma"` on an upgrade multiplies the target by
   `1 + bonusPerOwned * owned(synergyOf)` once purchased (stacks with a plain `multiplier` when both are set).
 - **Research:** `"research": [{"id": "mining", "cost": {"coins": "5000"}, "unlocks": ["mining"]}]` plus

@@ -12,6 +12,7 @@ pubspec.yaml.
 - Rebuilt the MkDocs home as a focused ZARVAN landing page with direct paths to the generated docs, agent hub, tutorials, architecture, and Persian documentation. The full navigation and sidebar remain available on inner documentation pages.
 
 ### Added (engine)
+- Added `WaveAutomation` for the wave-combat scene: auto-buy, auto-cast, auto-retry and auto-ascend toggles (`WaveCombatConfig.automation`).
 - Added the quiz genre: Flutter-free rules in `zarvan_core` (`zarvan_core_quiz.dart`), the `quiz.*` operations, and the `zarvan_quiz` package.
 - Added Flutter widgets for the UI toolkit models in `zarvan_flutter`: `ModelScrollList`, `ModelTextField`, `GameTabs`, `showGamePopup`, `GameTooltip`.
 - Added `zarvan_eye`, a Flutter-free Eye analytics client with session creation, identity enrichment, bounded batching, retries and periodic flushing.

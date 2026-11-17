@@ -40,6 +40,7 @@ export 'hud/world_text.dart';
 export 'hud/wave_strings.dart';
 export 'progress/gear.dart';
 export 'progress/hero_skill.dart';
+export 'progress/wave_automation.dart';
 export 'progress/loot.dart';
 export 'progress/hero_loadout.dart';
 export 'progress/hero_progress_store.dart';

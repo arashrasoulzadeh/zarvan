@@ -60,6 +60,7 @@ WaveCombatConfig _config({
   CombatTimingRules? timing,
   double windup = 0,
   double fightDelay = 0,
+  WaveAutomation? automation,
 }) => WaveCombatConfig(
   heroStem: 'hero',
   enemyRoot: 'enemies',
@@ -79,6 +80,7 @@ WaveCombatConfig _config({
   timing: timing,
   windupSeconds: windup,
   fightDelaySeconds: fightDelay,
+  automation: automation,
 );
 
 class _Run {
@@ -485,5 +487,91 @@ void main() {
       }
       expect(parried, isEmpty);
     });
+  });
+
+  test('auto-buy spends coins on affordable upgrades, none when off', () async {
+    final on = HeroProgress(coins: 30);
+    final r = await _start(
+      _Scene(
+        level: _level(),
+        config: _config(automation: WaveAutomation(autoBuy: true)),
+        progress: on,
+      ),
+    );
+    r.run(1);
+    expect(on.levelOf(_strength), greaterThan(0));
+    expect(on.coins, lessThan(30));
+
+    final off = HeroProgress(coins: 30);
+    final r2 = await _start(
+      _Scene(
+        level: _level(),
+        config: _config(automation: WaveAutomation()),
+        progress: off,
+      ),
+    );
+    r2.run(1);
+    expect(off.levelOf(_strength), 0);
+  });
+
+  test('auto-retry restarts a lost run after the delay', () async {
+    final progress = HeroProgress();
+    final r = await _start(
+      _Scene(
+        level: _level(),
+        config: _config(
+          automation: WaveAutomation(autoRetry: true, endingDelaySeconds: 1),
+        ),
+        progress: progress,
+      ),
+    );
+    r.world.componentsOf<Health>().get(r.scene.heroId!)!.current = 0;
+    while (!r.scene.finished) {
+      r.run(0.05);
+    }
+    expect(r.loaded, isEmpty);
+    r.run(0.5);
+    expect(r.loaded, isEmpty);
+    r.run(1.5);
+    expect(r.loaded.single, isA<WaveCombatScene>());
+    expect(progress.stars, 0);
+  });
+
+  test('auto-ascend ascends after a cleared boss; retry alone does not', () async {
+    final progress = HeroProgress(coins: 5);
+    final r = await _start(
+      _Scene(
+        level: _level(wave: ['a']),
+        config: _config(
+          prestige: 0.25,
+          automation: WaveAutomation(autoAscend: true, endingDelaySeconds: 0.5),
+        ),
+        progress: progress,
+      ),
+    );
+    r.run(60);
+    expect(progress.stars, 1);
+    expect(r.loaded, isNotEmpty);
+  });
+
+  test('auto-cast fires a ready strike skill without a tap', () async {
+    const strike = HeroSkill(
+      id: 'big',
+      label: 'Big',
+      kind: SkillKind.strike,
+      power: 3,
+      cooldown: 100,
+    );
+    final r = await _start(
+      _Scene(
+        level: _level(),
+        config: _config(
+          skills: const [strike],
+          automation: WaveAutomation(autoCast: true),
+        ),
+      ),
+    );
+    r.run(15);
+    expect(r.scene.skillCooldowns!.remaining(strike), greaterThan(0));
   });
 }

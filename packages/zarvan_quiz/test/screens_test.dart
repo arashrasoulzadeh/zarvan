@@ -247,7 +247,7 @@ void main() {
 
     test('shows the HUD, the poem with its blank and four options', () async {
       final r = await stage();
-      expect(r.hasPart('＿'), isTrue);
+      expect(r.hasPart(QuizScreen.blank), isTrue);
       for (final o in r.kit.session.question!.options) {
         expect(r.has(o), isTrue, reason: o);
       }
@@ -267,12 +267,11 @@ void main() {
     );
 
     test(
-      'the blank is kept in one piece so a line cannot break inside it',
+      'the blank is drawn with plain underscores that a line cannot break inside',
       () async {
         final r = await stage();
-        final line = r.texts.firstWhere((t) => t.contains('＿'));
-        expect(line.contains('＿＿＿'), isFalse);
-        expect(line.contains('＿\u2060＿\u2060＿'), isTrue);
+        final line = r.texts.firstWhere((t) => t.contains(QuizScreen.blank));
+        expect(line.contains('＿'), isFalse);
       },
     );
 
@@ -281,7 +280,7 @@ void main() {
       final right = r.optionRight;
       r.tap(right);
       r.run(0.1);
-      expect(r.hasPart('＿'), isFalse);
+      expect(r.hasPart(QuizScreen.blank), isFalse);
       expect(r.has('Score 10'), isTrue);
       expect(r.has('Streak 1'), isTrue);
       expect(r.has('Next'), isTrue);
@@ -571,7 +570,7 @@ void main() {
       () async {
         final r = await Rig.make(tutorialDone: false);
         await r.open(QuizTutorialScreen(r.kit));
-        expect(r.hasPart('＿'), isTrue);
+        expect(r.hasPart(QuizScreen.blank), isTrue);
         r.tap('Start');
         expect(r.loaded, isNull);
         final q = r.kit.factory.create(
@@ -580,7 +579,7 @@ void main() {
           1,
         )!;
         r.tap(q.options[0]);
-        expect(r.hasPart('＿'), isFalse);
+        expect(r.hasPart(QuizScreen.blank), isFalse);
         r.tap('Start');
         await Future<void>.delayed(const Duration(milliseconds: 10));
         expect(r.kit.session.progress.flags['tutorialDone'], isTrue);

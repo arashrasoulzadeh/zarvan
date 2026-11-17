@@ -220,13 +220,15 @@ abstract class QuizScreen extends Scene {
     }
   }
 
-  /// [line] with the blank marker made unbreakable: the marker is three
-  /// full-width underscores and a line may otherwise break between them,
-  /// splitting the gap across two lines.
-  String keepBlankTogether(String line) => line.replaceAll(
-    defaultBlankMarker,
-    defaultBlankMarker.split('').join('\u2060'),
-  );
+  /// How the blank is drawn: plain underscores. The core marker is three
+  /// full-width underscores, which a line may break between (splitting the gap
+  /// over two lines) and which some fonts lack; ASCII underscores never break
+  /// and every font has them.
+  static const blank = '______';
+
+  /// [line] with the blank marker replaced by [blank].
+  String keepBlankTogether(String line) =>
+      line.replaceAll(defaultBlankMarker, blank);
 
   /// A new group for things that change.
   QuizGroup group() => QuizGroup(this);

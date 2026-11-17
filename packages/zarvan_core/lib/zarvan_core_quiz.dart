@@ -7,3 +7,5 @@ export 'src/quiz/quiz_generator.dart';
 export 'src/quiz/quiz_item.dart';
 export 'src/quiz/quiz_question.dart';
 export 'src/quiz/quiz_rules.dart';
+export 'src/quiz/quiz_modes.dart';
+export 'src/quiz/quiz_scoring.dart';

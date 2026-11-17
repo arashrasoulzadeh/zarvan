@@ -77,7 +77,7 @@ and the item bank are passed in as data.
       metadata + `tier`), seeded RNG, blank-word choice per tier (e.g. last word of a line vs. a random content word,
       skipping caller-supplied stop words), distractor generation per tier (unrelated / same length / same rhyme,
       same author), all JSON-serializable.
-- [ ] **Scoring and modes**: per-tier base score, streak multiplier, hint (remove two options, halves the score), lives,
+- [x] **Scoring and modes**: per-tier base score, streak multiplier, hint (remove two options, halves the score), lives,
       countdown with time bonus/penalty; modes as data: staged levels (unlock threshold, stars), endless (tier steps
       every N questions, one continue), timed race, daily set seeded by date.
 - [ ] **Progress model**: stars and unlocks per chapter/stage, records, currency balance; saved through the existing

@@ -21,6 +21,11 @@ class QuizGameScreen extends QuizScreen {
   static const _poemSize = 20.0;
   static const _hudSize = 13.0;
 
+  /// The whole poem is written within this many seconds, and one word takes
+  /// [_wordFade] seconds to come in.
+  static const _writeSeconds = 1.5;
+  static const _wordFade = 0.3;
+
   late final List<UiNode> _hud;
   late final QuizGroup _view = group();
   late final QuizGroup _dialog = group();
@@ -218,6 +223,14 @@ class QuizGameScreen extends QuizScreen {
       fontFamily: theme.fontFamily,
       rtl: rtl,
     ).height;
+    // Writing the whole poem takes at most 1.5 s, however many verses it has.
+    final count = lines.fold<int>(
+      0,
+      (n, l) => n + l.split(' ').where((w) => w.isNotEmpty).length,
+    );
+    final step = count > 1
+        ? math.min(0.11, (_writeSeconds - _wordFade) / (count - 1))
+        : 0.0;
     var y = cardTop + 16;
     var wordNo = 0;
     for (var i = 0; i < lines.length; i++) {
@@ -263,10 +276,10 @@ class QuizGameScreen extends QuizScreen {
           );
           node.text!.alpha = 0;
           _view.addNode(node);
-          final word = _Word(node, wordNo++ * 0.11, lineY, finalColor);
+          final word = _Word(node, wordNo++ * step, lineY, finalColor);
           // A word that has already been written (a redraw after a hint or
           // an answer) must not throw its sparks again.
-          word.started = _time - _revealStart - word.delay > 0.4;
+          word.started = _time - _revealStart - word.delay > _wordFade;
           _words.add(word);
         }
       }
@@ -404,15 +417,16 @@ class QuizGameScreen extends QuizScreen {
     if (i == q.answerIndex) {
       b.bg.shape!
         ..colorArgb = theme.correct
-        ..alpha = 0.22;
-      b.label.text!.colorArgb = theme.correct;
+        ..alpha = 0.42;
+      b.label.text!.colorArgb = theme.ink;
       _view.addNode(frame(rect, theme.correct, stroke: 2.5, radius: 14, z: 7));
-      _view.addId(lightAt(rect, theme.correct, intensity: 0.55));
+      _view.addId(lightAt(rect, theme.correct, intensity: 0.65));
+      _badge(rect, '✓', theme.correct);
     } else if (i == session.picked) {
       b.bg.shape!
         ..colorArgb = theme.wrong
-        ..alpha = 0.2;
-      b.label.text!.colorArgb = theme.wrong;
+        ..alpha = 0.38;
+      b.label.text!.colorArgb = theme.ink;
       _view.addNode(
         frame(
           rect,
@@ -424,6 +438,8 @@ class QuizGameScreen extends QuizScreen {
           dash: 4,
         ),
       );
+      _view.addId(lightAt(rect, theme.wrong, intensity: 0.4));
+      _badge(rect, '✕', theme.wrong);
       _shaking = b;
       _shakeAge = 0;
       _shakeBgX = b.bg.pos.x;
@@ -433,12 +449,23 @@ class QuizGameScreen extends QuizScreen {
     }
   }
 
+  /// A round glowing seal with a mark in it at the reading-start end of an
+  /// answered option, so right and wrong read at a glance.
+  void _badge(UiRect rect, String mark, int color) {
+    final x = rtl ? rect.right - 24 : rect.x + 24;
+    _view.addNode(dot(x, rect.centerY, 32, color, alpha: 0.35, z: 8));
+    _view.addNode(dot(x, rect.centerY, 24, color, z: 9));
+    _view.addNode(
+      label(mark, x, rect.centerY, size: 16, color: theme.background, z: 10),
+    );
+  }
+
   /// Brings each word of the poem in, in turn: it rises a little, fades in and
   /// turns from the accent gold to the ink colour, with a few sparks as it lands.
   void _stepWords() {
     final t = _time - _revealStart;
     for (final w in _words) {
-      final k = ((t - w.delay) / 0.4).clamp(0.0, 1.0);
+      final k = ((t - w.delay) / _wordFade).clamp(0.0, 1.0);
       if (k > 0 && !w.started) {
         w.started = true;
         _burst(w.node.pos.x, w.y, theme.accent, 3);

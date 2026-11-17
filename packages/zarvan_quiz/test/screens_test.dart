@@ -319,6 +319,22 @@ void main() {
       expect(poem().every((a) => a == 1), isTrue);
     });
 
+    test('the whole poem is written within a second and a half', () async {
+      final r = await stage();
+      List<double> poem() {
+        final t = r.world.componentsOf<eng.Text>();
+        return [
+          for (var i = 0; i < t.length; i++)
+            if (t.denseAt(i).fontSize == 20 &&
+                !r.kit.session.question!.options.contains(t.denseAt(i).text))
+              t.denseAt(i).alpha,
+        ];
+      }
+
+      r.run(1.55);
+      expect(poem().every((a) => a == 1), isTrue);
+    });
+
     test('a hint redraw does not restart the writing', () async {
       final r = await stage();
       r.run(4);

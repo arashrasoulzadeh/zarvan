@@ -103,6 +103,77 @@ void main() {
       expect(s.progress.coins, 19);
     });
 
+    group('continue', () {
+      QuizSession endless({int lives = 1}) => newSession()
+        ..begin(
+          QuizRound.endless(
+            factoryOf(bank),
+            EndlessMode(lives: lives),
+            seedBase: 'endless:c',
+          ),
+        );
+
+      test('running out of lives offers one continue instead of finishing', () {
+        final s = endless();
+        s.answer(wrong(s));
+        expect(s.canContinue, isTrue);
+        s.next();
+        expect(s.offeringContinue, isTrue);
+        expect(s.finished, isFalse);
+        expect(s.answered, isTrue, reason: 'the answered question stays up');
+      });
+
+      test(
+        'continuing gives a life, a fresh question, and no second offer',
+        () {
+          final s = endless();
+          s.answer(wrong(s));
+          s.next();
+          final before = s.round!.run.score;
+          expect(s.continueRound(), isTrue);
+          expect(s.offeringContinue, isFalse);
+          expect(s.round!.run.lives, 1);
+          expect(s.round!.run.continueUsed, isTrue);
+          expect(s.answered, isFalse);
+          expect(s.question, isNotNull);
+          expect(s.round!.run.score, before);
+          s.answer(wrong(s));
+          expect(s.canContinue, isFalse);
+          s.next();
+          expect(s.offeringContinue, isFalse);
+          expect(s.finished, isTrue);
+        },
+      );
+
+      test('declining books the round as it ended', () {
+        final s = endless();
+        s.answer(right(s));
+        s.next();
+        s.answer(wrong(s));
+        s.next();
+        expect(s.offeringContinue, isTrue);
+        s.declineContinue();
+        expect(s.finished, isTrue);
+        expect(s.offeringContinue, isFalse);
+        expect(s.progress.records.endlessBest, s.round!.run.score);
+      });
+
+      test(
+        'continue is refused when nothing is being offered; stage and race never offer',
+        () {
+          final s = endless();
+          expect(s.continueRound(), isFalse);
+          s.declineContinue();
+          expect(s.finished, isFalse);
+          final stageSession = newSession()..begin(stage());
+          expect(stageSession.canContinue, isFalse);
+          final raceSession = newSession()..begin(race());
+          expect(raceSession.canContinue, isFalse);
+          raceSession.dispose();
+        },
+      );
+    });
+
     test('a daily already played is refused', () {
       final s = newSession();
       final d = QuizRound.daily(

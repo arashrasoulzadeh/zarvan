@@ -50,6 +50,7 @@ class QuizSession extends ChangeNotifier {
   RunReward? reward;
 
   bool _paused = false;
+  bool _offering = false;
   Timer? _clock;
   Timer? _auto;
 
@@ -65,6 +66,23 @@ class QuizSession extends ChangeNotifier {
   bool get finished => reward != null;
 
   bool get paused => _paused;
+
+  /// True while the player is being asked whether to continue an endless
+  /// round that ran out of lives (the app shows its rewarded ad, then calls
+  /// [continueRound]; or [declineContinue]). The round is not booked yet.
+  bool get offeringContinue => _offering;
+
+  /// Whether the round in play may still be continued: endless, out of
+  /// lives, the mode allows a continue and none was used.
+  bool get canContinue {
+    final r = round;
+    if (r == null) return false;
+    final m = r.mode;
+    return m is EndlessMode &&
+        m.continues >= 1 &&
+        r.run.lives == 0 &&
+        !r.run.continueUsed;
+  }
 
   /// Whether a hint can be bought now: a question is open, not answered or
   /// hinted yet, not a race, and the coins cover it.
@@ -86,6 +104,7 @@ class QuizSession extends ChangeNotifier {
     }
     _stopTimers();
     round = r;
+    _offering = false;
     picked = null;
     lastResult = null;
     reward = null;
@@ -129,6 +148,11 @@ class QuizSession extends ChangeNotifier {
     final r = round;
     if (r == null || !answered) return;
     _auto?.cancel();
+    if (r.isOver && canContinue && !finished) {
+      _offering = true;
+      notifyListeners();
+      return;
+    }
     picked = null;
     lastResult = null;
     if (r.isOver) {
@@ -137,6 +161,30 @@ class QuizSession extends ChangeNotifier {
       _current = r.nextQuestion();
       if (r.isOver || _current == null) _finish();
     }
+    notifyListeners();
+  }
+
+  /// After the player agreed to continue (the app showed its ad): gives one
+  /// life back and moves on to a new question. False when no continue is
+  /// being offered.
+  bool continueRound() {
+    final r = round;
+    if (!_offering || r == null || !r.continueRun()) return false;
+    _offering = false;
+    picked = null;
+    lastResult = null;
+    _current = r.nextQuestion();
+    notifyListeners();
+    return true;
+  }
+
+  /// The player did not continue: books the round as it ended.
+  void declineContinue() {
+    if (!_offering) return;
+    _offering = false;
+    picked = null;
+    lastResult = null;
+    _finish();
     notifyListeners();
   }
 

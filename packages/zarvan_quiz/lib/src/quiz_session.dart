@@ -1,42 +1,259 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:flutter/widgets.dart';
 import 'package:zarvan_core/zarvan_core.dart' show KeyValueStore;
 import 'package:zarvan_core/zarvan_core_quiz.dart';
 
-import 'quiz_controller.dart';
+/// Connects the quiz rules to Flutter: it owns the [QuizRound] being played
+/// and the player's [QuizProgress], gives the race its real clock, saves
+/// after every answer, and stops when the app goes to the background.
+/// Widgets listen to it and call [answer], [useHint] and [next].
+class QuizSession extends ChangeNotifier {
+  QuizSession({
+    required this.store,
+    required this.progress,
+    this.clockTick = const Duration(milliseconds: 100),
+    this.raceFeedback = const Duration(seconds: 1),
+  });
 
-/// Owns the saved [SimpleQuizProgress] and books finished runs into it.
-class QuizSession {
-  QuizSession._(this.store, this.progress, this.key);
+  /// Opens a session on the saved progress. A save that cannot be read
+  /// starts fresh; [loadError] says why.
+  static Future<QuizSession> open(KeyValueStore store) async {
+    final loaded = await QuizProgressStore(store).load();
+    return QuizSession(store: store, progress: loaded.progress)
+      ..loadError = loaded.error;
+  }
 
   final KeyValueStore store;
-  final SimpleQuizProgress progress;
-  final String key;
+  final QuizProgress progress;
 
-  /// Loads the saved progress (fresh if none, corrupt copy kept aside).
-  static Future<QuizSession> open(KeyValueStore store, {String key = 'quiz_progress'}) async =>
-      QuizSession._(store, await SimpleQuizProgress.load(store, key: key), key);
+  /// How often the race clock is advanced.
+  final Duration clockTick;
 
-  /// Coins earned per this many score points when a run is booked.
-  static const scorePerCoin = 10;
+  /// How long a race answer stays on screen before the next question.
+  final Duration raceFeedback;
 
-  /// Books a finished [c] into [progress] and saves. Staged runs record
-  /// stars and unlocks for [stageId]; other modes update the mode record.
-  /// Returns the currency earned. Does nothing for a run still in play.
-  Future<int> finishRun(QuizController c, {String? stageId, String? nextStageId}) async {
-    if (!c.finished) return 0;
-    if (c.mode.kind == QuizModeKind.staged && stageId != null) {
-      progress.completeStage(
-        stageId: stageId,
-        mode: c.mode,
-        correct: c.run.correctCount,
-        score: c.run.score,
-        nextStageId: nextStageId,
-      );
-    } else {
-      progress.recordScore(c.mode.kind, c.run.score);
-    }
-    final coins = c.run.score ~/ scorePerCoin;
-    progress.earn(coins);
-    await progress.save(store, key: key);
-    return coins;
+  /// Why the saved progress was not used, if it was not.
+  String? loadError;
+
+  /// The round in play, or null before [begin].
+  QuizRound? round;
+
+  /// Option the player picked on the current question, until [next].
+  int? picked;
+
+  /// What the last answer did, until [next].
+  AnswerResult? lastResult;
+
+  /// What the finished round paid, once it is over and booked.
+  RunReward? reward;
+
+  bool _paused = false;
+  Timer? _clock;
+  Timer? _auto;
+
+  Question? _current;
+
+  /// The question on screen, or null between rounds. It stays until [next]
+  /// after an answer, so the card can show the right word.
+  Question? get question => _current;
+
+  bool get answered => picked != null;
+
+  /// True once the round is over and booked into [progress].
+  bool get finished => reward != null;
+
+  bool get paused => _paused;
+
+  /// Whether a hint can be bought now: a question is open, not answered or
+  /// hinted yet, not a race, and the coins cover it.
+  bool get canHint {
+    final q = question;
+    return q != null &&
+        !answered &&
+        q.removedByHint.isEmpty &&
+        round!.mode is! RaceMode &&
+        progress.coins >= QuizProgress.hintCost;
   }
+
+  /// Starts [r] and shows its first question. A daily already played on its
+  /// date is refused (one per day) with a [StateError].
+  void begin(QuizRound r) {
+    final date = r.date;
+    if (date != null && progress.hasPlayedDaily(date)) {
+      throw StateError('The daily for $date was already played.');
+    }
+    _stopTimers();
+    round = r;
+    picked = null;
+    lastResult = null;
+    reward = null;
+    _current = r.nextQuestion();
+    if (r.mode is RaceMode) _startClock();
+    notifyListeners();
+  }
+
+  /// Answers option [choice] of the open question; ignored when already
+  /// answered, paused, or when the hint removed that option.
+  void answer(int choice) {
+    final r = round;
+    final q = question;
+    if (r == null || q == null || answered || _paused) return;
+    if (q.removedByHint.contains(choice)) return;
+    lastResult = r.answer(choice);
+    picked = choice;
+    unawaited(_saveRun());
+    if (r.mode is RaceMode && !r.isOver) {
+      _auto?.cancel();
+      _auto = Timer(raceFeedback, next);
+    }
+    notifyListeners();
+  }
+
+  /// Buys and applies the hint (20 coins). False, with nothing changed, when
+  /// it cannot be had (see [canHint]).
+  bool useHint() {
+    if (!canHint) return false;
+    progress.buyHint();
+    round!.useHint();
+    _current = round!.run.current;
+    unawaited(_saveProgress());
+    notifyListeners();
+    return true;
+  }
+
+  /// Moves on from the answered question: the next question, or, when the
+  /// round is over, books it into [progress] and saves.
+  void next() {
+    final r = round;
+    if (r == null || !answered) return;
+    _auto?.cancel();
+    picked = null;
+    lastResult = null;
+    if (r.isOver) {
+      _finish();
+    } else {
+      _current = r.nextQuestion();
+      if (r.isOver || _current == null) _finish();
+    }
+    notifyListeners();
+  }
+
+  /// Stops the race clock (the app went to the background).
+  void pause() {
+    if (_paused) return;
+    _paused = true;
+    _clock?.cancel();
+    _auto?.cancel();
+    unawaited(_saveRun());
+    notifyListeners();
+  }
+
+  /// Starts the race clock again.
+  void resume() {
+    if (!_paused) return;
+    _paused = false;
+    final r = round;
+    if (r != null && r.mode is RaceMode && !finished) {
+      _startClock();
+      if (answered && !r.isOver) _auto = Timer(raceFeedback, next);
+    }
+    notifyListeners();
+  }
+
+  void _startClock() {
+    _clock?.cancel();
+    _clock = Timer.periodic(clockTick, (_) {
+      final r = round;
+      if (r == null || _paused || finished) return;
+      r.tick(clockTick);
+      if (r.isOver) {
+        _clock?.cancel();
+        _finish();
+      }
+      notifyListeners();
+    });
+  }
+
+  void _finish() {
+    final r = round!;
+    _stopTimers();
+    _current = null;
+    picked = null;
+    lastResult = null;
+    reward = progress.applyRun(r);
+    unawaited(store.remove(runKey));
+    unawaited(_saveProgress());
+  }
+
+  /// Where the run in play is kept so a crash can resume it
+  /// (`QuizRound.resume`).
+  static const runKey = 'quiz.run';
+
+  Future<void> _saveRun() async {
+    final r = round;
+    if (r == null || finished) return;
+    await store.setString(runKey, jsonEncode(r.run.toJson()));
+  }
+
+  Future<void> _saveProgress() => QuizProgressStore(store).save(progress);
+
+  void _stopTimers() {
+    _clock?.cancel();
+    _auto?.cancel();
+    _clock = null;
+    _auto = null;
+  }
+
+  @override
+  void dispose() {
+    _stopTimers();
+    super.dispose();
+  }
+}
+
+/// Pauses a [QuizSession] when the app leaves the foreground and resumes it
+/// when it returns, so a race clock does not run in the background.
+class QuizLifecycleHost extends StatefulWidget {
+  const QuizLifecycleHost({
+    super.key,
+    required this.session,
+    required this.child,
+  });
+
+  final QuizSession session;
+  final Widget child;
+
+  @override
+  State<QuizLifecycleHost> createState() => _QuizLifecycleHostState();
+}
+
+class _QuizLifecycleHostState extends State<QuizLifecycleHost>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      widget.session.resume();
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden) {
+      widget.session.pause();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

@@ -129,6 +129,9 @@ class QuizRound {
   QuizRun _run;
   int _cursor = 0;
 
+  /// The bank the round asks from (for showing an item's full text).
+  QuizBank get bank => _factory.bank;
+
   /// The chapter and tier of a stage round; null in other modes.
   final String? author;
   final QuizTier? tier;

@@ -25,3 +25,21 @@
   if (window.document$) window.document$.subscribe(init);
   else document.addEventListener("DOMContentLoaded", init);
 })();
+
+// Keep the light/dark choice in step with the landing page (same origin, key `zv-theme`).
+(function () {
+  var KEY = "zv-theme";
+  function read() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+  function write(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
+  function scheme() { return document.body.getAttribute("data-md-color-scheme") === "slate" ? "dark" : "light"; }
+  function sync() {
+    var want = read();
+    if (want && want !== scheme()) {
+      var input = document.querySelector('input[name="__palette"][data-md-color-scheme="' + (want === "dark" ? "slate" : "default") + '"]');
+      if (input) input.click();
+    }
+    new MutationObserver(function () { write(scheme()); })
+      .observe(document.body, { attributes: true, attributeFilter: ["data-md-color-scheme"] });
+  }
+  document.addEventListener("DOMContentLoaded", sync);
+})();

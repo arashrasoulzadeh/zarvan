@@ -60,10 +60,10 @@
     .term-bar{display:flex;align-items:center;gap:7px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--bg2)}
     .term-bar i{width:10px;height:10px;border-radius:50%;background:#2b303a}
     .term-bar span{margin-left:auto;font-size:12px;color:var(--muted)}
-    .term pre{margin:0;padding:22px 24px;font-size:13.5px;line-height:1.75;min-height:236px;overflow:auto;color:#d6d2c8}
+    .term pre{margin:0;padding:22px 24px;font-size:12.5px;line-height:1.7;height:320px;overflow:auto;color:#d6d2c8}
     .c{color:#6b7280}.k{color:#d78f5a}.t{color:var(--gold2)}.s{color:#9ec58a}
     .tabs{display:flex;gap:6px;padding:12px 16px;border-top:1px solid var(--line);background:var(--bg2);flex-wrap:wrap}
-    .tabs button{border:1px solid transparent;background:none;color:var(--muted);padding:6px 12px;border-radius:999px;font:600 12px Inter;cursor:pointer}
+    .tabs button{border:1px solid transparent;background:none;color:var(--muted);padding:5px 10px;border-radius:999px;font:600 11.5px Inter;cursor:pointer}
     .tabs button.on{background:rgba(200,166,106,.14);color:var(--gold2);border-color:var(--line)}
     .proof{display:flex;flex-wrap:wrap;justify-content:space-between;gap:14px 28px;padding:22px 0;border-block:1px solid var(--line);color:var(--muted);font-size:14px}
     .proof span:before{content:"◆";color:var(--gold);font-size:9px;margin-right:10px;vertical-align:2px}
@@ -279,16 +279,66 @@ game.update(<span class="t">1</span> / <span class="t">60</span>);
     demos.forEach(function(d,i){var b=document.createElement('button');b.textContent=d[1];b.onclick=function(){pick(i)};picker.appendChild(b)});
     pick(0);
 
-    var T=function(x){return '<span class="t">'+x+'</span>'},K=function(x){return '<span class="k">'+x+'</span>'},C=function(x){return '<span class="c">'+x+'</span>'},S=function(x){return '<span class="s">'+x+'</span>'};
-    var ex=[
-      ['Spawn a world',C('// a tiny deterministic world')+'\n'+K('final')+' game = '+T('GameBuilder')+'.create(\n  width: '+T('320')+', height: '+T('240')+',\n);\ngame.spawn([\n  '+T('Position')+'('+T('10')+', '+T('10')+'),\n  '+T('Velocity')+'('+T('60')+', '+T('0')+'),\n]);'],
-      ['Advance one second',C('// advance without a renderer')+'\n'+K('for')+' ('+K('var')+' i = '+T('0')+'; i &lt; '+T('60')+'; i++) {\n  game.update('+T('1')+' / '+T('60')+');\n}\n'+K('assert')+'(game.world.time == '+T('1')+');'],
-      ['Inspect state',C('// snapshots are easy to log or replay')+'\n'+K('final')+' snapshot = game.world.toJson();\n'+K('final')+' player = snapshot['+S("'entities'")+']\n  .firstWhere((e) =&gt; e['+S("'id'")+'] == playerId);'],
-      ['Propose an action',C('// an agent proposes; the world validates')+'\n'+K('final')+' result = world.apply(\n  '+T('MoveAction')+'(\n    entityId: playerId,\n    direction: '+T('Direction')+'.east,\n  ),\n);']
+    var EX=[
+     [
+      "Hero + health bar",
+      "// a hero and a HUD health bar\nfinal player = spawnPlayer(world,\n  x: 0, y: 0, input: input, maxHealth: 100);\n\nspawnHealthHudBar(\n  world,\n  source: player,\n  x: 20, y: 20, width: 200, height: 20,\n  fillColorArgb: 0xFFE0304C,\n);"
+     ],
+     [
+      "Patrolling guard",
+      "// a guard who patrols and avoids ledges\nbehaviors.register('guard-patrol',\n  PatrolBehavior(minX: 200, maxX: 400,\n                 speed: 50, avoidLedges: true));\n\nspawnEnemy(world,\n  x: 300, y: 300,\n  behaviorId: 'guard-patrol',\n  affectedByGravity: true,\n  maxHealth: 30);"
+     ],
+     [
+      "Chase the player",
+      "// enemies that hunt you down\nbehaviors.register('chase',\n  FollowBehavior(target: player,\n                 speed: 80, maxDistance: 250));\n\n// gravity, jumping, tiles and AI in one call\ninstallPlatformerSystems(world,\n  behaviors: behaviors);"
+     ],
+     [
+      "Coins & pickups",
+      "// grab every coin you walk over\nvar coins = 0;\nworld.addSystemFn('pickup', (world, dt) {\n  final p = world.getComponent<Position>(player)!;\n  for (final id in world.findNear(p.x, p.y, 8)) {\n    if (world.hasTag(id, 'coin')) {\n      world.commands.destroy(id);\n      coins++;\n    }\n  }\n});"
+     ],
+     [
+      "Keys & doors",
+      "// picking up a key opens every door\nworld.on<KeyPicked>((_) {\n  for (final id in world.withTag('door')\n      .toList()) {\n    world.commands.destroy(id);\n  }\n});\n\nworld.events.emit(KeyPicked());"
+     ],
+     [
+      "Boss that flees",
+      "// a boss that flees when badly hurt\nclass FleeWhenHurt implements Behavior {\n  @override\n  Action decide(WorldView view, EntityId self) {\n    final hp = view.component<Health>(self)!;\n    if (hp.current / hp.max > 0.3) {\n      return const NoOpAction();\n    }\n    return SetVelocityAction(self, 100, 0);\n  }\n}"
+     ],
+     [
+      "Sword swing",
+      "// frame events: sound, shake, hitboxes\nfinal attack = AnimationClip('attack',\n  ['atk_0', 'atk_1', 'atk_2', 'atk_3'],\n  frameDurationSeconds: 0.06, loop: false,\n  frameEvents: [\n    [],\n    [AnimationEvent('sfx', {'id': 'swing'})],\n    [AnimationEvent('hitbox_on'),\n     AnimationEvent('shake', {'magnitude': 3})],\n    [AnimationEvent('hitbox_off')],\n  ]);"
+     ],
+     [
+      "Fog of war",
+      "// units see only what range and sight allow\nfinal fog = installStrategySystems(world,\n  navigator: GridNavigator(cols: 8, rows: 8,\n    terrainCost: (c, r) => 1),\n  cellSize: 48, fog: true)!;\n\nspawnStrategyUnit(world, team: 'red',\n  col: 2, row: 3, cellSize: 48, visionRange: 4);\nstartTurnBasedGame(world, ['red', 'blue']);"
+     ],
+     [
+      "Move range",
+      "// where can a unit walk with 2 AP?\nfinal cells = nav.reachable(\n  GridPosition(3, 3), 2,\n  blocked: (col, row) => col == 4 && row == 3,\n);\n\ncells[(5, 3)];             // 2: around it\ncells.containsKey((4, 3)); // false: occupied"
+     ],
+     [
+      "Save checkpoint",
+      "// save a checkpoint, resume next launch\nawait SaveGame.save(world,\n  slot: 'checkpoint', version: 1);\n\nfinal loaded = await SaveGame.load(world,\n  slot: 'checkpoint', version: 1);\nif (!loaded) {\n  // no save yet: start fresh\n}"
+     ]
     ];
+    var KW=/\b(final|var|const|class|implements|return|if|for|await|true|false|null|new)\b/g;
+    function hl(src){
+      var esc=src.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'),out=[],i=0;
+      // tokenise so comments and strings are not re-highlighted
+      var re=/(\/\/[^\n]*)|('(?:[^'\\]|\\.)*')|([A-Za-z_]\w*)|(\b\d[\d.]*\b|0x[0-9A-Fa-f]+)|([\s\S])/g,m;
+      while((m=re.exec(esc))){
+        if(m[1])out.push('<span class="c">'+m[1]+'</span>');
+        else if(m[2])out.push('<span class="s">'+m[2]+'</span>');
+        else if(m[3]){KW.lastIndex=0;out.push(/^(final|var|const|class|implements|return|if|for|await|true|false|null|new)$/.test(m[3])?'<span class="k">'+m[3]+'</span>':/^[A-Z]/.test(m[3])?'<span class="t">'+m[3]+'</span>':m[3])}
+        else if(m[4])out.push('<span class="t">'+m[4]+'</span>');
+        else out.push(m[5]);
+      }
+      return out.join('');
+    }
+    var ex=EX.map(function(e){return [e[0],hl(e[1])]});
     var code=$('#ex-code'),name=$('#ex-name'),tabs=$('#ex-tabs'),cur=0,timer;
     function show(i){cur=i;code.innerHTML=ex[i][1];name.textContent=ex[i][0];[].forEach.call(tabs.children,function(b,j){b.classList.toggle('on',i===j)})}
-    function auto(){clearInterval(timer);timer=setInterval(function(){show((cur+1)%ex.length)},4500)}
+    function auto(){clearInterval(timer);timer=setInterval(function(){show((cur+1)%ex.length)},6000)}
     ex.forEach(function(e,i){var b=document.createElement('button');b.textContent=e[0];b.onclick=function(){show(i);auto()};tabs.appendChild(b)});
     show(0);
     if(!matchMedia('(prefers-reduced-motion:reduce)').matches)auto();

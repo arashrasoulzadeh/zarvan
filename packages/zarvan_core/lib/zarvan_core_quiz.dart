@@ -15,3 +15,6 @@ export 'src/quiz/quiz_text.dart';
 export 'src/quiz/seeded_random.dart';
 export 'src/quiz/quiz_bank.dart';
 export 'src/quiz/word_index.dart';
+export 'src/quiz/blank_picker.dart';
+export 'src/quiz/distractors.dart';
+export 'src/quiz/question.dart';

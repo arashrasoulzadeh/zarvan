@@ -1,0 +1,731 @@
+{
+ "version": 1,
+ "authors": [
+  {
+   "id": "hafez",
+   "name": "حافظ"
+  },
+  {
+   "id": "saadi",
+   "name": "سعدی"
+  },
+  {
+   "id": "moulavi",
+   "name": "مولانا"
+  },
+  {
+   "id": "khayyam",
+   "name": "خیام"
+  },
+  {
+   "id": "ferdousi",
+   "name": "فردوسی"
+  },
+  {
+   "id": "nezami",
+   "name": "نظامی"
+  },
+  {
+   "id": "attar",
+   "name": "عطار"
+  },
+  {
+   "id": "roodaki",
+   "name": "رودکی"
+  },
+  {
+   "id": "babataher",
+   "name": "باباطاهر"
+  },
+  {
+   "id": "parvin",
+   "name": "پروین اعتصامی"
+  }
+ ],
+ "items": [
+  {
+   "id": "attar-10982-2",
+   "author": "attar",
+   "tier": "easy",
+   "fame": 1000000,
+   "lines": [
+    "ذره‌ای عشق آفتاب رخش",
+    "همه دلها به جان پذیرفته است"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/attar/divana/ghazal-attar/sh26",
+    "title": "عطار » دیوان اشعار » غزلیات » غزل شمارهٔ ۲۶"
+   }
+  },
+  {
+   "id": "attar-10961-0",
+   "author": "attar",
+   "tier": "medium",
+   "fame": 9,
+   "lines": [
+    "سوختی جانم چه می‌سازی مرا",
+    "بر سر افتادم چه می‌تازی مرا"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/attar/divana/ghazal-attar/sh5",
+    "title": "عطار » دیوان اشعار » غزلیات » غزل شمارهٔ ۵"
+   }
+  },
+  {
+   "id": "attar-11876-0",
+   "author": "attar",
+   "tier": "hard",
+   "fame": 5,
+   "lines": [
+    "ابتدای کار سیمرغ ای عجب",
+    "جلوه‌گر بگذشت بر چین نیم‌شب"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/attar/manteghotteyr/30morgh/sh1",
+    "title": "عطار » منطق‌الطیر » حکایت سیمرغ » حکایت سیمرغ"
+   }
+  },
+  {
+   "id": "attar-11435-0",
+   "author": "attar",
+   "tier": "literary",
+   "fame": 4,
+   "lines": [
+    "ساقیا توبه شکستم، جرعه‌ای می ده به دستم",
+    "من ز می ننگی ندارم، می‌پرستم می‌پرستم"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/attar/divana/ghazal-attar/sh479",
+    "title": "عطار » دیوان اشعار » غزلیات » غزل شمارهٔ ۴۷۹"
+   }
+  },
+  {
+   "id": "babataher-21322-0",
+   "author": "babataher",
+   "tier": "easy",
+   "fame": 52,
+   "lines": [
+    "ته دوری از برم دل در برم نیست",
+    "هوای دیگری اندر سرم نیست",
+    "به جان دلبرم کز هر دو عالم",
+    "تمنای دگر جز دلبرم نیست"
+   ],
+   "meta": {
+    "form": "robaee",
+    "source": "https://ganjoor.net/babataher/2beytiha/sh14",
+    "title": "باباطاهر » دوبیتی‌ها » دوبیتی شمارهٔ ۱۴"
+   }
+  },
+  {
+   "id": "babataher-21350-0",
+   "author": "babataher",
+   "tier": "medium",
+   "fame": 16,
+   "lines": [
+    "خوشا آنان که سودای ته دیرند",
+    "که سر پیوسته در پای ته دیرند",
+    "به دل دیرم تمنای کسانی",
+    "که اندر دل تمنای ته دیرند"
+   ],
+   "meta": {
+    "form": "robaee",
+    "source": "https://ganjoor.net/babataher/2beytiha/sh42",
+    "title": "باباطاهر » دوبیتی‌ها » دوبیتی شمارهٔ ۴۲"
+   }
+  },
+  {
+   "id": "babataher-21542-0",
+   "author": "babataher",
+   "tier": "hard",
+   "fame": 12,
+   "lines": [
+    "غمم بیحد و دردم بی شماره",
+    "فغان کاین درد مو درمان نداره",
+    "خداوندا ندونه ناصح مو",
+    "که فریاد دلم بی‌اختیاره"
+   ],
+   "meta": {
+    "form": "robaee",
+    "source": "https://ganjoor.net/babataher/2beytiha/sh234",
+    "title": "باباطاهر » دوبیتی‌ها » دوبیتی شمارهٔ ۲۳۴"
+   }
+  },
+  {
+   "id": "babataher-21346-0",
+   "author": "babataher",
+   "tier": "literary",
+   "fame": 7,
+   "lines": [
+    "بلا رمزی ز بالای ته باشد",
+    "جنون سری ز سودای ته باشد",
+    "به صورت‌آفرینم این گمان بی",
+    "که پنهان در تماشای ته باشد"
+   ],
+   "meta": {
+    "form": "robaee",
+    "source": "https://ganjoor.net/babataher/2beytiha/sh38",
+    "title": "باباطاهر » دوبیتی‌ها » دوبیتی شمارهٔ ۳۸"
+   }
+  },
+  {
+   "id": "ferdousi-1321-0",
+   "author": "ferdousi",
+   "tier": "easy",
+   "fame": 1000000,
+   "lines": [
+    "به نام خداوند جان و خرد",
+    "کز این برتر، اندیشه، بر نگذرد"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/ferdousi/shahname/aghaz/sh1",
+    "title": "فردوسی » شاهنامه » آغاز کتاب » بخش ۱ - آغاز کتاب"
+   }
+  },
+  {
+   "id": "ferdousi-1325-0",
+   "author": "ferdousi",
+   "tier": "medium",
+   "fame": 8,
+   "lines": [
+    "ز یاقوت سرخ است چرخ کبود",
+    "نه از آب و گرد و نه از باد و دود"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/ferdousi/shahname/aghaz/sh5",
+    "title": "فردوسی » شاهنامه » آغاز کتاب » بخش ۵ - گفتار اندر آفرینشِ آفتاب"
+   }
+  },
+  {
+   "id": "ferdousi-1506-0",
+   "author": "ferdousi",
+   "tier": "hard",
+   "fame": 6,
+   "lines": [
+    "تو بر کردگار روان و خرد",
+    "ستایش گزین تا چه اندر خورد"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/ferdousi/shahname/akvan/sh1",
+    "title": "فردوسی » شاهنامه » داستان اکوان دیو » داستان اکوان دیو"
+   }
+  },
+  {
+   "id": "ferdousi-1385-0",
+   "author": "ferdousi",
+   "tier": "literary",
+   "fame": 3,
+   "lines": [
+    "رسیدند خوبان به درگاه کاخ",
+    "به دست اندرون هر یک از گل دو شاخ"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/ferdousi/shahname/manoochehr/sh8",
+    "title": "فردوسی » شاهنامه » منوچهر » بخش ۸ - بازگشت ندیمه‌ها و شرح ماجرا برای رودابه"
+   }
+  },
+  {
+   "id": "hafez-2130-0",
+   "author": "hafez",
+   "tier": "easy",
+   "fame": 89,
+   "lines": [
+    "الا یا ایها الساقی ادر کأسا و ناولها",
+    "که عشق آسان نمود اول ولی افتاد مشکل‌ها"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/hafez/ghazal/sh1",
+    "title": "حافظ » غزلیات » غزل شمارهٔ ۱"
+   }
+  },
+  {
+   "id": "hafez-2564-0",
+   "author": "hafez",
+   "tier": "medium",
+   "fame": 47,
+   "lines": [
+    "با مدعی مگویید، اسرار عشق و مستی",
+    "تا بی‌خبر بمیرد، در درد خودپرستی"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/hafez/ghazal/sh435",
+    "title": "حافظ » غزلیات » غزل شمارهٔ ۴۳۵"
+   }
+  },
+  {
+   "id": "hafez-2162-0",
+   "author": "hafez",
+   "tier": "hard",
+   "fame": 36,
+   "lines": [
+    "خلوت گزیده را به تماشا چه حاجت است",
+    "چون کوی دوست هست به صحرا چه حاجت است"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/hafez/ghazal/sh33",
+    "title": "حافظ » غزلیات » غزل شمارهٔ ۳۳"
+   }
+  },
+  {
+   "id": "hafez-2366-0",
+   "author": "hafez",
+   "tier": "literary",
+   "fame": 32,
+   "lines": [
+    "نفس برآمد و کام از تو بر نمی‌آید",
+    "فغان که بخت من از خواب در نمی‌آید"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/hafez/ghazal/sh237",
+    "title": "حافظ » غزلیات » غزل شمارهٔ ۲۳۷"
+   }
+  },
+  {
+   "id": "khayyam-1250-0",
+   "author": "khayyam",
+   "tier": "easy",
+   "fame": 42,
+   "lines": [
+    "من بی می ناب زیستن نتوانم",
+    "بی باده کشید بار تن نتوانم",
+    "من بنده آن دمم که ساقی گوید",
+    "یک جام دگر بگیر و من نتوانم"
+   ],
+   "meta": {
+    "form": "robaee",
+    "source": "https://ganjoor.net/khayyam/robaee/sh132",
+    "title": "خیام » رباعیات » رباعی شمارهٔ ۱۳۲"
+   }
+  },
+  {
+   "id": "khayyam-1235-0",
+   "author": "khayyam",
+   "tier": "medium",
+   "fame": 16,
+   "lines": [
+    "در کارگه کوزه‌گری رفتم دوش",
+    "دیدم دو هزار کوزه گویا و خموش",
+    "ناگاه یکی کوزه برآورد خروش",
+    "کو کوزه‌گر و کوزه‌خر و کوزه فروش!"
+   ],
+   "meta": {
+    "form": "robaee",
+    "source": "https://ganjoor.net/khayyam/robaee/sh117",
+    "title": "خیام » رباعیات » رباعی شمارهٔ ۱۱۷"
+   }
+  },
+  {
+   "id": "khayyam-1169-0",
+   "author": "khayyam",
+   "tier": "hard",
+   "fame": 11,
+   "lines": [
+    "هر سبزه که بر کنار جویی رسته‌ست",
+    "گویی ز لب فرشته‌خویی رسته‌ست",
+    "پا بر سر سبزه تا به خواری ننهی",
+    "کآن سبزه ز خاک لاله‌رویی رسته‌ست"
+   ],
+   "meta": {
+    "form": "robaee",
+    "source": "https://ganjoor.net/khayyam/robaee/sh51",
+    "title": "خیام » رباعیات » رباعی شمارهٔ ۵۱"
+   }
+  },
+  {
+   "id": "khayyam-1127-0",
+   "author": "khayyam",
+   "tier": "literary",
+   "fame": 8,
+   "lines": [
+    "اکنون که گل سعادتت پربار است",
+    "دست تو ز جام می چرا بیکار است؟",
+    "می خور که زمانه دشمنی غدار است",
+    "دریافتن روز چنین دشوار است"
+   ],
+   "meta": {
+    "form": "robaee",
+    "source": "https://ganjoor.net/khayyam/robaee/sh9",
+    "title": "خیام » رباعیات » رباعی شمارهٔ ۹"
+   }
+  },
+  {
+   "id": "moulavi-7893-0",
+   "author": "moulavi",
+   "tier": "easy",
+   "fame": 127,
+   "lines": [
+    "بشنو این نی چون شکایت می‌کند",
+    "از جدایی‌ها حکایت می‌کند"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/moulavi/masnavi/daftar1/sh1",
+    "title": "مولانا » مثنوی معنوی » دفتر اول » بخش ۱ - سرآغاز"
+   }
+  },
+  {
+   "id": "moulavi-2786-0",
+   "author": "moulavi",
+   "tier": "medium",
+   "fame": 29,
+   "lines": [
+    "تو مرا جان و جهانی چه کنم جان و جهان را",
+    "تو مرا گنج روانی چه کنم سود و زیان را"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/moulavi/shams/ghazalsh/sh162",
+    "title": "مولانا » دیوان شمس » غزلیات » غزل شمارهٔ ۱۶۲"
+   }
+  },
+  {
+   "id": "moulavi-4349-0",
+   "author": "moulavi",
+   "tier": "hard",
+   "fame": 21,
+   "lines": [
+    "نگفتمت مرو آنجا که آشنات منم؟",
+    "در این سراب فنا چشمه حیات منم؟"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/moulavi/shams/ghazalsh/sh1725",
+    "title": "مولانا » دیوان شمس » غزلیات » غزل شمارهٔ ۱۷۲۵"
+   }
+  },
+  {
+   "id": "moulavi-4776-0",
+   "author": "moulavi",
+   "tier": "literary",
+   "fame": 16,
+   "lines": [
+    "سخت خوش است چشم تو و آن رخ گلفشان تو",
+    "دوش چه خورده‌ای دلا راست بگو به جان تو"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/moulavi/shams/ghazalsh/sh2152",
+    "title": "مولانا » دیوان شمس » غزلیات » غزل شمارهٔ ۲۱۵۲"
+   }
+  },
+  {
+   "id": "nezami-8921-0",
+   "author": "nezami",
+   "tier": "easy",
+   "fame": 1000000,
+   "lines": [
+    "نخستین بار گفتش کز کجایی‌؟",
+    "بگفت از دار ملک آشنایی"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/nezami/5ganj/khosro-shirin/sh57",
+    "title": "نظامی » خمسه » خسرو و شیرین » بخش ۵۷ - مناظرهٔ خسرو با فرهاد"
+   }
+  },
+  {
+   "id": "nezami-9074-0",
+   "author": "nezami",
+   "tier": "medium",
+   "fame": 3,
+   "lines": [
+    "چونکه بهرام شد نشاط‌پرست",
+    "دیده در نقش هفت پیکر بست"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/nezami/5ganj/7peykar/sh26",
+    "title": "نظامی » خمسه » هفت پیکر » بخش ۲۶ - نشستن بهرام روز شنبه در گنبد سیاه و افسانه گفتن دختر پادشاه اقلیم اول"
+   }
+  },
+  {
+   "id": "nezami-9020-0",
+   "author": "nezami",
+   "tier": "hard",
+   "fame": 1,
+   "lines": [
+    "کبکی به دهن گرفت موری",
+    "می‌کرد بر آن ضعیف زوری"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/nezami/5ganj/leyli-majnoon/sh18",
+    "title": "نظامی » خمسه » لیلی و مجنون » بخش ۱۸ - حکایت"
+   }
+  },
+  {
+   "id": "nezami-8891-0",
+   "author": "nezami",
+   "tier": "literary",
+   "fame": 0,
+   "lines": [
+    "چو شیرین در مداین مهد بگشاد",
+    "ز شیرین‌لب طبق‌ها شهد بگشاد"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/nezami/5ganj/khosro-shirin/sh27",
+    "title": "نظامی » خمسه » خسرو و شیرین » بخش ۲۷ - ترتیب کردن کوشک برای شیرین"
+   }
+  },
+  {
+   "id": "parvin-10926-0",
+   "author": "parvin",
+   "tier": "easy",
+   "fame": 13,
+   "lines": [
+    "محتسب، مستی به ره دید و گریبانش گرفت",
+    "مست گفت: ای دوست، این پیراهن است، افسار نیست"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/parvin/divanp/mtm/sh142",
+    "title": "پروین اعتصامی » دیوان اشعار » مثنویات، تمثیلات و مقطعات » شمارهٔ  ۱۴۲ - مست و هشیار"
+   }
+  },
+  {
+   "id": "parvin-10798-0",
+   "author": "parvin",
+   "tier": "medium",
+   "fame": 3,
+   "lines": [
+    "بی روی دوست، دوش شب ما سحر نداشت",
+    "سوز و گداز شمع و من و دل اثر نداشت"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/parvin/divanp/mtm/sh14",
+    "title": "پروین اعتصامی » دیوان اشعار » مثنویات، تمثیلات و مقطعات » شمارهٔ  ۱۴ - از یک غزل"
+   }
+  },
+  {
+   "id": "parvin-10755-0",
+   "author": "parvin",
+   "tier": "hard",
+   "fame": 2,
+   "lines": [
+    "عاقل از کار بزرگی طلبید",
+    "تکیه بر بیهده گفتار نداشت"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/parvin/divanp/ghasidep/sh13",
+    "title": "پروین اعتصامی » دیوان اشعار » قصاید » قصیدهٔ شمارهٔ ۱۳"
+   }
+  },
+  {
+   "id": "parvin-10803-0",
+   "author": "parvin",
+   "tier": "literary",
+   "fame": 2,
+   "lines": [
+    "تا به کی جان کندن اندر آفتاب ای رنجبر",
+    "ریختن از بهر نان از چهر آب ای رنجبر"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/parvin/divanp/mtm/sh19",
+    "title": "پروین اعتصامی » دیوان اشعار » مثنویات، تمثیلات و مقطعات » شمارهٔ  ۱۹ - ای رنجبر"
+   }
+  },
+  {
+   "id": "roodaki-25306-0",
+   "author": "roodaki",
+   "tier": "easy",
+   "fame": 18,
+   "lines": [
+    "بوی جوی مولیان آید همی",
+    "یاد یار مهربان آید همی"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/roodaki/baghimande/sh121",
+    "title": "رودکی » قصاید و قطعات » شمارهٔ ۱۲۱ - بویِ جویِ مولیان آیَد هَمی"
+   }
+  },
+  {
+   "id": "roodaki-13842-0",
+   "author": "roodaki",
+   "tier": "medium",
+   "fame": 1,
+   "lines": [
+    "کس فرستاد به سر اندر عیار مرا",
+    "که «مکن یاد به شعر اندر بسیار مرا»"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/roodaki/baghimande/sh8",
+    "title": "رودکی » قصاید و قطعات » شمارهٔ ۸"
+   }
+  },
+  {
+   "id": "roodaki-13848-0",
+   "author": "roodaki",
+   "tier": "hard",
+   "fame": 0,
+   "lines": [
+    "آن صحن چمن، که از دم دی",
+    "گفتی: دم گرگ یا پلنگ است"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/roodaki/baghimande/sh14",
+    "title": "رودکی » قصاید و قطعات » شمارهٔ ۱۴"
+   }
+  },
+  {
+   "id": "roodaki-25207-0",
+   "author": "roodaki",
+   "tier": "literary",
+   "fame": 0,
+   "lines": [
+    "مهر مفگن برین سرای سپنج",
+    "کین جهان پاک بازیی نیرنج"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/roodaki/baghimande/sh23",
+    "title": "رودکی » قصاید و قطعات » شمارهٔ ۲۳"
+   }
+  },
+  {
+   "id": "saadi-9590-0",
+   "author": "saadi",
+   "tier": "easy",
+   "fame": 70,
+   "lines": [
+    "ای ساربان! آهسته رو کآرام جانم می‌رود",
+    "وآن دل که با خود داشتم، با دل‌ستانم می‌رود"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/saadi/divan/ghazals/sh268",
+    "title": "سعدی » دیوان اشعار » غزلیات » غزل شمارهٔ  ۲۶۸"
+   }
+  },
+  {
+   "id": "saadi-9727-0",
+   "author": "saadi",
+   "tier": "medium",
+   "fame": 32,
+   "lines": [
+    "هزار جهد بکردم که سر عشق بپوشم",
+    "نبود بر سر آتش، میسرم که نجوشم"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/saadi/divan/ghazals/sh405",
+    "title": "سعدی » دیوان اشعار » غزلیات » غزل شمارهٔ  ۴۰۵"
+   }
+  },
+  {
+   "id": "saadi-10463-0",
+   "author": "saadi",
+   "tier": "hard",
+   "fame": 24,
+   "lines": [
+    "به جهان خرم از آنم که جهان خرم از اوست",
+    "عاشقم بر همه عالم که همه عالم از اوست"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/saadi/mavaez/ghazal2/sh13",
+    "title": "سعدی » مواعظ » غزلیات » غزل شمارهٔ  ۱۳"
+   }
+  },
+  {
+   "id": "saadi-9393-0",
+   "author": "saadi",
+   "tier": "literary",
+   "fame": 20,
+   "lines": [
+    "دلی که عاشق و صابر بود مگر سنگ است",
+    "ز عشق تا به صبوری هزار فرسنگ است"
+   ],
+   "meta": {
+    "form": "beyt",
+    "source": "https://ganjoor.net/saadi/divan/ghazals/sh71",
+    "title": "سعدی » دیوان اشعار » غزلیات » غزل شمارهٔ  ۷۱"
+   }
+  }
+ ],
+ "stopWords": [
+  "از",
+  "به",
+  "با",
+  "بر",
+  "برای",
+  "بی",
+  "تا",
+  "چو",
+  "چون",
+  "در",
+  "را",
+  "بدون",
+  "جز",
+  "سوی",
+  "پس",
+  "پیش",
+  "میان",
+  "همچون",
+  "همچو",
+  "ز",
+  "و",
+  "یا",
+  "اما",
+  "ولی",
+  "لیکن",
+  "که",
+  "اگر",
+  "گر",
+  "چونکه",
+  "هرچند",
+  "نه",
+  "نی",
+  "نیز",
+  "هم",
+  "هر",
+  "هیچ",
+  "چه",
+  "چنین",
+  "چنان",
+  "این",
+  "آن",
+  "ای",
+  "وی",
+  "ما",
+  "من",
+  "تو",
+  "او",
+  "خود",
+  "خویش",
+  "ایشان",
+  "یک",
+  "دو",
+  "هرگز",
+  "همی",
+  "می",
+  "نمی",
+  "بود",
+  "باشد",
+  "است",
+  "نیست",
+  "شد",
+  "شود",
+  "کرد",
+  "کند",
+  "گشت",
+  "گردد"
+ ]
+}

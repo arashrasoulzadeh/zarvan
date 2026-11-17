@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zarvan_core/zarvan_core.dart'
     show
@@ -654,6 +656,23 @@ void main() {
       );
       r.tap('Menu');
       expect(r.loaded, isA<QuizHomeScreen>());
+    });
+  });
+
+  group('no Flutter in this package', () {
+    test('no file in lib imports a Flutter library', () {
+      final offenders = <String>[];
+      for (final f in Directory(
+        'lib',
+      ).listSync(recursive: true).whereType<File>()) {
+        if (!f.path.endsWith('.dart')) continue;
+        for (final line in f.readAsLinesSync()) {
+          if (line.startsWith("import 'package:flutter/")) {
+            offenders.add('${f.path}: $line');
+          }
+        }
+      }
+      expect(offenders, isEmpty);
     });
   });
 }

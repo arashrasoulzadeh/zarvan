@@ -1,10 +1,10 @@
 import 'package:zarvan_core/zarvan_core.dart' show UiRect, World;
 import 'package:zarvan_core/zarvan_core_quiz.dart';
-import 'package:zarvan_flutter/zarvan_flutter.dart' show UiButton, UiNode;
+import 'package:zarvan_flutter/zarvan_flutter.dart'
+    show UiButton, UiNode, measureText;
 
 import '../../quiz_session.dart';
 import '../quiz_screen.dart';
-import '../text_measure.dart';
 import 'home_screen.dart';
 import 'result_screen.dart';
 

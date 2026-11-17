@@ -16,3 +16,9 @@ Future<Map<String, dynamic>> loadJsonAsset(
   }
   return decoded;
 }
+
+/// Reads the bundled text file at [assetPath] whole (declared under `assets:`
+/// in `pubspec.yaml`), so a game that imports no Flutter itself can load its
+/// own data formats. [bundle] is for tests.
+Future<String> loadTextAsset(String assetPath, {AssetBundle? bundle}) =>
+    (bundle ?? rootBundle).loadString(assetPath);

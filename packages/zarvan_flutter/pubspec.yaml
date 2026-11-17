@@ -47,6 +47,8 @@ dependencies:
   audioplayers: ^6.1.0
   # openUrl: links out of the game (e.g. the maker's page)
   url_launcher: ^6.3.0
+  # The native share sheet behind shareText (so games need no Flutter import).
+  share_plus: ^10.1.4
   # For error reporting backends (Sentry, custom HTTP endpoints)
   http: ^1.2.0
 

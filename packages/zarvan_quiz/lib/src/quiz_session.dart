@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show ChangeNotifier;
 import 'package:zarvan_core/zarvan_core.dart' show KeyValueStore;
 import 'package:zarvan_core/zarvan_core_quiz.dart';
 
@@ -58,7 +57,7 @@ class RoundEnded extends QuizEvent {
 /// and the player's [QuizProgress], gives the race its real clock, saves
 /// after every answer, and stops when the app goes to the background.
 /// Widgets listen to it and call [answer], [useHint] and [next].
-class QuizSession extends ChangeNotifier {
+class QuizSession {
   QuizSession({
     required this.store,
     required this.progress,
@@ -93,6 +92,20 @@ class QuizSession extends ChangeNotifier {
 
   /// What the finished round paid, once it is over and booked.
   RunReward? reward;
+
+  final List<void Function()> _listeners = [];
+
+  /// Calls [listener] whenever the session changes.
+  void addListener(void Function() listener) => _listeners.add(listener);
+
+  void removeListener(void Function() listener) => _listeners.remove(listener);
+
+  /// Tells every listener the session changed.
+  void notifyListeners() {
+    for (final l in List.of(_listeners)) {
+      l();
+    }
+  }
 
   final StreamController<QuizEvent> _events = StreamController.broadcast(
     sync: true,
@@ -321,9 +334,8 @@ class QuizSession extends ChangeNotifier {
 
   Future<void> _saveProgress() => QuizProgressStore(store).save(progress);
 
-  @override
   void dispose() {
     unawaited(_events.close());
-    super.dispose();
+    _listeners.clear();
   }
 }

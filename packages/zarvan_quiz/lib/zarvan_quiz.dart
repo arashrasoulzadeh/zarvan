@@ -18,4 +18,3 @@ export 'src/ui/screens/result_screen.dart';
 export 'src/ui/screens/settings_screen.dart';
 export 'src/ui/screens/stages_screen.dart';
 export 'src/ui/screens/tutorial_screen.dart';
-export 'src/ui/text_measure.dart';

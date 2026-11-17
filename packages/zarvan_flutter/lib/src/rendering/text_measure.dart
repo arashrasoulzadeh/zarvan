@@ -3,9 +3,9 @@ import 'dart:ui' show Size;
 import 'package:flutter/painting.dart'
     show TextAlign, TextDirection, TextPainter, TextSpan, TextStyle;
 
-/// How big the engine will draw a piece of text, so a screen can stack
-/// things under a poem of any length. Uses the same text layout as the
-/// engine's renderer (same size, typeface, direction and wrap width).
+/// How big the engine will draw a piece of text, so a screen can stack things
+/// under a poem of any length. Uses the same text layout as the engine's
+/// renderer (same size, typeface, direction and wrap width).
 Size measureText(
   String text, {
   required double fontSize,

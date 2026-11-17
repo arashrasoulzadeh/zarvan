@@ -1,8 +1,8 @@
 import 'package:zarvan_core/zarvan_core.dart' show UiRect;
 import 'package:zarvan_core/zarvan_core_quiz.dart';
+import 'package:zarvan_flutter/zarvan_flutter.dart' show measureText;
 
 import '../quiz_screen.dart';
-import '../text_measure.dart';
 import 'home_screen.dart';
 
 /// The first run: one famous couplet with its blank, to show what the game

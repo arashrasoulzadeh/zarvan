@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 
-import 'package:zarvan_core/zarvan_core.dart' show UiRect;
+import 'package:zarvan_core/zarvan_core.dart' show Position, UiRect;
 import 'package:zarvan_flutter/zarvan_flutter.dart'
-    show Shape, ShapeKind, UiNode;
+    show Shape, ShapeKind, ShaderEffect, UiNode;
 
 import 'quiz_screen.dart';
 
@@ -33,6 +33,50 @@ class Twinkle {
 /// all made of the engine's four flat shapes and a changing opacity: no
 /// gradients, blur or images, which the engine does not draw.
 extension QuizOrnaments on QuizScreen {
+  /// A GPU night sky (nebula, aurora, stars, rising dust) behind the whole
+  /// screen, in the theme's colours. Drawn by the engine's `aurora` shader.
+  void nightSky({double speed = 1}) {
+    final id = world.spawn();
+    world.componentsOf<Position>().set(
+      id,
+      Position(QuizScreen.worldWidth / 2, QuizScreen.worldHeight / 2),
+    );
+    world.componentsOf<ShaderEffect>().set(
+      id,
+      ShaderEffect(
+        kind: ShaderEffect.aurora,
+        width: QuizScreen.worldWidth,
+        height: QuizScreen.worldHeight,
+        zIndex: -9,
+        speed: speed,
+        rimArgb: theme.background,
+        armArgb: theme.accent,
+        coreArgb: theme.ink,
+      ),
+    );
+  }
+
+  /// A soft additive light of [color] centred in [rect] (bleeding past it),
+  /// breathing by itself, drawn by the engine's `glow` shader.
+  void lightAt(UiRect rect, int color, {double intensity = 0.6, int z = 4}) {
+    final id = world.spawn();
+    world.componentsOf<Position>().set(
+      id,
+      Position(rect.x + rect.width / 2, rect.y + rect.height / 2),
+    );
+    world.componentsOf<ShaderEffect>().set(
+      id,
+      ShaderEffect(
+        kind: ShaderEffect.glow,
+        width: rect.width * 1.9,
+        height: rect.height * 1.9,
+        zIndex: z,
+        intensity: intensity,
+        coreArgb: color,
+      ),
+    );
+  }
+
   /// A [size] diamond at ([x], [y]).
   UiNode diamondAt(
     double x,

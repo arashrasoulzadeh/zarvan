@@ -96,6 +96,11 @@ class ShaderEffect {
   /// A soft additive glow that lights what is behind it.
   static const glow = 'glow';
 
+  /// A full-rect night sky: nebula, aurora ribbons, twinkling stars and rising
+  /// motes. Colours: [rimArgb] the sky, [armArgb] nebula and aurora, [coreArgb]
+  /// stars. Opaque, so draw it behind everything.
+  static const aurora = 'aurora';
+
   /// A band of light that sweeps across `images[0]` every [period] seconds,
   /// lighting only its opaque pixels: lay it over a button or banner, same rect.
   static const shine = 'shine';
@@ -158,6 +163,9 @@ class EffectShader {
 
   /// `shine.frag`.
   static final shine = EffectShader._('shine.frag');
+
+  /// `aurora.frag`.
+  static final aurora = EffectShader._('aurora.frag');
 
   final String _assetKey;
   ui.FragmentProgram? _program;

@@ -7,6 +7,7 @@ import 'package:zarvan_core/zarvan_core.dart';
 // velocity) would otherwise collide with zarvan_core's component of
 // the same name; every use of the physics one below is unambiguous.
 import 'package:flutter/widgets.dart' hide Velocity;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/scheduler.dart';
 
 import 'backdrop_blur.dart';
@@ -3641,7 +3642,8 @@ class _EnginePainter extends CustomPainter {
       // just masked differently) take three.
       final isGlow = fx.kind == ShaderEffect.glow || isShine;
       final isOrb = fx.kind == ShaderEffect.orb;
-      final isPicture = fx.kind == ShaderEffect.portal || isOrb;
+      final isAurora = fx.kind == ShaderEffect.aurora;
+      final isPicture = fx.kind == ShaderEffect.portal || isOrb || isAurora;
       if (pos == null || (!isPicture && !isGlow)) continue;
       final center = camera.worldToScreen(
         pos.x,
@@ -3658,6 +3660,8 @@ class _EnginePainter extends CustomPainter {
                       ? EffectShader.glow
                       : isOrb
                       ? EffectShader.orb
+                      : isAurora
+                      ? EffectShader.aurora
                       : EffectShader.portal)
                   .shader();
           if (shader == null) return;
@@ -3704,7 +3708,7 @@ class _EnginePainter extends CustomPainter {
                 ..setFloat(k++, col.b)
                 ..setFloat(k++, col.a);
             }
-            if (!isOrb && !isShine) {
+            if (!isOrb && !isShine && !isAurora) {
               shader
                 ..setFloat(k++, fx.detail)
                 ..setFloat(k++, fx.rimGlow)
@@ -3712,9 +3716,11 @@ class _EnginePainter extends CustomPainter {
                 ..setFloat(k++, fx.border);
             }
           }
-          shader
-            ..setImageSampler(0, first ?? blankShaderImage())
-            ..setImageSampler(1, second ?? first ?? blankShaderImage());
+          if (!isAurora) {
+            shader
+              ..setImageSampler(0, first ?? blankShaderImage())
+              ..setImageSampler(1, second ?? first ?? blankShaderImage());
+          }
           canvas.drawRect(
             rect,
             Paint()
@@ -4056,9 +4062,12 @@ class _MirrorBatch {
         indices: Uint16List.sublistView(_indicesFor(n), 0, n * 6),
       );
       canvas.drawVertices(vertices, BlendMode.modulate, paint);
-      vertices.dispose();
+      // On web the recorded picture reads these CanvasKit objects at playback,
+      // after this call returns; disposing here trips an assertion every frame
+      // and aborts the whole paint (a left-facing hero erased the HUD too).
+      if (!kIsWeb) vertices.dispose();
     }
-    shader.dispose();
+    if (!kIsWeb) shader.dispose();
   }
 }
 

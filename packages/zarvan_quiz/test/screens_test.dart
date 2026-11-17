@@ -10,7 +10,7 @@ import 'package:zarvan_core/zarvan_core.dart'
         registerCoreComponents;
 import 'package:zarvan_flutter/zarvan_flutter.dart' as eng;
 import 'package:zarvan_flutter/zarvan_flutter.dart'
-    show Scene, SceneController, Shape, ShareOutcome;
+    show Scene, SceneController, ShaderEffect, Shape, ShareOutcome;
 import 'package:zarvan_quiz/zarvan_quiz.dart';
 
 import 'support.dart';
@@ -531,6 +531,22 @@ void main() {
         await race.open(QuizHomeScreen(race.kit));
         race.tap('Race');
         expect(race.kit.session.round!.mode, isA<RaceMode>());
+      },
+    );
+
+    test(
+      'the menu has a GPU night sky behind it and a light on the next poet',
+      () async {
+        final r = await Rig.make(bank: makeMultiBank());
+        await r.open(QuizHomeScreen(r.kit));
+        final fx = r.world.componentsOf<ShaderEffect>();
+        final kinds = [for (var i = 0; i < fx.length; i++) fx.denseAt(i).kind];
+        expect(kinds.where((k) => k == ShaderEffect.aurora), hasLength(1));
+        expect(kinds.where((k) => k == ShaderEffect.glow), hasLength(2));
+        final sky = [
+          for (var i = 0; i < fx.length; i++) fx.denseAt(i),
+        ].firstWhere((e) => e.kind == ShaderEffect.aurora);
+        expect(sky.zIndex, greaterThan(-10));
       },
     );
 

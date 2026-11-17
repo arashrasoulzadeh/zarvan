@@ -43,6 +43,7 @@ class QuizHomeScreen extends QuizScreen {
     final theme = this.theme;
     final session = kit.session;
     final progress = session.progress;
+    nightSky();
     _twinkles.addAll(sparkles(16));
 
     // Top bar: coins, the title plaque, settings.
@@ -240,6 +241,7 @@ class QuizHomeScreen extends QuizScreen {
       z: 3,
     );
     contGlow.shape!.alpha = 0.18;
+    lightAt(cont, theme.accent, intensity: 0.45);
     _twinkles.add(Twinkle(contGlow.shape!, low: 0.08, high: 0.28, phase: 2));
     button(
       cont,
@@ -294,6 +296,7 @@ class QuizHomeScreen extends QuizScreen {
     final theme = this.theme;
     final cx = x + w / 2;
     if (current) {
+      lightAt(UiRect(x, y, w, h), theme.accent, intensity: 0.7);
       final glow = box(
         UiRect(x - 5, y - 5, w + 10, h + 10),
         theme.accent,

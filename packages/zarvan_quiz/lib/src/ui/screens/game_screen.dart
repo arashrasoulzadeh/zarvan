@@ -163,6 +163,7 @@ class QuizGameScreen extends QuizScreen {
         sizes.fold<double>(0, (a, z) => a + z.height) +
         gap * (lines.length - 1);
     final cardTop = 104.0;
+    spread(0.15);
     final cardHeight = inner + 32;
     _view.addNode(
       box(
@@ -273,7 +274,7 @@ class QuizGameScreen extends QuizScreen {
           );
           node.text!.alpha = 0;
           _view.addNode(node);
-          final word = _Word(node, wordNo++ * step, rowY, finalColor);
+          final word = _Word(node, wordNo++ * step, rowY + yShift, finalColor);
           // A word that has already been written (a redraw after a hint or
           // an answer) must not throw its sparks again.
           word.started = _time - _revealStart - word.delay > _wordFade;
@@ -284,6 +285,8 @@ class QuizGameScreen extends QuizScreen {
     }
 
     // The four options.
+    spread(0.45);
+    final optionShift = yShift;
     var oy = cardTop + cardHeight + 18;
     _optionRects.clear();
     for (var i = 0; i < q.options.length; i++) {
@@ -314,6 +317,7 @@ class QuizGameScreen extends QuizScreen {
 
     // After an answer: the author and Next. Before: the hint.
     final bottom = QuizScreen.worldHeight - 68;
+    spread(1);
     if (answered) {
       final item = kit.bank.byId(q.itemId);
       final author = item?.author == null
@@ -350,6 +354,7 @@ class QuizGameScreen extends QuizScreen {
       if (!hint.enabled) _fade(hint, 0.4);
     }
 
+    yShift = optionShift;
     if (answered && !_wasAnswered) {
       final right = _optionRects[q.answerIndex];
       _burst(right.centerX, right.centerY, theme.correct, 26);
@@ -362,6 +367,7 @@ class QuizGameScreen extends QuizScreen {
       }
     }
     _wasAnswered = answered;
+    yShift = 0;
 
     if (session.offeringContinue && !_asked) _askContinue();
     if (!session.offeringContinue) _dialog.clear();
@@ -540,15 +546,16 @@ class QuizGameScreen extends QuizScreen {
     _asked = true;
     final s = kit.strings;
     final theme = this.theme;
+    yShift = extra / 2;
     final veil = box(
-      UiRect(0, 0, QuizScreen.worldWidth, QuizScreen.worldHeight),
+      UiRect(0, 0, QuizScreen.worldWidth, world.height),
       theme.background,
       radius: 0,
       z: 30,
     );
     veil.shape!.alpha = 0.82;
     veil.pos.x = QuizScreen.worldWidth / 2;
-    veil.pos.y = QuizScreen.worldHeight / 2;
+    veil.pos.y = world.height / 2;
     _dialog.addNode(veil);
     _dialog.addNode(
       box(
@@ -602,6 +609,7 @@ class QuizGameScreen extends QuizScreen {
     for (final b in ui.buttons) {
       if (b != yes && b != no) b.enabled = false;
     }
+    yShift = 0;
   }
 }
 

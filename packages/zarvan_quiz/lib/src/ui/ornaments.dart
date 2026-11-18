@@ -47,7 +47,7 @@ extension QuizOrnaments on QuizScreen {
     final portraits = kit.portraits;
     if (portraits == null || !portraits.has(authorId)) return null;
     final id = world.spawn();
-    world.componentsOf<Position>().set(id, Position(x, y));
+    world.componentsOf<Position>().set(id, Position(x, y + yShift));
     final scale = width / QuizPortraits.regionWidth;
     world.componentsOf<Sprite>().set(
       id,
@@ -69,14 +69,14 @@ extension QuizOrnaments on QuizScreen {
     final id = world.spawn();
     world.componentsOf<Position>().set(
       id,
-      Position(QuizScreen.worldWidth / 2, QuizScreen.worldHeight / 2),
+      Position(QuizScreen.worldWidth / 2, world.height / 2),
     );
     world.componentsOf<ShaderEffect>().set(
       id,
       ShaderEffect(
         kind: ShaderEffect.aurora,
         width: QuizScreen.worldWidth * 1.6,
-        height: QuizScreen.worldHeight * 1.6,
+        height: world.height * 1.6,
         zIndex: -9,
         speed: speed,
         rimArgb: theme.background,
@@ -97,7 +97,7 @@ extension QuizOrnaments on QuizScreen {
     final id = world.spawn();
     world.componentsOf<Position>().set(
       id,
-      Position(rect.x + rect.width / 2, rect.y + rect.height / 2),
+      Position(rect.x + rect.width / 2, rect.y + rect.height / 2 + yShift),
     );
     world.componentsOf<ShaderEffect>().set(
       id,
@@ -135,7 +135,7 @@ extension QuizOrnaments on QuizScreen {
         zIndex: z,
       ),
       x: x,
-      y: y,
+      y: y + yShift,
     );
     return n;
   }
@@ -158,7 +158,7 @@ extension QuizOrnaments on QuizScreen {
       zIndex: z,
     ),
     x: x,
-    y: y,
+    y: y + yShift,
   );
 
   /// A circle outline.
@@ -181,7 +181,7 @@ extension QuizOrnaments on QuizScreen {
       zIndex: z,
     ),
     x: x,
-    y: y,
+    y: y + yShift,
   );
 
   /// An outlined rounded frame.
@@ -234,7 +234,7 @@ extension QuizOrnaments on QuizScreen {
     final out = <Twinkle>[];
     for (var i = 0; i < count; i++) {
       final x = 12 + rng.nextDouble() * (QuizScreen.worldWidth - 24);
-      final y = 8 + rng.nextDouble() * (QuizScreen.worldHeight - 16);
+      final y = 8 + rng.nextDouble() * (world.height - 16 - yShift);
       final size = 2.0 + rng.nextDouble() * 3.5;
       final n = i.isEven
           ? diamondAt(x, y, size, theme.accent, z: 1)

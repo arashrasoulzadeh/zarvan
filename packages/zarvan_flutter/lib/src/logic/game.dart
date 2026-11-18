@@ -473,6 +473,20 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
     await loader.load();
   }
 
+  /// The world's height: the configured one, or, for a game that fills the
+  /// screen, as tall as the screen shows at the world's width (never shorter
+  /// than configured, never more than half again) so the layout can spread.
+  double _worldHeightFor(Game game) {
+    final base = game.config.worldHeight;
+    if (game.viewportConfig?.fillScreen != true) return base;
+    final views = WidgetsBinding.instance.platformDispatcher.views;
+    if (views.isEmpty) return base;
+    final size = views.first.physicalSize;
+    if (size.width <= 0) return base;
+    final tall = game.config.worldWidth * size.height / size.width;
+    return tall.clamp(base, base * 1.5);
+  }
+
   /// Builds a brand-new `World` for [scene] rather than clearing the
   /// previous one — the previous scene's systems (added in its own
   /// `populate`) would otherwise keep running against the new scene's
@@ -484,7 +498,7 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
     progress.report(0.15, 'Loading world');
     final world = World(
       width: widget.game.config.worldWidth,
-      height: widget.game.config.worldHeight,
+      height: _worldHeightFor(widget.game),
     );
     registerCoreComponents(world);
     registerFlutterComponents(world);

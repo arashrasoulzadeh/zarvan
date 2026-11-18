@@ -83,6 +83,7 @@ class QuizHomeScreen extends QuizScreen {
     }
 
     // The wall: heading, progress, and the shelves of authors.
+    spread(0.08);
     const cx = QuizScreen.worldWidth / 2;
     line(24, 108, 100, theme.accent);
     line(
@@ -112,6 +113,7 @@ class QuizHomeScreen extends QuizScreen {
     );
 
     final next = nextStage(kit.bank, progress);
+    spread(0.2);
     const perRow = 5;
     const cardW = 58.0;
     const cardH = 104.0;
@@ -145,6 +147,7 @@ class QuizHomeScreen extends QuizScreen {
     }
 
     // Daily challenge banner, then Endless and Race side by side.
+    spread(0.55);
     final today = kit.today;
     final played = progress.hasPlayedDaily(today);
     final daily = UiRect(
@@ -248,6 +251,7 @@ class QuizHomeScreen extends QuizScreen {
       },
       size: 17,
     );
+    spread(1);
     final about = button(
       UiRect(cx - 50, 598, 100, 28),
       s.about,
@@ -339,7 +343,7 @@ class QuizHomeScreen extends QuizScreen {
     final tap = button(
       UiRect(x, y, w, h),
       a.name,
-      () => _medal.open(a, UiRect(x, y, w, h)),
+      () => _medal.open(a, UiRect(x, y + yShift, w, h)),
       style: QuizButtonStyle.option,
       size: 12,
     );

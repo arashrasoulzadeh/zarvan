@@ -100,6 +100,7 @@ class QuizTutorialScreen extends QuizScreen {
       b.enabled = !answered;
       oy += 56;
     }
+    spread(1);
     final start = button(
       row(QuizScreen.worldHeight - 68),
       s.tutorialDone,

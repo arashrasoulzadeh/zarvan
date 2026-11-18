@@ -25,7 +25,9 @@ class MedalOverlay {
 
   /// Where the medal ends up, centred, and how big it is.
   static const centerX = QuizScreen.worldWidth / 2;
-  static const centerY = 300.0;
+
+  /// The medal comes to the middle of the screen, whatever its height.
+  double get centerY => screen.world.height / 2;
   static const medalW = 272.0;
   static const medalH = 340.0;
 

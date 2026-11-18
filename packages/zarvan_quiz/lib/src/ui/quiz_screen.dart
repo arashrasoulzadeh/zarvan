@@ -91,6 +91,19 @@ abstract class QuizScreen extends Scene {
 
   QuizTheme get theme => kit.theme;
 
+  /// Height the screen has beyond the authored [worldHeight]: a tall phone
+  /// shows more world, which the layout spreads over instead of padding.
+  double get extra =>
+      world.height > worldHeight ? world.height - worldHeight : 0;
+
+  /// Added to every y the helpers place, so a section of the layout moves down
+  /// as one piece. Screens set it with [spread] before building each section.
+  double yShift = 0;
+
+  /// Moves the sections built after this by [fraction] of the spare height
+  /// (0 stays at the top, 1 sits at the bottom).
+  void spread(double fraction) => yShift = extra * fraction;
+
   bool get rtl => kit.strings.rtl;
 
   /// Builds the screen's pieces. Called once the world is ready.
@@ -114,11 +127,12 @@ abstract class QuizScreen extends Scene {
       world,
       theme,
       width: worldWidth,
-      height: worldHeight,
+      height: world.height,
       fontFamily: theme.fontFamily,
     );
     ui.background();
     build();
+    yShift = 0;
   }
 
   @override
@@ -148,7 +162,7 @@ abstract class QuizScreen extends Scene {
       rtl: rtl,
     ),
     x: x,
-    y: y,
+    y: y + yShift,
     fontFamily: theme.fontFamily,
   );
 
@@ -171,7 +185,7 @@ abstract class QuizScreen extends Scene {
       zIndex: z,
     ),
     x: b.centerX,
-    y: b.centerY,
+    y: b.centerY + yShift,
   );
 
   /// A button over [b] showing [text]; it is also added to [group] when given.
@@ -183,7 +197,14 @@ abstract class QuizScreen extends Scene {
     double size = 18,
     QuizGroup? group,
   }) {
-    final btn = ui.add(ui.button(b, text, onTap, size: size));
+    final btn = ui.add(
+      ui.button(
+        UiRect(b.x, b.y + yShift, b.width, b.height),
+        text,
+        onTap,
+        size: size,
+      ),
+    );
     btn.label.text!.rtl = rtl;
     switch (style) {
       case QuizButtonStyle.primary:

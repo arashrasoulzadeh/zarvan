@@ -21,6 +21,7 @@ class QuizResultScreen extends QuizScreen {
     final reward = session.reward;
     titleBar(s.result);
     final cx = QuizScreen.worldWidth / 2;
+    spread(0.2);
     label('${s.number(round.run.score)} ${s.score}', cx, 130, size: 32);
     var y = 180.0;
     final mode = round.mode;
@@ -58,6 +59,7 @@ class QuizResultScreen extends QuizScreen {
       );
     }
 
+    spread(1);
     var by = 500.0;
     if (mode is DailyMode && round.date != null && kit.share != null) {
       button(row(by - 60), s.share, () async {

@@ -123,7 +123,8 @@ class Rig {
   Rig(this.kit);
 
   final QuizKit kit;
-  final world = World(width: 360, height: 640);
+  late final world = World(width: 360, height: worldHeight);
+  double worldHeight = 640;
   late Scene scene;
   Scene? loaded;
   final controller = SceneController();
@@ -577,6 +578,20 @@ void main() {
   });
 
   group('menu screens', () {
+    test(
+      'a taller screen spreads the home layout over its whole height',
+      () async {
+        double aboutY(Rig r) => r._at('About').y;
+
+        final short = await Rig.make(bank: makeMultiBank());
+        await short.open(QuizHomeScreen(short.kit));
+        final tall = await Rig.make(bank: makeMultiBank())
+          ..worldHeight = 780;
+        await tall.open(QuizHomeScreen(tall.kit));
+        expect(aboutY(tall) - aboutY(short), closeTo(140, 1));
+      },
+    );
+
     test(
       'home: coins, the poets shelf, the daily card and the modes',
       () async {

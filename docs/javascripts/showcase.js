@@ -11,9 +11,9 @@
     window.addEventListener("message", function (e) { if (e.data === "zarvan-ready" && e.source === frame.contentWindow) busy(false); });
     busy(true);
     var hint = root.querySelector(".zv-live-hint");
-    root.querySelectorAll("button[data-demo]").forEach(function (btn) {
+    root.querySelectorAll("button[data-demo], button[data-query]").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        root.querySelectorAll("button[data-demo]").forEach(function (b) { b.classList.toggle("is-active", b === btn); });
+        root.querySelectorAll("button[data-demo], button[data-query]").forEach(function (b) { b.classList.toggle("is-active", b === btn); });
         var src = (root.dataset.app || "app/") + "?" + (btn.dataset.query || "demo=" + btn.dataset.demo);
         busy(true);
         frame.src = src;

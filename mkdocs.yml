@@ -52,7 +52,7 @@ extra_css:
 
 extra_javascript:
   - javascripts/rtl.js
-  - javascripts/showcase.js?v=2
+  - javascripts/showcase.js?v=3
 
 markdown_extensions:
   - admonition

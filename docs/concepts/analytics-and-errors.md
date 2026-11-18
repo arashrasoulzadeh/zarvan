@@ -45,6 +45,31 @@ Consent defaults to **on**, since analytics only acts once you register a provid
 ask first calls `setConsent(false)` before `initialize` and `setConsent(true)` when the player
 agrees. Keep personal data out of event payloads and `userId`; payloads go to every provider.
 
+## Eye analytics client (`zarvan_eye`)
+
+[`zarvan_eye`](../packages/zarvan_eye.md) is a Flutter-free client for the Eye
+collector, independent of `AnalyticsManager`. Use it when you want sessions, a
+stable anonymous installation id and an offline retry queue.
+
+```dart
+final eye = await EyeClient.init(EyeOptions(
+  endpoint: const String.fromEnvironment('EYE_ENDPOINT'),
+  apiKey: const String.fromEnvironment('EYE_API_KEY'),
+  tenantId: 'my-game',
+  installationStore: myInstallationStore, // keeps the id across launches
+  queueStore: myQueueStore,               // restores unsent events
+  redactKeys: {'email', 'token', 'password'},
+));
+eye.levelStarted('forest_01');
+eye.levelCompleted('forest_01', duration: const Duration(seconds: 42));
+await eye.flush();
+```
+
+- Keep one client for the process lifetime; `init` creates the launch session.
+- The package picks no storage library: you implement `EyeInstallationStore` and `EyeQueueStore`.
+- `GameActivity` emits focus, idle and `game_time` events from your input and lifecycle callbacks.
+- `redactKeys` and `maxPayloadBytes` bound what leaves the device; failed batches are retried.
+
 ## Error reporting (`zarvan_flutter`)
 
 `ErrorReportingManager.instance` sends errors to your `ErrorReporter`s. Bundled reporters:

@@ -98,7 +98,20 @@ nav:
       - For developers: guides/for-developers.md
       - For AI agents: guides/for-ai-agents.md
       - Agent hub: agents.md
-      - Packages: packages.md
+  - Packages:
+      - Overview: packages.md
+      - zarvan_core: packages/zarvan_core.md
+      - zarvan_schema: packages/zarvan_schema.md
+      - zarvan_flutter: packages/zarvan_flutter.md
+      - zarvan_platformer: packages/zarvan_platformer.md
+      - zarvan_strategy: packages/zarvan_strategy.md
+      - zarvan_idle: packages/zarvan_idle.md
+      - zarvan_quiz: packages/zarvan_quiz.md
+      - zarvan_ads: packages/zarvan_ads.md
+      - zarvan_eye: packages/zarvan_eye.md
+      - zarvan_api: packages/zarvan_api.md
+      - zarvan_cli: packages/zarvan_cli.md
+      - zarvan_studio: packages/zarvan_studio.md
   - فارسی:
       - صفحه‌ی اصلی: fa/index.md
       - مفهوم ZARVAN: fa/concept.md
@@ -138,6 +151,8 @@ nav:
       - Localization: concepts/localization.md
       - Settings and accessibility: concepts/settings.md
       - Idle games: concepts/idle-games.md
+      - Quiz games: concepts/quiz-games.md
+      - Ads: concepts/ads.md
       - Dialogue: concepts/dialogue.md
       - Procedural generation: concepts/procedural-generation.md
       - AI trees and state machines: concepts/ai.md

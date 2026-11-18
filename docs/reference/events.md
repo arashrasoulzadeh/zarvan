@@ -87,6 +87,25 @@ world.events.emit(MyEvent());      // queued; delivered at the end of the step
 | `GoldenOfferedEvent` | `lifetime` | `GoldenEventSystem` |
 | `ChallengeCompletedEvent` | `id` | `checkChallenges` |
 
+## zarvan_quiz
+
+Not world events: `QuizSession.events` is a stream, so an app can record what happened (for example as analytics).
+
+| Event | Fields | Emitted by |
+|---|---|---|
+| `QuizEvent` | `round` (sealed base of the events below) | `QuizSession` |
+| `RoundStarted` | — | `QuizSession.begin` |
+| `AnswerGiven` | `question`, `result` | `QuizSession` |
+| `HintUsed` | `question` | `QuizSession` |
+| `ContinueOffered` / `ContinueResolved` | — | endless mode |
+| `RoundEnded` | — | `QuizSession` |
+
+## zarvan_eye
+
+| Event | Fields | Emitted by |
+|---|---|---|
+| `EyeEvent` | `eventId`, `sessionId`, `eventName`, `clientTimestamp`, `payload`, `dims` | `EyeClient` (the queued wire-format record; not a world event) |
+
 ## Patterns
 
 **Don't mutate the world inside a handler for something you're iterating.**

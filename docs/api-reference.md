@@ -13,6 +13,12 @@ Browse them three ways.
 | `zarvan_flutter` | [zarvan_flutter API](https://meetarash.ir/agentic-game-engine/api/zarvan_flutter/) |
 | `zarvan_platformer` | [zarvan_platformer API](https://meetarash.ir/agentic-game-engine/api/zarvan_platformer/) |
 | `zarvan_strategy` | [zarvan_strategy API](https://meetarash.ir/agentic-game-engine/api/zarvan_strategy/) |
+| `zarvan_idle` | [zarvan_idle API](https://meetarash.ir/zarvan/api/zarvan_idle/) |
+| `zarvan_quiz` | [zarvan_quiz API](https://meetarash.ir/zarvan/api/zarvan_quiz/) |
+| `zarvan_ads` | [zarvan_ads API](https://meetarash.ir/zarvan/api/zarvan_ads/) |
+| `zarvan_eye` | [zarvan_eye API](https://meetarash.ir/zarvan/api/zarvan_eye/) |
+| `zarvan_api` | [zarvan_api API](https://meetarash.ir/zarvan/api/zarvan_api/) |
+| `zarvan_cli` | [zarvan_cli API](https://meetarash.ir/zarvan/api/zarvan_cli/) |
 
 These are rebuilt from `main` by the docs workflow. To build one locally:
 

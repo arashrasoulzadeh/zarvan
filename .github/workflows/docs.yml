@@ -17,6 +17,10 @@ on:
       - "packages/zarvan_strategy/lib/**"
       - "packages/zarvan_idle/lib/**"
       - "packages/zarvan_api/lib/**"
+      - "packages/zarvan_quiz/lib/**"
+      - "packages/zarvan_ads/lib/**"
+      - "packages/zarvan_eye/lib/**"
+      - "packages/zarvan_cli/lib/**"
       - ".github/workflows/docs.yml"
   pull_request:
     paths:
@@ -84,7 +88,7 @@ jobs:
 
       - name: Generate API docs
         run: |
-          for pkg in zarvan_schema zarvan_core zarvan_flutter zarvan_platformer zarvan_strategy zarvan_idle zarvan_api; do
+          for pkg in zarvan_schema zarvan_core zarvan_flutter zarvan_platformer zarvan_strategy zarvan_idle zarvan_quiz zarvan_ads zarvan_eye zarvan_api zarvan_cli; do
             if (cd packages/$pkg && flutter pub get && dart doc . ); then
               mkdir -p site/api/$pkg
               cp -r packages/$pkg/doc/api/. site/api/$pkg/

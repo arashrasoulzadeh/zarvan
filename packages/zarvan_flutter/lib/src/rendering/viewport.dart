@@ -50,13 +50,20 @@ class ViewportConfig {
       avoidSystemUi = false,
       letterboxColorArgb = 0xFF000000,
       centerViewport = true,
-      fitWorld = true;
+      fitWorld = true,
+      fillScreen = false;
 
   /// Scale the picture to the rectangle: every frame the engine sets `Camera.zoom` so the whole
   /// world width fills it. For a world authored at a fixed logical size (a 180x320 portrait game)
   /// this replaces computing a zoom per screen by hand. Pair it with a [targetAspectRatio] equal
   /// to the world's width / height so nothing is cropped.
   final bool fitWorld;
+
+  /// Draw into the whole screen instead of leaving bars. The rectangle is the screen, so on a screen
+  /// taller than the world you see more world above and below (the camera stays centred on the
+  /// world); a game draws its backdrop larger than the world to fill that. With [fitWorld] the zoom
+  /// is the one that keeps the whole world visible.
+  final bool fillScreen;
 
   const ViewportConfig({
     this.targetAspectRatio = 16 / 9,
@@ -65,6 +72,7 @@ class ViewportConfig {
     this.letterboxColorArgb = 0xFF000000,
     this.centerViewport = true,
     this.fitWorld = false,
+    this.fillScreen = false,
   }) : assert(targetAspectRatio > 0, 'targetAspectRatio must be positive');
 }
 
@@ -116,6 +124,20 @@ class ViewportManager {
 
     double width;
     double height;
+    if (_config.fillScreen) {
+      return ViewportLayout(
+        contentRect: ui.Rect.fromLTWH(areaLeft, areaTop, areaWidth, areaHeight),
+        safeAreaInsets: useSafe
+            ? safeArea
+            : ui.RRect.fromRectXY(
+                ui.Rect.fromLTWH(0, 0, screenSize.width, screenSize.height),
+                0,
+                0,
+              ),
+        isLetterboxed: false,
+        isPillarboxed: false,
+      );
+    }
     switch (_config.fit) {
       case ViewportFit.contain:
         if (areaWidth / areaHeight > ratio) {

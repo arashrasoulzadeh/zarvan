@@ -75,8 +75,8 @@ extension QuizOrnaments on QuizScreen {
       id,
       ShaderEffect(
         kind: ShaderEffect.aurora,
-        width: QuizScreen.worldWidth,
-        height: QuizScreen.worldHeight,
+        width: QuizScreen.worldWidth * 1.6,
+        height: QuizScreen.worldHeight * 1.6,
         zIndex: -9,
         speed: speed,
         rimArgb: theme.background,

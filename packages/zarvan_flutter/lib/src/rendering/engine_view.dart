@@ -638,7 +638,11 @@ class _EngineViewState extends State<EngineView>
           );
           _viewportLayout = layout;
           if (widget.viewportConfig!.fitWorld && widget.world.width > 0) {
-            widget.camera.zoom = layout.contentRect.width / widget.world.width;
+            final byWidth = layout.contentRect.width / widget.world.width;
+            final byHeight = layout.contentRect.height / widget.world.height;
+            widget.camera.zoom = widget.viewportConfig!.fillScreen
+                ? (byWidth < byHeight ? byWidth : byHeight)
+                : byWidth;
           }
 
           // Build the game content with letterboxing

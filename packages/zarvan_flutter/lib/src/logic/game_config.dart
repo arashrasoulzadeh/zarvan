@@ -26,6 +26,12 @@ class GameConfig {
   final Color backgroundColor;
   final bool showFpsOverlay;
 
+  /// Log build- and raster-thread frame times (percentiles and the share of
+  /// janky frames) every few seconds, in any build mode: the way to find out
+  /// what shaders really cost on a device. Read them with
+  /// `adb logcat -s flutter`. See `FrameTimingLogger`.
+  final bool logFrameTimings;
+
   /// See `EngineView.showColliderDebug`'s doc comment — a stroked
   /// outline per `Collider`/solid-or-one-way-or-slope tile, on top of
   /// everything else. Off by default; a game typically only flips this
@@ -136,6 +142,7 @@ class GameConfig {
     required this.worldHeight,
     this.backgroundColor = const Color(0xFF000000),
     this.showFpsOverlay = false,
+    this.logFrameTimings = false,
     this.showColliderDebug = false,
     this.showPerformanceOverlay = false,
     this.showAutoTileBitmask = false,
@@ -159,6 +166,7 @@ class GameConfig {
     'worldHeight': worldHeight,
     'backgroundColor': backgroundColor.toARGB32(),
     'showFpsOverlay': showFpsOverlay,
+    'logFrameTimings': logFrameTimings,
     'showColliderDebug': showColliderDebug,
     'showPerformanceOverlay': showPerformanceOverlay,
     'showAutoTileBitmask': showAutoTileBitmask,
@@ -188,6 +196,7 @@ class GameConfig {
         ? Color(json['backgroundColor'] as int)
         : const Color(0xFF000000),
     showFpsOverlay: json['showFpsOverlay'] as bool? ?? false,
+    logFrameTimings: json['logFrameTimings'] as bool? ?? false,
     showColliderDebug: json['showColliderDebug'] as bool? ?? false,
     showPerformanceOverlay: json['showPerformanceOverlay'] as bool? ?? false,
     showAutoTileBitmask: json['showAutoTileBitmask'] as bool? ?? false,

@@ -13,6 +13,7 @@ import '../rendering/camera.dart';
 import '../rendering/engine_warmup.dart';
 import '../rendering/engine_view.dart';
 import '../rendering/frame_stats.dart';
+import '../rendering/frame_timing_logger.dart';
 import '../rendering/shader_effect.dart' show EffectShader;
 import '../rendering/viewport.dart';
 import 'game_config.dart';
@@ -218,6 +219,7 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
       popScene: _popScene,
       captureScreenshot: _captureScreenshot,
     );
+    if (widget.game.config.logFrameTimings) _timings.start();
     EffectShader.pageTurn.warmUp();
     EffectShader.lanterns.warmUp();
     EffectShader.ripple.warmUp();
@@ -315,6 +317,18 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
   /// True while a transition is running and for `inputGraceSeconds` after it:
   /// the scene on screen takes no taps, drags or key presses meanwhile.
   bool _inputLocked = false;
+  final FrameTimingLogger _timings = FrameTimingLogger();
+
+  /// Prints what a frame was doing whenever one takes over 20 ms (only with
+  /// `GameConfig.logFrameTimings`), so a spike can be traced to the step, the
+  /// paint or the lighting rather than just counted.
+  late final FrameStats _spikeStats = FrameStats()
+    ..onSpike = (s) => debugPrint(
+      '[zarvan:spike] frame=${s.frameMs.toStringAsFixed(1)}ms '
+      'step=${s.stepMs.toStringAsFixed(1)} paint=${s.paintMs.toStringAsFixed(1)} '
+      'light=${s.lightingMs.toStringAsFixed(1)} entities=${s.entities} '
+      'sprites=${s.sprites} particles=${s.particles}',
+    );
   Timer? _unlockTimer;
 
   void _lockInput() {
@@ -617,6 +631,7 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _unlockTimer?.cancel();
+    _timings.stop();
     final active = _snapshotTransition;
     if (active != null) {
       active.$1.dispose();
@@ -699,7 +714,9 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
             dayNightCycle: loaded.scene.dayNightCycle,
             maxFps: widget.game.config.maxFps,
             fixedTimestepSeconds: widget.game.config.fixedTimestepSeconds,
-            frameStats: widget.game.frameStats,
+            frameStats:
+                widget.game.frameStats ??
+                (widget.game.config.logFrameTimings ? _spikeStats : null),
             singlePassLighting: widget.game.config.singlePassLighting,
             // No taps while an overlay is up -- it alone should be
             // interactive, so the paused scene underneath can't be

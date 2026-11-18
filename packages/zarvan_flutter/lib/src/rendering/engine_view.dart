@@ -300,6 +300,8 @@ class _EngineViewState extends State<EngineView>
   Offset? _dragStart;
   Offset? _dragEnd;
 
+  final _EffectShaderCache _effectShaders = _EffectShaderCache();
+
   late final Ticker _ticker;
   Duration _lastTick = Duration.zero;
   Duration? _nextTickDue;
@@ -560,6 +562,7 @@ class _EngineViewState extends State<EngineView>
   void dispose() {
     _ticker.dispose();
     _focusNode.dispose();
+    _effectShaders.dispose();
     super.dispose();
   }
 
@@ -615,6 +618,7 @@ class _EngineViewState extends State<EngineView>
       autoGpuShadows: widget.autoGpuShadows,
       showAutoTileBitmask: widget.showAutoTileBitmask,
       combinedTextureCache: _combinedTextureCache,
+      effectShaders: _effectShaders,
     );
 
     Widget child;
@@ -800,6 +804,48 @@ class _EngineViewState extends State<EngineView>
   }
 }
 
+/// One live `FragmentShader` per shader-effect entity, reused every frame:
+/// creating a native shader for every effect on every frame (dozens in a busy
+/// scene) costs allocations and garbage-collection pauses that showed up as
+/// frame spikes on a real device. Only the uniforms change per frame. Lives in
+/// the view's `State`, because the painter itself is rebuilt every frame.
+class _EffectShaderCache {
+  final Map<int, ({EffectShader kind, ui.FragmentShader shader})> _byEntity =
+      {};
+
+  /// The cached shader for [entity], made on first use; null while the
+  /// program is still compiling.
+  ui.FragmentShader? shaderFor(int entity, EffectShader kind) {
+    final cached = _byEntity[entity];
+    if (cached != null && identical(cached.kind, kind)) return cached.shader;
+    final fresh = kind.shader();
+    if (fresh == null) return null;
+    cached?.shader.dispose();
+    _byEntity[entity] = (kind: kind, shader: fresh);
+    return fresh;
+  }
+
+  /// Disposes the shaders of entities that no longer have an effect.
+  void prune(ComponentStore<ShaderEffect> effects) {
+    if (_byEntity.isEmpty) return;
+    final live = <int>{
+      for (var i = 0; i < effects.length; i++) effects.entityAt(i),
+    };
+    _byEntity.removeWhere((entity, entry) {
+      if (live.contains(entity)) return false;
+      entry.shader.dispose();
+      return true;
+    });
+  }
+
+  void dispose() {
+    for (final e in _byEntity.values) {
+      e.shader.dispose();
+    }
+    _byEntity.clear();
+  }
+}
+
 class _EnginePainter extends CustomPainter {
   final World world;
   final AtlasRegistry atlasRegistry;
@@ -939,6 +985,7 @@ class _EnginePainter extends CustomPainter {
   /// Cache of combined normal mapping textures (diffuse left half, normal right half).
   /// Key is "${diffuseAtlasId}:${normalAtlasId}".
   final Map<String, ui.Image> combinedTextureCache;
+  final _EffectShaderCache effectShaders;
 
   _EnginePainter({
     required this.world,
@@ -960,6 +1007,7 @@ class _EnginePainter extends CustomPainter {
     this.autoGpuShadows = true,
     this.showAutoTileBitmask = false,
     required this.combinedTextureCache,
+    required this.effectShaders,
   }) : super(repaint: null);
 
   /// [current]'s position blended with wherever that entity was just
@@ -3673,33 +3721,32 @@ class _EnginePainter extends CustomPainter {
       );
       items.add(
         _DrawItem(fx.zIndex, order++, (canvas) {
-          final shader =
-              (isShine
-                      ? EffectShader.shine
-                      : isGlow
-                      ? EffectShader.glow
-                      : isOrb
-                      ? EffectShader.orb
-                      : isAurora
-                      ? EffectShader.aurora
-                      : isOrnate
-                      ? EffectShader.ornate
-                      : isPortrait
-                      ? (fx.kind == ShaderEffect.seal
-                            ? EffectShader.seal
-                            : fx.kind == ShaderEffect.dust
-                            ? EffectShader.dust
-                            : EffectShader.portrait)
-                      : isVeil
-                      ? (fx.kind == ShaderEffect.ink
-                            ? EffectShader.ink
-                            : fx.kind == ShaderEffect.kashi
-                            ? EffectShader.kashi
-                            : fx.kind == ShaderEffect.curtain
-                            ? EffectShader.curtain
-                            : EffectShader.veil)
-                      : EffectShader.portal)
-                  .shader();
+          final effectShader = (isShine
+              ? EffectShader.shine
+              : isGlow
+              ? EffectShader.glow
+              : isOrb
+              ? EffectShader.orb
+              : isAurora
+              ? EffectShader.aurora
+              : isOrnate
+              ? EffectShader.ornate
+              : isPortrait
+              ? (fx.kind == ShaderEffect.seal
+                    ? EffectShader.seal
+                    : fx.kind == ShaderEffect.dust
+                    ? EffectShader.dust
+                    : EffectShader.portrait)
+              : isVeil
+              ? (fx.kind == ShaderEffect.ink
+                    ? EffectShader.ink
+                    : fx.kind == ShaderEffect.kashi
+                    ? EffectShader.kashi
+                    : fx.kind == ShaderEffect.curtain
+                    ? EffectShader.curtain
+                    : EffectShader.veil)
+              : EffectShader.portal);
+          final shader = effectShaders.shaderFor(entity, effectShader);
           if (shader == null) return;
           ui.Image? img(int i) =>
               i < fx.images.length && atlasRegistry.has(fx.images[i])
@@ -3777,6 +3824,7 @@ class _EnginePainter extends CustomPainter {
         }),
       );
     }
+    effectShaders.prune(effects);
     return order;
   }
 
@@ -4145,6 +4193,7 @@ Future<Uint8List> captureWorldToPng(
     backgroundColor: backgroundColor,
     tileCullCache: {},
     combinedTextureCache: {},
+    effectShaders: _EffectShaderCache(),
   );
   final recorder = ui.PictureRecorder();
   painter.paint(Canvas(recorder), Size(width.toDouble(), height.toDouble()));

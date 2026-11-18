@@ -69,6 +69,7 @@ const textSchema = ComponentSchema('text', [
   FieldSchema('zIndex', FieldType.int, defaultValue: 0),
   FieldSchema('maxWidth', FieldType.double, min: 0, optional: true),
   FieldSchema('textScale', FieldType.double, min: 0, defaultValue: 1),
+  FieldSchema('alpha', FieldType.double, min: 0, max: 1, defaultValue: 1),
   FieldSchema('rtl', FieldType.bool, optional: true),
   FieldSchema('fontFamily', FieldType.string, optional: true),
   FieldSchema('shadowArgb', FieldType.int, optional: true),
@@ -184,6 +185,7 @@ const shaderEffectSchema = ComponentSchema('shaderEffect', [
   FieldSchema('rimArgb', FieldType.int, defaultValue: 0xFFB5400C),
   FieldSchema('armArgb', FieldType.int, defaultValue: 0xFFFFC53D),
   FieldSchema('coreArgb', FieldType.int, defaultValue: 0xFFFFF1B8),
+  FieldSchema('params', FieldType.list),
 ]);
 
 const screenTintSchema = ComponentSchema('screenTint', [

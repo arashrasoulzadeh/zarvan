@@ -592,6 +592,7 @@ A marker: present or absent, no fields.
 | `zIndex` | `int` | default `0` |
 | `maxWidth` | `double` | may be null; 0 to ∞ |
 | `textScale` | `double` | 0 to ∞; default `1` |
+| `alpha` | `double` | 0 to 1; default `1` |
 | `rtl` | `bool` | may be null |
 | `fontFamily` | `string` | may be null |
 | `shadowArgb` | `int` | may be null |
@@ -706,6 +707,7 @@ A marker: present or absent, no fields.
 | `rimArgb` | `int` | default `4290068492` |
 | `armArgb` | `int` | default `4294952253` |
 | `coreArgb` | `int` | default `4294963640` |
+| `params` | `list` |  |
 
 ### `screenTint`
 

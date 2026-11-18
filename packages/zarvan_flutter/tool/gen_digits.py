@@ -1,93 +1,71 @@
-"""Turns the Persian digits of a font into stroke data for shaders.
+"""Turns the digits of a font into outline data for shaders.
 
-Each digit (Persian U+06F0..U+06F9, or Western U+0030..U+0039) is rendered, thinned to its centre line, traced
-into polylines and simplified; the output is GLSL (`float digitDist(vec2 q,
-int d)`) that returns the distance from q to that digit's strokes, with q in
-glyph units (the digit is about 1.0 tall and centred), plus the stroke width.
-Paste the result into the shader (see shaders/seal.frag).
+Each digit (Persian U+06F0..U+06F9, or Western U+0030..U+0039) is read from the
+font as its real outline, curves are flattened to short straight edges and the
+result is written as GLSL: `float digitSdFa(vec2 q, int d)` returns the signed
+distance from q to that digit (negative inside), with q in glyph units (all ten
+digits share one scale, about 1.0 tall, centred on their own box). A shader
+fills it with an anti-aliased edge, so the digit keeps the typeface's real
+weight and shape. Paste the output into the shader (see shaders/seal.frag).
 
-Needs numpy, scikit-image and Pillow:
+Needs fontTools:
   python3 tool/gen_digits.py path/to/font.ttf fa|en > digits.glsl
 """
 import sys
-import numpy as np
-from PIL import Image, ImageDraw, ImageFont
-from skimage.morphology import medial_axis
+from fontTools.ttLib import TTFont
+from fontTools.pens.basePen import BasePen
 
-SIZE = 360
-EPS = 2.2  # simplification tolerance in pixels at SIZE
-
-
-def render(font, ch):
-    im = Image.new('L', (SIZE * 2, SIZE * 2), 0)
-    d = ImageDraw.Draw(im)
-    d.text((SIZE // 2, SIZE // 2), ch, font=font, fill=255)
-    a = np.array(im) > 127
-    ys, xs = np.where(a)
-    return a, (xs.min(), xs.max(), ys.min(), ys.max())
+FLATTEN = 4        # straight edges per curve
+EPS = 0.0035       # simplification tolerance, in glyph units
 
 
-def neighbors(sk, y, x):
-    out = []
-    for dy in (-1, 0, 1):
-        for dx in (-1, 0, 1):
-            if (dy or dx) and 0 <= y + dy < sk.shape[0] and 0 <= x + dx < sk.shape[1] and sk[y + dy, x + dx]:
-                out.append((y + dy, x + dx))
-    return out
+class Flatten(BasePen):
+    def __init__(self, glyph_set):
+        super().__init__(glyph_set)
+        self.contours = []
+        self._cur = None
 
+    def _moveTo(self, p):
+        self._cur = [p]
 
-def trace(sk):
-    """Polylines (lists of (y, x)) covering every skeleton pixel."""
-    pts = {(y, x) for y, x in zip(*np.where(sk))}
-    deg = {p: len(neighbors(sk, *p)) for p in pts}
-    nodes = {p for p, d in deg.items() if d != 2}
-    seen_edges = set()
-    paths = []
+    def _lineTo(self, p):
+        self._cur.append(p)
 
-    def walk(start, nxt):
-        path = [start, nxt]
-        prev, cur = start, nxt
-        while cur not in nodes:
-            nb = [n for n in neighbors(sk, *cur) if n != prev and (cur, n) not in seen_edges]
-            if not nb:
-                break
-            prev, cur = cur, nb[0]
-            path.append(cur)
-            if cur == start:
-                break
-        return path
+    def _qCurveToOne(self, c, p):
+        a = self._cur[-1]
+        for i in range(1, FLATTEN + 1):
+            t = i / FLATTEN
+            x = (1 - t) ** 2 * a[0] + 2 * (1 - t) * t * c[0] + t * t * p[0]
+            y = (1 - t) ** 2 * a[1] + 2 * (1 - t) * t * c[1] + t * t * p[1]
+            self._cur.append((x, y))
 
-    for n in nodes:
-        for m in neighbors(sk, *n):
-            if (n, m) in seen_edges:
-                continue
-            p = walk(n, m)
-            for a, b in zip(p, p[1:]):
-                seen_edges.add((a, b))
-                seen_edges.add((b, a))
-            paths.append(p)
-    # Pure loops (every pixel has degree 2).
-    covered = {q for p in paths for q in p}
-    for p0 in sorted(pts - covered):
-        if p0 in covered:
-            continue
-        p = walk(p0, neighbors(sk, *p0)[0])
-        for q in p:
-            covered.add(q)
-        paths.append(p)
-    return paths
+    def _curveToOne(self, c1, c2, p):
+        a = self._cur[-1]
+        for i in range(1, FLATTEN + 1):
+            t = i / FLATTEN
+            m = 1 - t
+            x = m**3 * a[0] + 3 * m * m * t * c1[0] + 3 * m * t * t * c2[0] + t**3 * p[0]
+            y = m**3 * a[1] + 3 * m * m * t * c1[1] + 3 * m * t * t * c2[1] + t**3 * p[1]
+            self._cur.append((x, y))
+
+    def _closePath(self):
+        if self._cur and len(self._cur) > 2:
+            self.contours.append(self._cur)
+        self._cur = None
+
+    _endPath = _closePath
 
 
 def rdp(points, eps):
     if len(points) < 3:
         return points
-    a, b = np.array(points[0], float), np.array(points[-1], float)
-    ab = b - a
-    n = np.linalg.norm(ab)
-    best, idx = -1, 0
+    (ax, ay), (bx, by) = points[0], points[-1]
+    dx, dy = bx - ax, by - ay
+    n = (dx * dx + dy * dy) ** 0.5
+    best, idx = -1.0, 0
     for i in range(1, len(points) - 1):
-        p = np.array(points[i], float)
-        d = np.linalg.norm(p - a) if n == 0 else abs(ab[0] * (a[1] - p[1]) - ab[1] * (a[0] - p[0])) / n
+        px, py = points[i]
+        d = ((px - ax) ** 2 + (py - ay) ** 2) ** 0.5 if n == 0 else abs(dx * (ay - py) - dy * (ax - px)) / n
         if d > best:
             best, idx = d, i
     if best > eps:
@@ -97,35 +75,36 @@ def rdp(points, eps):
 
 def main(font_path, script):
     base = 0x06F0 if script == 'fa' else 0x0030
-    font = ImageFont.truetype(font_path, SIZE)
+    font = TTFont(font_path)
+    cmap = font.getBestCmap()
+    gs = font.getGlyphSet()
     glyphs = []
     for i in range(10):
-        a, box = render(font, chr(base + i))
-        sk, dist = medial_axis(a, return_distance=True)
-        radius = float(np.median(dist[sk]))
-        glyphs.append((a, box, sk, radius))
-    # One scale for all digits: the tallest digit is 1.0 high.
-    height = max(b[3] - b[2] for _, b, _, _ in glyphs)
-    width = float(np.median([g[3] for g in glyphs]) * 2) / height
+        pen = Flatten(gs)
+        gs[cmap[base + i]].draw(pen)
+        glyphs.append(pen.contours)
+    boxes = []
+    for cs in glyphs:
+        xs = [x for c in cs for x, _ in c]
+        ys = [y for c in cs for _, y in c]
+        boxes.append((min(xs), max(xs), min(ys), max(ys)))
+    height = max(b[3] - b[2] for b in boxes)
     print('// Generated by tool/gen_digits.py - do not edit by hand.')
-    print(f'const float DIGIT_STROKE_{script.upper()} = {width:.3f};')
-    print(f'float digitDist{script.capitalize()}(vec2 q, int d) {{')
-    print('  float r = 1e9;')
-    for i, (a, box, sk, radius) in enumerate(glyphs):
-        cx = (box[0] + box[1]) / 2
-        cy = (box[2] + box[3]) / 2
-        paths = [rdp(p, EPS) for p in trace(sk)]
+    print(f'float digitSd{script.capitalize()}(vec2 q, int d) {{')
+    print('  float dm = 1e9;')
+    print('  int wn = 0;')
+    for i, (cs, b) in enumerate(zip(glyphs, boxes)):
+        cx, cy = (b[0] + b[1]) / 2, (b[2] + b[3]) / 2
         print(f'  {"if" if i == 0 else "else if"} (d == {i}) {{')
-        for p in paths:
-            for (y0, x0), (y1, x1) in zip(p, p[1:]):
-                f = lambda y, x: (round((x - cx) / height, 3), round((y - cy) / height, 3))
-                ax, ay = f(y0, x0)
-                bx, by = f(y1, x1)
-                if (ax, ay) == (bx, by):
-                    continue
-                print(f'    r = min(r, digitSeg(q, vec2({ax}, {ay}), vec2({bx}, {by})));')
+        for c in cs:
+            pts = [((x - cx) / height, -(y - cy) / height) for x, y in c]
+            pts = rdp(pts + [pts[0]], EPS)[:-1]
+            n = len(pts)
+            for k in range(n):
+                (ax, ay), (bx, by) = pts[k], pts[(k + 1) % n]
+                print(f'    digitEdge(q, vec2({ax:.3f}, {ay:.3f}), vec2({bx:.3f}, {by:.3f}), dm, wn);')
         print('  }')
-    print('  return r;')
+    print('  return wn != 0 ? -dm : dm;')
     print('}')
 
 

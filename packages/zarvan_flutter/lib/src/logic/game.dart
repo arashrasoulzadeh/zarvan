@@ -220,6 +220,7 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
     );
     EffectShader.pageTurn.warmUp();
     EffectShader.lanterns.warmUp();
+    EffectShader.ripple.warmUp();
     _gameState = widget.game.createInitialState();
     _future = _loadInitial(widget.game.createInitialScene());
   }
@@ -318,6 +319,8 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
       await EffectShader.pageTurn.warmUp();
     } else if (transition.type == SceneTransitionType.lanterns) {
       await EffectShader.lanterns.warmUp();
+    } else if (transition.type == SceneTransitionType.ripple) {
+      await EffectShader.ripple.warmUp();
     }
     final snapshot = await _captureImage();
     _loadScene(next);

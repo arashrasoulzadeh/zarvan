@@ -7,7 +7,7 @@ import 'package:zarvan_flutter/zarvan_flutter.dart' show ShareOutcome;
 
 import '../quiz_session.dart';
 import 'quiz_strings.dart';
-import 'quiz_screen.dart' show quizLanternsTransition, quizPageTurnTransition;
+import 'quiz_screen.dart' show quizRippleTransition;
 import 'quiz_theme.dart';
 
 /// The player's quiz settings, saved under [key] in a [KeyValueStore] and
@@ -184,8 +184,8 @@ class QuizKit {
     this.stageMode = const StageMode(),
     this.portraits,
     this.transitions = true,
-    this.transitionKind = quizPageTurnTransition,
-    this.returnTransitionKind = quizLanternsTransition,
+    this.transitionKind = quizRippleTransition,
+    this.returnTransitionKind = quizRippleTransition,
     DateTime Function()? now,
   }) : now = now ?? DateTime.now;
 

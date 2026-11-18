@@ -82,6 +82,10 @@ const quizPageTurnTransition = 'page';
 /// (the engine's `lanterns`).
 const quizLanternsTransition = 'lanterns';
 
+/// The transition kind in which a drop falls where the player touched and
+/// rings spread over the screen like water (the engine's `ripple`).
+const quizRippleTransition = 'ripple';
+
 /// The name of the transition kind that swirls the poems' own words over an
 /// ink wash (the others are engine `ShaderEffect` kinds).
 const quizVerseTransition = 'verse';
@@ -153,6 +157,10 @@ abstract class QuizScreen extends Scene {
   @override
   void handleTap(World world, SceneController scenes, Offset worldPosition) {
     if (veiled) return;
+    _lastTap = Offset(
+      (worldPosition.dx / worldWidth).clamp(0.0, 1.0),
+      (worldPosition.dy / world.height).clamp(0.0, 1.0),
+    );
     ui.tap(worldPosition.dx, worldPosition.dy);
   }
 
@@ -297,6 +305,9 @@ abstract class QuizScreen extends Scene {
   Scene? _veilNext;
   eng.WordSwarm? _swarm;
 
+  /// Where the player last touched, as fractions of the screen.
+  Offset _lastTap = const Offset(0.5, 0.5);
+
   /// Moves on to [next] under the transition when the kit has them on, or at
   /// once when not. [returning] picks the kit's transition for going back to
   /// the menu rather than the one for going into a game.
@@ -311,6 +322,7 @@ abstract class QuizScreen extends Scene {
     final snapshot = switch (kind) {
       quizPageTurnTransition => (SceneTransitionType.pageTurn, 0.9),
       quizLanternsTransition => (SceneTransitionType.lanterns, 1.2),
+      quizRippleTransition => (SceneTransitionType.ripple, 1.3),
       _ => null,
     };
     if (snapshot != null) {
@@ -319,6 +331,9 @@ abstract class QuizScreen extends Scene {
         transition: SceneTransitionConfig(
           type: snapshot.$1,
           duration: snapshot.$2,
+          // The drop falls where the player last touched.
+          originX: _lastTap.dx,
+          originY: _lastTap.dy,
         ),
       );
     } else {

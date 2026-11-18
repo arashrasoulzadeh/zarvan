@@ -307,6 +307,40 @@ void main() {
       },
     );
 
+    test(
+      'ripple fades the picture out until its shader is ready, and keeps its origin',
+      () async {
+        final snap = await _solid(const Color(0xFF3366FF));
+        Future<double> covered(double t) async => _coverage(
+          await _render(
+            SnapshotTransitionPainter(
+              snapshot: snap,
+              type: SceneTransitionType.ripple,
+              progress: t,
+              originX: 0.2,
+              originY: 0.8,
+            ),
+          ),
+        );
+        expect(await covered(0), greaterThan(0.95));
+        expect(await covered(1), lessThan(0.05));
+        expect(SceneTransitionType.ripple.usesSnapshot, isTrue);
+        final cfg = SceneTransitionConfig.fromJson(
+          const SceneTransitionConfig(
+            type: SceneTransitionType.ripple,
+            originX: 0.2,
+            originY: 0.8,
+          ).toJson(),
+        );
+        expect((cfg.originX, cfg.originY), (0.2, 0.8));
+        expect(File('shaders/ripple.frag').existsSync(), isTrue);
+        expect(
+          File('pubspec.yaml').readAsStringSync(),
+          contains('shaders/ripple.frag'),
+        );
+      },
+    );
+
     test('its shader is bundled and listed in the pubspec', () {
       expect(File('shaders/pageturn.frag').existsSync(), isTrue);
       expect(

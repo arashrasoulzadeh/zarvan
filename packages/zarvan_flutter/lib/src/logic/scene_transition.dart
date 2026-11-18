@@ -39,6 +39,12 @@ enum SceneTransitionType {
   /// up and off the top of the screen, lighting it from below, while the new
   /// scene is revealed underneath (drawn by `lanterns.frag`).
   lanterns,
+
+  /// A drop falls on the outgoing scene (at [SceneTransitionConfig.originX] /
+  /// [SceneTransitionConfig.originY]) and rings spread over it, bending its
+  /// picture as they pass, while the new scene appears behind the leading ring
+  /// through settling water (drawn by `ripple.frag`).
+  ripple,
 }
 
 extension SceneTransitionTypeX on SceneTransitionType {
@@ -77,6 +83,11 @@ class SceneTransitionConfig {
   final int portalColorArgb;
   final bool portalReverse;
 
+  /// Where a point-based snapshot effect ([SceneTransitionType.ripple]) starts,
+  /// as fractions of the screen (0..1; the middle by default).
+  final double originX;
+  final double originY;
+
   const SceneTransitionConfig({
     this.type = SceneTransitionType.fade,
     this.duration = 0.5,
@@ -86,6 +97,8 @@ class SceneTransitionConfig {
     this.portalY = 0,
     this.portalColorArgb = 0xFFFFFFFF,
     this.portalReverse = false,
+    this.originX = 0.5,
+    this.originY = 0.5,
   });
 
   Map<String, dynamic> toJson() => {
@@ -97,6 +110,8 @@ class SceneTransitionConfig {
     'portalY': portalY,
     'portalColorArgb': portalColorArgb,
     'portalReverse': portalReverse,
+    'originX': originX,
+    'originY': originY,
   };
 
   factory SceneTransitionConfig.fromJson(Map<String, dynamic> json) =>
@@ -116,6 +131,8 @@ class SceneTransitionConfig {
         portalColorArgb:
             (json['portalColorArgb'] as num?)?.toInt() ?? 0xFFFFFFFF,
         portalReverse: json['portalReverse'] == true,
+        originX: (json['originX'] as num?)?.toDouble() ?? 0.5,
+        originY: (json['originY'] as num?)?.toDouble() ?? 0.5,
       );
 }
 

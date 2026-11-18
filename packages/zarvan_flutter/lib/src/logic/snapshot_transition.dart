@@ -27,6 +27,8 @@ class SnapshotTransitionPainter extends CustomPainter {
     this.portalY,
     this.portalColorArgb = 0xFFFFFFFF,
     this.portalReverse = false,
+    this.originX = 0.5,
+    this.originY = 0.5,
   });
 
   final ui.Image snapshot;
@@ -44,6 +46,10 @@ class SnapshotTransitionPainter extends CustomPainter {
   final double? portalY;
   final int portalColorArgb;
   final bool portalReverse;
+
+  /// Where a ripple starts, as fractions of the screen.
+  final double originX;
+  final double originY;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -100,6 +106,8 @@ class SnapshotTransitionPainter extends CustomPainter {
         _paintPageTurn(canvas, size, t);
       case SceneTransitionType.lanterns:
         _paintLanterns(canvas, size, t);
+      case SceneTransitionType.ripple:
+        _paintRipple(canvas, size, t);
       case SceneTransitionType.fade:
       case SceneTransitionType.iris:
         // World-based transitions (screen tint / clip shape); they never paint a
@@ -139,6 +147,34 @@ class SnapshotTransitionPainter extends CustomPainter {
       ..setFloat(8, 0.88)
       ..setFloat(9, 0.78)
       ..setFloat(10, 1)
+      ..setImageSampler(0, snapshot);
+    canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
+  }
+
+  /// Rings spreading over the picture from a point; until the shader has
+  /// compiled the picture simply fades out.
+  void _paintRipple(Canvas canvas, Size size, double t) {
+    final shader = EffectShader.ripple.shader();
+    if (shader == null) {
+      canvas.drawImageRect(
+        snapshot,
+        Rect.fromLTWH(
+          0,
+          0,
+          snapshot.width.toDouble(),
+          snapshot.height.toDouble(),
+        ),
+        Offset.zero & size,
+        Paint()..color = Color.fromARGB(((1 - t) * 255).round(), 255, 255, 255),
+      );
+      return;
+    }
+    shader
+      ..setFloat(0, size.width)
+      ..setFloat(1, size.height)
+      ..setFloat(2, size.width * originX)
+      ..setFloat(3, size.height * originY)
+      ..setFloat(4, t)
       ..setImageSampler(0, snapshot);
     canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
   }
@@ -321,6 +357,8 @@ class _SnapshotTransitionState extends State<SnapshotTransition>
             portalY: widget.config.portalY,
             portalColorArgb: widget.config.portalColorArgb,
             portalReverse: widget.config.portalReverse,
+            originX: widget.config.originX,
+            originY: widget.config.originY,
           ),
         ),
       ),

@@ -1036,6 +1036,21 @@ void main() {
       },
     );
 
+    test('the ripple starts where the player touched', () async {
+      final r = await Rig.make(
+        bank: makeMultiBank(),
+        transitions: true,
+        transitionKind: quizRippleTransition,
+      );
+      await r.open(QuizHomeScreen(r.kit));
+      r.tap('Endless');
+      expect(r.loadedWith?.type, SceneTransitionType.ripple);
+      final cfg = r.loadedWith!;
+      final p = r._at('Endless');
+      expect(cfg.originX, closeTo(p.x / 360, 0.08));
+      expect(cfg.originY, closeTo(p.y / r.world.height, 0.08));
+    });
+
     test(
       'tapping a poet blurs the screen and opens a medal with the levels',
       () async {

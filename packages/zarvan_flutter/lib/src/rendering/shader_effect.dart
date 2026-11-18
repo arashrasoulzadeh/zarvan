@@ -226,6 +226,10 @@ class EffectShader {
   /// `SceneTransitionType.pageTurn`).
   static final pageTurn = EffectShader._('pageturn.frag');
 
+  /// `ripple.frag`, rings spreading over a snapshot like water (see
+  /// `SceneTransitionType.ripple`).
+  static final ripple = EffectShader._('ripple.frag');
+
   /// `lanterns.frag`, the page lifted by paper lanterns (see
   /// `SceneTransitionType.lanterns`).
   static final lanterns = EffectShader._('lanterns.frag');

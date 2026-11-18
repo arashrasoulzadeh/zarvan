@@ -5,6 +5,7 @@ import 'package:zarvan_core/zarvan_core.dart' show Tween;
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart' hide Tween;
 
+import '../rendering/shader_effect.dart' show EffectShader;
 import 'scene_transition.dart';
 
 /// Paints a frozen snapshot of the *outgoing* scene over the live *incoming* one,
@@ -95,12 +96,49 @@ class SnapshotTransitionPainter extends CustomPainter {
         _paintDissolve(canvas, size, src, t);
       case SceneTransitionType.portal:
         _paintPortal(canvas, size, src, t);
+      case SceneTransitionType.pageTurn:
+        _paintPageTurn(canvas, size, t);
       case SceneTransitionType.fade:
       case SceneTransitionType.iris:
         // World-based transitions (screen tint / clip shape); they never paint a
         // snapshot, so there is nothing to draw if one is asked for.
         break;
     }
+  }
+
+  /// Paints the curl with the page-turn shader; until it has compiled (the
+  /// first frames) the page simply slides off to the left.
+  void _paintPageTurn(Canvas canvas, Size size, double t) {
+    final shader = EffectShader.pageTurn.shader();
+    if (shader == null) {
+      canvas.drawImageRect(
+        snapshot,
+        Rect.fromLTWH(
+          0,
+          0,
+          snapshot.width.toDouble(),
+          snapshot.height.toDouble(),
+        ),
+        (Offset.zero & size).shift(Offset(-size.width * t, 0)),
+        Paint(),
+      );
+      return;
+    }
+    shader
+      ..setFloat(0, size.width)
+      ..setFloat(1, size.height)
+      ..setFloat(2, snapshot.width.toDouble())
+      ..setFloat(3, snapshot.height.toDouble())
+      ..setFloat(4, t)
+      ..setFloat(5, size.width * 0.13)
+      ..setFloat(6, 0.22)
+      // The back of the page: warm paper.
+      ..setFloat(7, 0.93)
+      ..setFloat(8, 0.88)
+      ..setFloat(9, 0.78)
+      ..setFloat(10, 1)
+      ..setImageSampler(0, snapshot);
+    canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
   }
 
   void _paintPortal(Canvas canvas, Size size, Rect src, double t) {

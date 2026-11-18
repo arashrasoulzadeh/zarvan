@@ -9,6 +9,8 @@ import 'package:zarvan_flutter/zarvan_flutter.dart'
     show
         Scene,
         SceneController,
+        SceneTransitionConfig,
+        SceneTransitionType,
         ShaderEffect,
         Shape,
         ShapeKind,
@@ -72,6 +74,10 @@ class QuizGroup {
 ///
 /// The world is laid out for a portrait [worldWidth] x [worldHeight]; the
 /// game's viewport scales it to the device.
+/// The transition kind that turns the screen like a page: a snapshot curls
+/// away from the right over the next screen (the engine's `pageTurn`).
+const quizPageTurnTransition = 'page';
+
 /// The name of the transition kind that swirls the poems' own words over an
 /// ink wash (the others are engine `ShaderEffect` kinds).
 const quizVerseTransition = 'verse';
@@ -290,10 +296,20 @@ abstract class QuizScreen extends Scene {
   /// Moves on to [next] under the transition when the kit has them on, or at
   /// once when not.
   void navigate(Scene next) {
-    if (kit.transitions) {
-      veilTo(next);
-    } else {
+    if (!kit.transitions) {
       goTo(next);
+    } else if (kit.transitionKind == quizPageTurnTransition) {
+      // A snapshot of this screen curls away from the right while the next
+      // one is already loaded underneath: no cover phase, no pause.
+      scenes.loadSceneWithTransition(
+        next,
+        transition: const SceneTransitionConfig(
+          type: SceneTransitionType.pageTurn,
+          duration: 0.9,
+        ),
+      );
+    } else {
+      veilTo(next);
     }
   }
 

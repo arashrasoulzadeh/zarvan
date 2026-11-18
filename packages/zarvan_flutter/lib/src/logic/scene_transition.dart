@@ -29,6 +29,11 @@ enum SceneTransitionType {
   /// The outgoing scene breaks into blocks that vanish in a scattered order.
   pixelDissolve,
   portal,
+
+  /// The outgoing scene is a page lifted from its right edge and rolled up
+  /// toward the left over the new scene, with the paper's back showing where it
+  /// has folded over (a real curl, drawn by `pageturn.frag`).
+  pageTurn,
 }
 
 extension SceneTransitionTypeX on SceneTransitionType {

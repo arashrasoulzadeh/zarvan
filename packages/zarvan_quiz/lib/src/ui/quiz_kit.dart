@@ -7,7 +7,7 @@ import 'package:zarvan_flutter/zarvan_flutter.dart' show ShareOutcome;
 
 import '../quiz_session.dart';
 import 'quiz_strings.dart';
-import 'quiz_screen.dart' show quizVerseTransition;
+import 'quiz_screen.dart' show quizPageTurnTransition;
 import 'quiz_theme.dart';
 
 /// The player's quiz settings, saved under [key] in a [KeyValueStore] and
@@ -184,7 +184,7 @@ class QuizKit {
     this.stageMode = const StageMode(),
     this.portraits,
     this.transitions = true,
-    this.transitionKind = 'curtain',
+    this.transitionKind = quizPageTurnTransition,
     DateTime Function()? now,
   }) : now = now ?? DateTime.now;
 
@@ -211,11 +211,10 @@ class QuizKit {
   /// Whether leaving the menu for a game plays the veil transition.
   final bool transitions;
 
-  /// Which engine shader draws the transition, by the name of its
-  /// `ShaderEffect` kind: `curtain` (default), embroidered velvet curtains
-  /// closing under moonlight; `verse`, the poems' own words swirling in over an
-  /// ink wash; `kashi`, Persian tilework in the game's
-  /// own style; `ink`, a bleeding wash with petals; or the plain `veil`.
+  /// How leaving a screen for another looks: `page` (default), the screen
+  /// itself curling away from the right over the next one; or, by the name of
+  /// an engine `ShaderEffect` kind, an overlay drawn over it: `curtain`,
+  /// `kashi`, `ink`, `veil`; or `verse`, poem words swirling in over ink.
   final String transitionKind;
 
   /// Set when a screen is leaving under a transition, so the next one knows

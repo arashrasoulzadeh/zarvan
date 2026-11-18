@@ -13,6 +13,7 @@ import '../rendering/camera.dart';
 import '../rendering/engine_warmup.dart';
 import '../rendering/engine_view.dart';
 import '../rendering/frame_stats.dart';
+import '../rendering/shader_effect.dart' show EffectShader;
 import '../rendering/viewport.dart';
 import 'game_config.dart';
 import '../input/input.dart';
@@ -217,6 +218,7 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
       popScene: _popScene,
       captureScreenshot: _captureScreenshot,
     );
+    EffectShader.pageTurn.warmUp();
     _gameState = widget.game.createInitialState();
     _future = _loadInitial(widget.game.createInitialScene());
   }
@@ -309,6 +311,11 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
     Scene next,
     SceneTransitionConfig transition,
   ) async {
+    // The curl's shader compiles on first use; wait for it so the page never
+    // slides off as a stand-in.
+    if (transition.type == SceneTransitionType.pageTurn) {
+      await EffectShader.pageTurn.warmUp();
+    }
     final snapshot = await _captureImage();
     _loadScene(next);
     if (snapshot == null) return;

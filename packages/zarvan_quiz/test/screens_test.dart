@@ -14,6 +14,8 @@ import 'package:zarvan_flutter/zarvan_flutter.dart'
         BackdropBlur,
         Scene,
         SceneController,
+        SceneTransitionConfig,
+        SceneTransitionType,
         ShaderEffect,
         Shape,
         ShareOutcome;
@@ -127,6 +129,7 @@ class Rig {
   double worldHeight = 640;
   late Scene scene;
   Scene? loaded;
+  SceneTransitionConfig? loadedWith;
   final controller = SceneController();
 
   static Future<Rig> make({
@@ -180,6 +183,10 @@ class Rig {
     eng.registerFlutterComponents(world);
     controller.attach(
       loadScene: (n) => loaded = n,
+      loadSceneWithTransition: (n, t) {
+        loaded = n;
+        loadedWith = t;
+      },
       pushOverlay: (_) {},
       popOverlay: () {},
     );
@@ -973,6 +980,31 @@ void main() {
           r.world.componentsOf<eng.Text>().length,
           before,
           reason: 'the words are gone',
+        );
+      },
+    );
+
+    test(
+      'the page turn hands the screen to the engine as a snapshot that curls away',
+      () async {
+        final r = await Rig.make(
+          bank: makeMultiBank(),
+          transitions: true,
+          transitionKind: quizPageTurnTransition,
+        );
+        await r.open(QuizHomeScreen(r.kit));
+        r.tap('Endless');
+        expect(
+          r.loaded,
+          isA<QuizGameScreen>(),
+          reason: 'the next screen loads at once, no cover phase',
+        );
+        expect(r.loadedWith?.type, SceneTransitionType.pageTurn);
+        final fx = r.world.componentsOf<ShaderEffect>();
+        expect(
+          [for (var i = 0; i < fx.length; i++) fx.denseAt(i).kind],
+          isNot(contains(ShaderEffect.veil)),
+          reason: 'no overlay is drawn by the screen itself',
         );
       },
     );

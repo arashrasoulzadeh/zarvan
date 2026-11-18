@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -259,6 +260,44 @@ void main() {
         expect(find.byKey(const Key('snapshot-transition')), findsNothing);
       },
     );
+  });
+
+  group('pageTurn', () {
+    test(
+      'slides off like a page until its shader is ready, then is gone',
+      () async {
+        final snap = await _solid(const Color(0xFFFF0000));
+        Future<double> covered(double t) async => _coverage(
+          await _render(
+            SnapshotTransitionPainter(
+              snapshot: snap,
+              type: SceneTransitionType.pageTurn,
+              progress: t,
+            ),
+          ),
+        );
+        expect(await covered(0), greaterThan(0.95));
+        expect(await covered(0.5), inInclusiveRange(0.4, 0.6));
+        expect(await covered(1), lessThan(0.05));
+      },
+    );
+
+    test('its shader is bundled and listed in the pubspec', () {
+      expect(File('shaders/pageturn.frag').existsSync(), isTrue);
+      expect(
+        File('pubspec.yaml').readAsStringSync(),
+        contains('shaders/pageturn.frag'),
+      );
+    });
+
+    test('it is a snapshot transition and survives JSON', () {
+      expect(SceneTransitionType.pageTurn.usesSnapshot, isTrue);
+      final cfg = SceneTransitionConfig(type: SceneTransitionType.pageTurn);
+      expect(
+        SceneTransitionConfig.fromJson(cfg.toJson()).type,
+        SceneTransitionType.pageTurn,
+      );
+    });
   });
 }
 

@@ -222,6 +222,10 @@ class EffectShader {
   /// `aurora.frag`.
   static final aurora = EffectShader._('aurora.frag');
 
+  /// `pageturn.frag`, the page curl over a snapshot (see
+  /// `SceneTransitionType.pageTurn`).
+  static final pageTurn = EffectShader._('pageturn.frag');
+
   /// `ornate.frag`.
   static final ornate = EffectShader._('ornate.frag');
 

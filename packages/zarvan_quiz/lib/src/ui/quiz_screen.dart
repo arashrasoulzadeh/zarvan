@@ -309,9 +309,11 @@ abstract class QuizScreen extends Scene {
         height: world.height,
         zIndex: 100,
         rimArgb: 0xFFE3C477,
-        armArgb: kit.transitionKind == ShaderEffect.ink
-            ? 0xFFE8A0AA
-            : theme.accent,
+        armArgb: switch (kit.transitionKind) {
+          ShaderEffect.ink => 0xFFE8A0AA,
+          ShaderEffect.kashi => 0xFF1F7A6E,
+          _ => theme.accent,
+        },
         coreArgb: kit.transitionKind == ShaderEffect.ink
             ? 0xFF0C1A30
             : 0xFF0B2420,

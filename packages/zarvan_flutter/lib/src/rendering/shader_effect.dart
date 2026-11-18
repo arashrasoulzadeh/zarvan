@@ -133,6 +133,18 @@ class ShaderEffect {
   /// Colours: [rimArgb] gold, [armArgb] petals, [coreArgb] the ink.
   static const ink = 'ink';
 
+  /// A transition in the game's own style, drawn by `kashi.frag`: Persian
+  /// tilework. Tiles turn over outward from a point, each with a gold eight-
+  /// pointed star, ring and corner diamonds on teal, until the screen is
+  /// tiled. Same [params] as [veil]. Colours: [rimArgb] gold, [armArgb] teal,
+  /// [coreArgb] the dark tile body.
+  static const kashi = 'kashi';
+
+  /// A small eight-pointed progress seal drawn by `seal.frag`; [params] x is 0
+  /// upcoming (dim), 1 current (bright, breathing light), 2 done (a tick).
+  /// Colours: [rimArgb] gold, [armArgb] teal, [coreArgb] the dark.
+  static const seal = 'seal';
+
   /// A band of light that sweeps across `images[0]` every [period] seconds,
   /// lighting only its opaque pixels: lay it over a button or banner, same rect.
   static const shine = 'shine';
@@ -214,6 +226,12 @@ class EffectShader {
 
   /// `ink.frag`.
   static final ink = EffectShader._('ink.frag');
+
+  /// `kashi.frag`.
+  static final kashi = EffectShader._('kashi.frag');
+
+  /// `seal.frag`.
+  static final seal = EffectShader._('seal.frag');
 
   final String _assetKey;
   ui.FragmentProgram? _program;

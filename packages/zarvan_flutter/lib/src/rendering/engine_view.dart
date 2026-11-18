@@ -3648,9 +3648,12 @@ class _EnginePainter extends CustomPainter {
       final isOrb = fx.kind == ShaderEffect.orb;
       final isAurora = fx.kind == ShaderEffect.aurora;
       final isOrnate = fx.kind == ShaderEffect.ornate;
-      final isPortrait = fx.kind == ShaderEffect.portrait;
+      final isPortrait =
+          fx.kind == ShaderEffect.portrait || fx.kind == ShaderEffect.seal;
       final isVeil =
-          fx.kind == ShaderEffect.veil || fx.kind == ShaderEffect.ink;
+          fx.kind == ShaderEffect.veil ||
+          fx.kind == ShaderEffect.ink ||
+          fx.kind == ShaderEffect.kashi;
       final isPicture =
           fx.kind == ShaderEffect.portal ||
           isOrb ||
@@ -3679,10 +3682,14 @@ class _EnginePainter extends CustomPainter {
                       : isOrnate
                       ? EffectShader.ornate
                       : isPortrait
-                      ? EffectShader.portrait
+                      ? (fx.kind == ShaderEffect.seal
+                            ? EffectShader.seal
+                            : EffectShader.portrait)
                       : isVeil
                       ? (fx.kind == ShaderEffect.ink
                             ? EffectShader.ink
+                            : fx.kind == ShaderEffect.kashi
+                            ? EffectShader.kashi
                             : EffectShader.veil)
                       : EffectShader.portal)
                   .shader();

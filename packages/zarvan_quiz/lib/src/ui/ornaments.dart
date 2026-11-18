@@ -62,6 +62,28 @@ extension QuizOrnaments on QuizScreen {
     return id;
   }
 
+  /// A progress seal of [size] centred at ([x], [y]), drawn by the `seal`
+  /// shader: [state] 0 for a step to come, 1 for the current one, 2 for one
+  /// done (it carries a tick).
+  EntityId sealAt(double x, double y, double size, int state, {int z = 6}) {
+    final id = world.spawn();
+    world.componentsOf<Position>().set(id, Position(x, y + yShift));
+    world.componentsOf<ShaderEffect>().set(
+      id,
+      ShaderEffect(
+        kind: ShaderEffect.seal,
+        width: size,
+        height: size,
+        zIndex: z,
+        rimArgb: 0xFFE3C477,
+        armArgb: theme.accent,
+        coreArgb: 0xFF0B2420,
+        params: [state.toDouble()],
+      ),
+    );
+    return id;
+  }
+
   /// An ornate Persian frame around [r], drawn by the engine's `ornate`
   /// shader: a band [band] thick of a lattice with cells [cell] wide, gold
   /// lines and corner rosettes, with the corners rounded by [radius]. Inside

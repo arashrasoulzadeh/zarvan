@@ -183,7 +183,7 @@ class QuizKit {
     this.stageMode = const StageMode(),
     this.portraits,
     this.transitions = true,
-    this.transitionKind = 'ink',
+    this.transitionKind = 'kashi',
     DateTime Function()? now,
   }) : now = now ?? DateTime.now;
 
@@ -210,8 +210,9 @@ class QuizKit {
   /// Whether leaving the menu for a game plays the veil transition.
   final bool transitions;
 
-  /// Which engine shader draws the transition: the poetic `ink` (default) or
-  /// the plain `veil` (the names of the engine's `ShaderEffect` kinds).
+  /// Which engine shader draws the transition, by the name of its
+  /// `ShaderEffect` kind: `kashi` (default), Persian tilework in the game's
+  /// own style; `ink`, a bleeding wash with petals; or the plain `veil`.
   final String transitionKind;
 
   /// Set when a screen is leaving under a transition, so the next one knows

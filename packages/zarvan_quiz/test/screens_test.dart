@@ -138,7 +138,7 @@ class Rig {
     QuizBank? bank,
     QuizPortraits? portraits,
     bool transitions = false,
-    String transitionKind = 'ink',
+    String transitionKind = 'kashi',
   }) async {
     final kv = MemoryKeyValueStore();
     final session = await QuizSession.open(kv);
@@ -266,6 +266,56 @@ void main() {
       await r.open(QuizGameScreen(r.kit));
       return r;
     }
+
+    test(
+      'a stage shows five seals that follow the current question, drawn by a shader',
+      () async {
+        List<List<double>> seals(Rig r) {
+          final fx = r.world.componentsOf<ShaderEffect>();
+          return [
+            for (var i = 0; i < fx.length; i++)
+              if (fx.denseAt(i).kind == ShaderEffect.seal) fx.denseAt(i).params,
+          ];
+        }
+
+        final r = await stage();
+        expect(seals(r).map((p) => p[0]), [
+          1,
+          0,
+          0,
+          0,
+          0,
+        ], reason: 'the first is lit');
+        for (var i = 0; i < 3; i++) {
+          r.tap(r.optionRight);
+          r.run(0.1);
+          r.tap('Next');
+          r.run(0.1);
+        }
+        expect(
+          seals(r).map((p) => p[0]),
+          [2, 2, 1, 0, 0],
+          reason:
+              'on the fourth question the window has moved one along: two done, this one, two to come',
+        );
+        expect(r.world.componentsOf<eng.Sprite>().length, 0);
+
+        final endless = await Rig.make();
+        endless.kit.session.begin(
+          QuizRound.endless(
+            endless.kit.factory,
+            const EndlessMode(),
+            seedBase: 'e',
+          ),
+        );
+        await endless.open(QuizGameScreen(endless.kit));
+        expect(
+          seals(endless),
+          isEmpty,
+          reason: 'endless has no length to show',
+        );
+      },
+    );
 
     test(
       'the card and each option are ornate shader frames, not images',
@@ -790,7 +840,9 @@ void main() {
           final fx = r.world.componentsOf<ShaderEffect>();
           for (var i = 0; i < fx.length; i++) {
             final k = fx.denseAt(i).kind;
-            if (k == ShaderEffect.ink || k == ShaderEffect.veil) {
+            if (k == ShaderEffect.kashi ||
+                k == ShaderEffect.ink ||
+                k == ShaderEffect.veil) {
               return fx.denseAt(i);
             }
           }
@@ -841,7 +893,11 @@ void main() {
     test(
       'going back from the game to the menu has a transition too, in either style',
       () async {
-        for (final kind in [ShaderEffect.ink, ShaderEffect.veil]) {
+        for (final kind in [
+          ShaderEffect.kashi,
+          ShaderEffect.ink,
+          ShaderEffect.veil,
+        ]) {
           final r = await Rig.make(
             bank: makeMultiBank(),
             transitions: true,

@@ -110,6 +110,58 @@ class QuizGameScreen extends QuizScreen {
     if (stamp != _stamp) _redraw();
   }
 
+  // The questions of a round with a known length (a stage, the daily), as a
+  // row of seals: done ones ticked, the current one lit, the rest to come. Only
+  // five show at a time, scrolling with the current one.
+  int? get _questionTotal {
+    final mode = session.round?.mode;
+    return switch (mode) {
+      StageMode() => mode.questionCount,
+      DailyMode() => mode.tiers.length,
+      _ => null,
+    };
+  }
+
+  bool get _hasStepper => _questionTotal != null;
+
+  void _stepper() {
+    final total = _questionTotal;
+    final run = session.round?.run;
+    if (total == null || run == null) return;
+    spread(0.08);
+    const shown = 5;
+    const pitch = 52.0;
+    const size = 38.0;
+    final cx = QuizScreen.worldWidth / 2;
+    final count = math.min(shown, total);
+    final current = run.index.clamp(0, total - 1);
+    final first = (current - 2).clamp(0, total - count);
+    final y = 126.0;
+    for (var k = 0; k < count; k++) {
+      final n = first + k;
+      final x = cx + (rtl ? -1 : 1) * (k - (count - 1) / 2) * pitch;
+      final state = n < current ? 2 : (n == current ? 1 : 0);
+      _view.addId(sealAt(x, y, size, state));
+      if (state != 2) {
+        _view.addNode(
+          label(
+            kit.strings.number(n + 1),
+            x,
+            y,
+            size: 14,
+            color: state == 1 ? 0xFFFFF1CC : 0xFFBFD8D0,
+            z: 8,
+          ),
+        );
+      }
+    }
+    final reach = (count - 1) * pitch / 2 + size / 2 + 10;
+    _view.addNode(line(24, cx - reach, y, theme.accent));
+    _view.addNode(
+      line(cx + reach, QuizScreen.worldWidth - 24, y, theme.accent),
+    );
+  }
+
   void _refreshHud() {
     final round = session.round;
     if (round == null) return;
@@ -178,7 +230,8 @@ class QuizGameScreen extends QuizScreen {
     final inner =
         sizes.fold<double>(0, (a, z) => a + z.height) +
         gap * (lines.length - 1);
-    final cardTop = 104.0;
+    _stepper();
+    final cardTop = _hasStepper ? 150.0 : 104.0;
     spread(0.2);
     final cardHeight = inner + 56;
     final cardRect = UiRect(

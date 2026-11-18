@@ -77,6 +77,8 @@ flutter:
     - shaders/portrait.frag
     - shaders/veil.frag
     - shaders/ink.frag
+    - shaders/kashi.frag
+    - shaders/seal.frag
   fonts:
     # Bundled so `Text` has a default typeface it owns outright on every
     # platform, instead of implicitly depending on whatever "no

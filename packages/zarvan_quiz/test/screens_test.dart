@@ -18,6 +18,7 @@ import 'package:zarvan_flutter/zarvan_flutter.dart'
         SceneTransitionType,
         ShaderEffect,
         Shape,
+        ShapeKind,
         ShareOutcome;
 import 'package:zarvan_quiz/zarvan_quiz.dart';
 
@@ -1165,6 +1166,59 @@ void main() {
         r.run(0.15);
         r.tap(r.optionRight);
         expect(r.kit.session.answered, isTrue, reason: 'afterwards it counts');
+      },
+    );
+
+    test(
+      'cards show an emblem, no stage dots; the medal adds the epithet and a bigger emblem',
+      () async {
+        List<ShaderEffect> emblems(Rig r) {
+          final fx = r.world.componentsOf<ShaderEffect>();
+          return [
+            for (var i = 0; i < fx.length; i++)
+              if (fx.denseAt(i).kind == ShaderEffect.emblem) fx.denseAt(i),
+          ];
+        }
+
+        final r = await Rig.make(
+          bank: makeMultiBank(),
+          portraits: const QuizPortraits({
+            'a': QuizPortraitStyle(
+              emblem: QuizEmblem.cup,
+              epithet: 'Tongue of the Unseen',
+            ),
+            'b': QuizPortraitStyle(
+              emblem: QuizEmblem.rose,
+              epithet: 'Master of Speech',
+            ),
+          }),
+        );
+        await r.open(QuizHomeScreen(r.kit));
+        expect(
+          emblems(r).map((e) => e.params[0]).toSet(),
+          {0.0, 1.0},
+          reason: 'cup and rose on the two cards',
+        );
+        final shapes = r.world.componentsOf<Shape>();
+        var pips = 0;
+        for (var i = 0; i < shapes.length; i++) {
+          final sh = shapes.denseAt(i);
+          if (sh.kind == ShapeKind.ring && sh.width == 7) pips++;
+        }
+        expect(pips, 0, reason: 'the four little stage dots are gone');
+
+        r.tap('Poet a');
+        r.run(1);
+        expect(
+          r.has('Tongue of the Unseen'),
+          isTrue,
+          reason: 'the epithet is under the name',
+        );
+        expect(
+          emblems(r).length,
+          3,
+          reason: 'the medal brings its own larger emblem',
+        );
       },
     );
 

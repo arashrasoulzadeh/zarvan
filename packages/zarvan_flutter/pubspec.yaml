@@ -78,6 +78,7 @@ flutter:
     - shaders/ripple.frag
     - shaders/dust.frag
     - shaders/mark.frag
+    - shaders/emblem.frag
     - shaders/ornate.frag
     - shaders/portrait.frag
     - shaders/veil.frag

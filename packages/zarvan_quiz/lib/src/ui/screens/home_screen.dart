@@ -230,12 +230,6 @@ class QuizHomeScreen extends QuizScreen {
     openVeil();
   }
 
-  /// How many of the author's four stages have been passed.
-  int _passed(QuizAuthor a) => [
-    for (final t in QuizTier.values)
-      if (kit.session.progress.stages[a.id]?[t.name]?.passedOnce ?? false) 1,
-  ].length;
-
   void _coinPill(double x, double y, String text) {
     frame(UiRect(x, y, 92, 32), theme.accent, radius: 16, alpha: 0.7);
     dot(x + 18, y + 16, 18, _gold);
@@ -297,15 +291,9 @@ class QuizHomeScreen extends QuizScreen {
       diamondAt(cx, y + 36, 30, theme.accent, stroke: 1.2, alpha: 0.3);
       diamondAt(cx, y + 36, 14, theme.accent, stroke: 1.2, alpha: 0.35);
     }
-    final passed = _passed(a);
-    for (var i = 0; i < QuizTier.values.length; i++) {
-      final px = cx + (i - 1.5) * 11;
-      if (i < passed) {
-        dot(px, y + h - 9, 7, theme.accent, alpha: 0.95);
-      } else {
-        ringAt(px, y + h - 9, 7, theme.accent, stroke: 1, alpha: 0.6);
-      }
-    }
+    // What they are known for, along the bottom of the card where the stage
+    // dots used to be.
+    emblemAt(a.id, cx, y + h - 15, 32, color: current ? theme.ink : null);
     if (current) diamondAt(cx, y + h, 11, theme.accent, z: 8);
     final tap = button(
       UiRect(x, y, w, h),
@@ -315,7 +303,9 @@ class QuizHomeScreen extends QuizScreen {
       size: 12,
     );
     tap.bg.shape!.alpha = 0;
-    tap.label.pos.y += portrait == null ? -6 : 21;
+    // A long name wraps to two lines: lift it so it clears the emblem below.
+    final longName = a.name.length > 9 && a.name.contains(' ');
+    tap.label.pos.y += portrait == null ? -6 : (longName ? 13 : 21);
     tap.label.text!
       ..maxWidth = w - 8
       ..colorArgb = theme.ink;

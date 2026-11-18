@@ -232,8 +232,19 @@ class MedalOverlay {
     }
     _destroy(_veilButton);
     _veilButton = null;
+    _dropEmblem();
     _contentShown = false;
     _dir = -1;
+  }
+
+  EntityId? _emblem;
+
+  void _dropEmblem() {
+    final id = _emblem;
+    if (id == null) return;
+    screen.world.destroy(id);
+    _ids.remove(id);
+    _emblem = null;
   }
 
   void _destroy(UiButton? b) {
@@ -340,14 +351,27 @@ class MedalOverlay {
     final title = screen.label(
       author.name,
       centerX,
-      centerY - medalH / 2 + 38,
-      size: 24,
+      centerY - medalH / 2 + 56,
+      size: 22,
       color: theme.accent,
       z: _z + 6,
     );
     _content.addNode(title);
     _items.add(_Item.text(title, centerX, centerY));
-    var y = centerY - medalH / 2 + 80;
+    final epithet = screen.kit.portraits?.styles[author.id]?.epithet;
+    if (epithet != null) {
+      final sub = screen.label(
+        epithet,
+        centerX,
+        centerY - medalH / 2 + 78,
+        size: 12,
+        color: theme.soft,
+        z: _z + 6,
+      );
+      _content.addNode(sub);
+      _items.add(_Item.text(sub, centerX, centerY));
+    }
+    var y = centerY - medalH / 2 + 94;
     for (final tier in QuizTier.values) {
       final unlocked = p.isUnlocked(author.id, tier);
       final entry = p.stages[author.id]?[tier.name];
@@ -395,13 +419,26 @@ class MedalOverlay {
         ..add(_Item.box(b.bg, centerX, centerY))
         ..add(_Item.text(b.label, centerX, centerY))
         ..add(_Item.text(info, centerX, centerY));
-      y += 60;
+      y += 58;
     }
   }
 
   /// The medal has landed: the levels can be pressed, and a tap outside closes.
   void _showContent() {
     _contentShown = true;
+    // The author's emblem appears once the medal has landed (a shader icon
+    // cannot be squeezed with the spin the way the text can).
+    final emblem = screen.emblemAt(
+      _author!.id,
+      centerX,
+      centerY - medalH / 2 + 26,
+      46,
+      z: _z + 7,
+    );
+    if (emblem != null) {
+      _emblem = emblem;
+      _ids.add(emblem);
+    }
     for (final (b, unlocked) in _buttons) {
       b.enabled = unlocked;
     }
@@ -421,6 +458,7 @@ class MedalOverlay {
   }
 
   void _finish() {
+    _emblem = null;
     for (final id in _ids) {
       screen.world.destroy(id);
     }

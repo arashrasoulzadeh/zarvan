@@ -3700,6 +3700,7 @@ class _EnginePainter extends CustomPainter {
           fx.kind == ShaderEffect.portrait ||
           fx.kind == ShaderEffect.seal ||
           fx.kind == ShaderEffect.mark ||
+          fx.kind == ShaderEffect.emblem ||
           fx.kind == ShaderEffect.dust;
       final isVeil =
           fx.kind == ShaderEffect.veil ||
@@ -3739,6 +3740,8 @@ class _EnginePainter extends CustomPainter {
                     ? EffectShader.dust
                     : fx.kind == ShaderEffect.mark
                     ? EffectShader.mark
+                    : fx.kind == ShaderEffect.emblem
+                    ? EffectShader.emblem
                     : EffectShader.portrait)
               : isVeil
               ? (fx.kind == ShaderEffect.ink

@@ -97,6 +97,35 @@ extension QuizOrnaments on QuizScreen {
     return id;
   }
 
+  /// The emblem of [authorId] ([size] wide, centred at ([x], [y])), drawn by the
+  /// `emblem` shader, or null when the game gave them none.
+  EntityId? emblemAt(
+    String authorId,
+    double x,
+    double y,
+    double size, {
+    int? color,
+    int z = 8,
+  }) {
+    final emblem = kit.portraits?.styles[authorId]?.emblem;
+    if (emblem == null) return null;
+    final id = world.spawn();
+    world.componentsOf<Position>().set(id, Position(x, y + yShift));
+    world.componentsOf<ShaderEffect>().set(
+      id,
+      ShaderEffect(
+        kind: ShaderEffect.emblem,
+        width: size,
+        height: size,
+        zIndex: z,
+        rimArgb: color ?? theme.accent,
+        armArgb: theme.accent,
+        params: [emblem.index.toDouble()],
+      ),
+    );
+    return id;
+  }
+
   /// An answer mark of [size] centred at ([x], [y]): a star medallion edged in
   /// gold with a calligraphic tick or, when [cross], a cross, drawn in by a pen
   /// of light as [ShaderEffect.params] y goes from 0 to 1 (the caller animates

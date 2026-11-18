@@ -92,6 +92,20 @@ enum QuizHeadwear {
   scarf,
 }
 
+/// A small emblem that says what an author is known for.
+enum QuizEmblem {
+  cup,
+  rose,
+  reedFlute,
+  jug,
+  book,
+  crown,
+  bird,
+  lute,
+  staff,
+  quill,
+}
+
 /// How one author's line portrait looks: the engine's `portrait` shader
 /// draws the face, and these pick what varies between people.
 class QuizPortraitStyle {
@@ -103,6 +117,8 @@ class QuizPortraitStyle {
     this.feather = false,
     this.collar = false,
     this.woman = false,
+    this.emblem,
+    this.epithet,
   });
 
   /// How far the beard hangs below the chin (0 for none).
@@ -120,6 +136,13 @@ class QuizPortraitStyle {
   /// A V-shaped collar.
   final bool collar;
   final bool woman;
+
+  /// What the author is known for, drawn as a small icon on their card and
+  /// on their medal.
+  final QuizEmblem? emblem;
+
+  /// The title they are known by, written under their name on the medal.
+  final String? epithet;
 
   /// The numbers the shader reads (beard, spread, headwear, flags).
   List<double> get params => [

@@ -160,6 +160,12 @@ class ShaderEffect {
   /// medallion fills the middle of the rect and the rest holds its glow.
   static const mark = 'mark';
 
+  /// A small line-art emblem drawn by `emblem.frag`: [params] x picks it (0 cup,
+  /// 1 rose, 2 reed flute, 3 jug, 4 book, 5 crown, 6 bird, 7 lute, 8 staff, 9
+  /// quill). Colours: [rimArgb] the line, [armArgb] its glow. The icon fills the
+  /// middle of the rect and the rest holds the glow.
+  static const emblem = 'emblem';
+
   /// A small eight-pointed progress seal drawn by `seal.frag`; [params] x is 0
   /// upcoming (dim), 1 current (bright, breathing light), 2 done (a tick).
   /// Colours: [rimArgb] gold, [armArgb] teal, [coreArgb] the dark.
@@ -238,6 +244,9 @@ class EffectShader {
   /// `pageturn.frag`, the page curl over a snapshot (see
   /// `SceneTransitionType.pageTurn`).
   static final pageTurn = EffectShader._('pageturn.frag');
+
+  /// `emblem.frag`.
+  static final emblem = EffectShader._('emblem.frag');
 
   /// `mark.frag`.
   static final mark = EffectShader._('mark.frag');

@@ -443,6 +443,36 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('an EngineView with emblem 0 paints without error', (
+    tester,
+  ) async {
+    final w = World(width: 180, height: 320);
+    registerCoreComponents(w);
+    registerFlutterComponents(w);
+    final e = w.spawn();
+    w.componentsOf<Position>().set(e, Position(90, 160));
+    w.componentsOf<ShaderEffect>().set(
+      e,
+      ShaderEffect(
+        kind: ShaderEffect.emblem,
+        width: 80,
+        height: 100,
+        params: const [1],
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: EngineView(
+          world: w,
+          atlasRegistry: AtlasRegistry(),
+          camera: Camera(),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(tester.takeException(), isNull);
+  });
+
   test('params survive a JSON round trip', () {
     final fx = ShaderEffect(
       kind: ShaderEffect.portrait,
@@ -465,6 +495,7 @@ void main() {
       'curtain',
       'dust',
       'mark',
+      'emblem',
     ]) {
       expect(File('shaders/$f.frag').existsSync(), isTrue);
       expect(pubspec, contains('shaders/$f.frag'));

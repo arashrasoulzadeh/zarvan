@@ -137,6 +137,8 @@ class Rig {
     void Function(QuizProgress)? setup,
     QuizBank? bank,
     QuizPortraits? portraits,
+    bool transitions = false,
+    String transitionKind = 'ink',
   }) async {
     final kv = MemoryKeyValueStore();
     final session = await QuizSession.open(kv);
@@ -160,6 +162,8 @@ class Rig {
         return outcome;
       },
       portraits: portraits,
+      transitions: transitions,
+      transitionKind: transitionKind,
       now: () => now ?? DateTime(2026, 11, 17, 10),
     );
     gates[kit] = gate;
@@ -739,32 +743,146 @@ void main() {
       },
     );
 
-    test(
-      'with portraits the shelf shows them instead of the diamonds',
-      () async {
-        int sprites(Rig r) => r.world.componentsOf<eng.Sprite>().length;
-        final plain = await Rig.make(bank: makeMultiBank());
-        await plain.open(QuizHomeScreen(plain.kit));
-        expect(sprites(plain), 0);
-        final shapesPlain = plain.world.componentsOf<Shape>().length;
+    test('with portraits the shelf draws each face with a shader', () async {
+      List<ShaderEffect> portraits(Rig r) {
+        final fx = r.world.componentsOf<ShaderEffect>();
+        return [
+          for (var i = 0; i < fx.length; i++)
+            if (fx.denseAt(i).kind == ShaderEffect.portrait) fx.denseAt(i),
+        ];
+      }
 
-        final r = await Rig.make(
-          bank: makeMultiBank(),
-          portraits: const QuizPortraits(
-            atlasId: 'portraits',
-            authors: {'a', 'b'},
+      final plain = await Rig.make(bank: makeMultiBank());
+      await plain.open(QuizHomeScreen(plain.kit));
+      expect(portraits(plain), isEmpty);
+      final shapesPlain = plain.world.componentsOf<Shape>().length;
+
+      final r = await Rig.make(
+        bank: makeMultiBank(),
+        portraits: const QuizPortraits({
+          'a': QuizPortraitStyle(beard: 22),
+          'b': QuizPortraitStyle(headwear: QuizHeadwear.scarf, woman: true),
+        }),
+      );
+      await r.open(QuizHomeScreen(r.kit));
+      final drawn = portraits(r);
+      expect(drawn.length, 2, reason: 'a and b have one, c does not');
+      expect(
+        drawn.map((e) => e.params).toSet(),
+        {
+          [22.0, 1.0, 0.0, 0.0],
+          [0.0, 1.0, 6.0, 8.0],
+        },
+        reason: 'the style reaches the shader as numbers',
+      );
+      expect(r.world.componentsOf<eng.Sprite>().length, 0, reason: 'no images');
+      expect(
+        r.world.componentsOf<Shape>().length,
+        shapesPlain - 4,
+        reason: 'two diamonds less for each of the two portraits',
+      );
+    });
+
+    test(
+      'starting a game plays the veil: it covers the menu, then lifts off the game',
+      () async {
+        ShaderEffect? veil(Rig r) {
+          final fx = r.world.componentsOf<ShaderEffect>();
+          for (var i = 0; i < fx.length; i++) {
+            final k = fx.denseAt(i).kind;
+            if (k == ShaderEffect.ink || k == ShaderEffect.veil) {
+              return fx.denseAt(i);
+            }
+          }
+          return null;
+        }
+
+        final r = await Rig.make(bank: makeMultiBank(), transitions: true);
+        await r.open(QuizHomeScreen(r.kit));
+        expect(veil(r), isNull);
+        r.tap('Endless');
+        expect(
+          r.loaded,
+          isNull,
+          reason: 'the game waits for the veil to cover',
+        );
+        expect(veil(r), isNotNull);
+        r.run(0.3);
+        final half = veil(r)!.params[0];
+        expect(half, greaterThan(0.3));
+        expect(half, lessThan(1));
+        r.tap('Race');
+        expect(
+          r.kit.session.round!.mode,
+          isA<EndlessMode>(),
+          reason: 'taps are ignored under the veil',
+        );
+        r.run(0.5);
+        expect(r.loaded, isA<QuizGameScreen>());
+
+        final next = await Rig.make(bank: makeMultiBank(), transitions: true);
+        next.kit.veilPending = true;
+        next.kit.session.begin(
+          QuizRound.endless(
+            next.kit.factory,
+            const EndlessMode(),
+            seedBase: 's',
           ),
         );
-        await r.open(QuizHomeScreen(r.kit));
-        expect(sprites(r), 2, reason: 'a and b have one, c does not');
-        final first = r.world.componentsOf<eng.Sprite>().denseAt(0);
-        expect(first.atlasId, 'portraits');
-        expect(['a', 'b'], contains(first.region));
-        expect(
-          r.world.componentsOf<Shape>().length,
-          shapesPlain - 4,
-          reason: 'two diamonds less for each of the two portraits',
-        );
+        await next.open(QuizGameScreen(next.kit));
+        expect(veil(next)!.params[0], 1, reason: 'the game starts covered');
+        next.run(0.3);
+        expect(veil(next)!.params[0], lessThan(0.7));
+        next.run(1);
+        expect(veil(next), isNull, reason: 'and the veil is gone');
+      },
+    );
+
+    test(
+      'going back from the game to the menu has a transition too, in either style',
+      () async {
+        for (final kind in [ShaderEffect.ink, ShaderEffect.veil]) {
+          final r = await Rig.make(
+            bank: makeMultiBank(),
+            transitions: true,
+            transitionKind: kind,
+          );
+          r.kit.session.begin(
+            QuizRound.endless(
+              r.kit.factory,
+              const EndlessMode(),
+              seedBase: 's',
+            ),
+          );
+          await r.open(QuizGameScreen(r.kit));
+          r.run(1);
+          r.tap('←');
+          expect(r.loaded, isNull, reason: '$kind: waits for the cover');
+          final fx = r.world.componentsOf<ShaderEffect>();
+          final kinds = [
+            for (var i = 0; i < fx.length; i++) fx.denseAt(i).kind,
+          ];
+          expect(kinds, contains(kind), reason: 'drawn with the chosen shader');
+          r.run(1);
+          expect(r.loaded, isA<QuizHomeScreen>());
+          expect(r.kit.veilPending, isTrue);
+
+          final home = await Rig.make(
+            bank: makeMultiBank(),
+            transitions: true,
+            transitionKind: kind,
+          );
+          home.kit.veilPending = true;
+          await home.open(QuizHomeScreen(home.kit));
+          final hfx = home.world.componentsOf<ShaderEffect>();
+          expect(
+            [for (var i = 0; i < hfx.length; i++) hfx.denseAt(i).kind],
+            contains(kind),
+            reason: 'the menu starts covered',
+          );
+          home.run(1);
+          expect(home.kit.veilPending, isFalse);
+        }
       },
     );
 

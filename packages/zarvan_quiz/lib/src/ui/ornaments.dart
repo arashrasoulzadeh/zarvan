@@ -2,9 +2,8 @@ import 'dart:math' as math;
 
 import 'package:zarvan_core/zarvan_core.dart' show EntityId, Position, UiRect;
 import 'package:zarvan_flutter/zarvan_flutter.dart'
-    show Shape, ShapeKind, ShaderEffect, Sprite, UiNode;
+    show Shape, ShapeKind, ShaderEffect, UiNode;
 
-import 'quiz_kit.dart';
 import 'quiz_screen.dart';
 
 /// Something that pulses or twinkles: [shape]'s alpha moves between [low] and
@@ -35,7 +34,8 @@ class Twinkle {
 /// gradients, blur or images, which the engine does not draw.
 extension QuizOrnaments on QuizScreen {
   /// The line portrait of [authorId] centred at ([x], [y]), [width] wide and
-  /// tinted [color], or null when the game gave no portrait for them.
+  /// drawn in [color] by the `portrait` shader, or null when the game gave no
+  /// style for them.
   EntityId? portraitAt(
     String authorId,
     double x,
@@ -44,20 +44,19 @@ extension QuizOrnaments on QuizScreen {
     int color, {
     int z = 7,
   }) {
-    final portraits = kit.portraits;
-    if (portraits == null || !portraits.has(authorId)) return null;
+    final style = kit.portraits?.styles[authorId];
+    if (style == null) return null;
     final id = world.spawn();
     world.componentsOf<Position>().set(id, Position(x, y + yShift));
-    final scale = width / QuizPortraits.regionWidth;
-    world.componentsOf<Sprite>().set(
+    world.componentsOf<ShaderEffect>().set(
       id,
-      Sprite(
-        portraits.atlasId,
-        authorId,
-        scaleX: scale,
-        scaleY: scale,
+      ShaderEffect(
+        kind: ShaderEffect.portrait,
+        width: width,
+        height: width * 1.25,
         zIndex: z,
-        tintArgb: color,
+        rimArgb: color,
+        params: style.params,
       ),
     );
     return id;

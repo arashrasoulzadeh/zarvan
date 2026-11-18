@@ -3,12 +3,13 @@ import 'dart:ui' show Offset;
 import 'package:zarvan_core/zarvan_core_quiz.dart'
     show QuizRound, defaultBlankMarker;
 import 'package:zarvan_core/zarvan_core.dart'
-    show EntityId, GameState, UiRect, World;
+    show EntityId, GameState, Position, UiRect, World;
 import 'package:zarvan_flutter/zarvan_flutter.dart' as eng;
 import 'package:zarvan_flutter/zarvan_flutter.dart'
     show
         Scene,
         SceneController,
+        ShaderEffect,
         Shape,
         ShapeKind,
         TextAlignment,
@@ -137,6 +138,7 @@ abstract class QuizScreen extends Scene {
 
   @override
   void handleTap(World world, SceneController scenes, Offset worldPosition) {
+    if (veiled) return;
     ui.tap(worldPosition.dx, worldPosition.dy);
   }
 
@@ -264,9 +266,102 @@ abstract class QuizScreen extends Scene {
   /// Moves on to [next], dropping this screen.
   void goTo(Scene next) => scenes.loadScene(next);
 
-  /// Starts [round] on the session and opens the game screen.
+  /// Starts [round] on the session and opens the game screen, under the veil
+  /// when the kit has transitions on.
   void play(QuizRound round, Scene Function() gameScreen) {
     kit.session.begin(round);
-    goTo(gameScreen());
+    navigate(gameScreen());
   }
+
+  // The transition veil: a full-screen shader that spreads from a point until
+  // it covers the screen, then the next scene loads and its own veil shrinks
+  // away. Driven from [update].
+  static const veilSeconds = 0.6;
+  EntityId? _veil;
+  double _veilProgress = 0;
+  double _veilDirection = 0;
+  Scene? _veilNext;
+
+  /// Moves on to [next] under the transition when the kit has them on, or at
+  /// once when not.
+  void navigate(Scene next) {
+    if (kit.transitions) {
+      veilTo(next);
+    } else {
+      goTo(next);
+    }
+  }
+
+  /// Whether a transition is running (taps are ignored meanwhile).
+  bool get veiled => _veilDirection != 0;
+
+  EntityId _spawnVeil(double progress, double x, double y) {
+    final id = world.spawn();
+    world.componentsOf<Position>().set(
+      id,
+      Position(worldWidth / 2, world.height / 2),
+    );
+    world.componentsOf<ShaderEffect>().set(
+      id,
+      ShaderEffect(
+        kind: kit.transitionKind,
+        width: worldWidth,
+        height: world.height,
+        zIndex: 100,
+        rimArgb: 0xFFE3C477,
+        armArgb: kit.transitionKind == ShaderEffect.ink
+            ? 0xFFE8A0AA
+            : theme.accent,
+        coreArgb: kit.transitionKind == ShaderEffect.ink
+            ? 0xFF0C1A30
+            : 0xFF0B2420,
+        params: [progress, x, y],
+      ),
+    );
+    return id;
+  }
+
+  /// Loads [next] once a veil spread from ([x], [y]) (fractions of the
+  /// screen) has covered this screen.
+  void veilTo(Scene next, {double x = 0.5, double y = 0.5}) {
+    if (veiled) return;
+    kit.veilPending = true;
+    _veilNext = next;
+    _veilProgress = 0;
+    _veilDirection = 1;
+    _veil = _spawnVeil(0, x, y);
+  }
+
+  /// Starts this screen covered and lets the veil shrink away from the
+  /// middle: the other half of [veilTo].
+  void openVeil({double x = 0.5, double y = 0.5}) {
+    if (!kit.transitions || !kit.veilPending) return;
+    kit.veilPending = false;
+    _veilProgress = 1;
+    _veilDirection = -1;
+    _veil = _spawnVeil(1, x, y);
+  }
+
+  void _stepVeil(double dt) {
+    if (_veilDirection == 0) return;
+    _veilProgress += _veilDirection * dt / veilSeconds;
+    final done = _veilDirection > 0 ? _veilProgress >= 1 : _veilProgress <= 0;
+    _veilProgress = _veilProgress.clamp(0.0, 1.0);
+    final fx = world.componentsOf<ShaderEffect>().get(_veil!);
+    if (fx != null) fx.params = [_veilProgress, fx.params[1], fx.params[2]];
+    if (!done) return;
+    final next = _veilNext;
+    final closing = _veilDirection > 0;
+    _veilDirection = 0;
+    if (closing && next != null) {
+      _veilNext = null;
+      goTo(next);
+    } else if (_veil != null) {
+      world.destroy(_veil!);
+      _veil = null;
+    }
+  }
+
+  @override
+  void update(double dt, World world) => _stepVeil(dt);
 }

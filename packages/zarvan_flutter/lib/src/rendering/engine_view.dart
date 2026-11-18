@@ -3648,8 +3648,16 @@ class _EnginePainter extends CustomPainter {
       final isOrb = fx.kind == ShaderEffect.orb;
       final isAurora = fx.kind == ShaderEffect.aurora;
       final isOrnate = fx.kind == ShaderEffect.ornate;
+      final isPortrait = fx.kind == ShaderEffect.portrait;
+      final isVeil =
+          fx.kind == ShaderEffect.veil || fx.kind == ShaderEffect.ink;
       final isPicture =
-          fx.kind == ShaderEffect.portal || isOrb || isAurora || isOrnate;
+          fx.kind == ShaderEffect.portal ||
+          isOrb ||
+          isAurora ||
+          isOrnate ||
+          isPortrait ||
+          isVeil;
       if (pos == null || (!isPicture && !isGlow)) continue;
       final center = camera.worldToScreen(
         pos.x,
@@ -3670,6 +3678,12 @@ class _EnginePainter extends CustomPainter {
                       ? EffectShader.aurora
                       : isOrnate
                       ? EffectShader.ornate
+                      : isPortrait
+                      ? EffectShader.portrait
+                      : isVeil
+                      ? (fx.kind == ShaderEffect.ink
+                            ? EffectShader.ink
+                            : EffectShader.veil)
                       : EffectShader.portal)
                   .shader();
           if (shader == null) return;
@@ -3716,7 +3730,11 @@ class _EnginePainter extends CustomPainter {
                 ..setFloat(k++, col.b)
                 ..setFloat(k++, col.a);
             }
-            if (isOrnate) {
+            if (isPortrait || isVeil) {
+              for (var n = 0; n < 4; n++) {
+                shader.setFloat(k++, n < fx.params.length ? fx.params[n] : 0);
+              }
+            } else if (isOrnate) {
               shader
                 ..setFloat(k++, fx.border * camera.zoom)
                 ..setFloat(k++, fx.detail * camera.zoom)
@@ -3731,7 +3749,7 @@ class _EnginePainter extends CustomPainter {
                 ..setFloat(k++, fx.border);
             }
           }
-          if (!isAurora && !isOrnate) {
+          if (!isAurora && !isOrnate && !isPortrait && !isVeil) {
             shader
               ..setImageSampler(0, first ?? blankShaderImage())
               ..setImageSampler(1, second ?? first ?? blankShaderImage());

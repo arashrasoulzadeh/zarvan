@@ -17,6 +17,11 @@ class ShaderEffect {
   /// Which shader draws it; unknown kinds draw nothing.
   String kind;
 
+  /// Up to four numbers the kind reads (`portrait`: beard length, beard
+  /// spread, headwear, flags; `veil`: progress, origin x, origin y), set
+  /// each frame by the game. Missing ones are 0.
+  List<double> params;
+
   /// Size of the rect the effect fills, in world units.
   double width;
   double height;
@@ -82,6 +87,7 @@ class ShaderEffect {
     this.rimArgb = 0xFFB5400C,
     this.armArgb = 0xFFFFC53D,
     this.coreArgb = 0xFFFFF1B8,
+    this.params = const [],
   });
 
   /// The portal doorway.
@@ -110,6 +116,23 @@ class ShaderEffect {
   /// edge darkening; [saturation] 0..1 depth of the band's inner scallops.
   static const ornate = 'ornate';
 
+  /// A minimal line portrait of a poet, drawn by `portrait.frag` with
+  /// distance-field strokes. [rimArgb] is the line colour; [params] pick the
+  /// beard, headwear and extras (see the shader).
+  static const portrait = 'portrait';
+
+  /// A screen transition drawn by `veil.frag`: a swirling veil with a
+  /// gold-rimmed edge that spreads from a point ([params] = progress 0..1,
+  /// origin x, origin y, all but progress as fractions of the rect). Colours:
+  /// [rimArgb] the edge, [armArgb] the lattice, [coreArgb] the body.
+  static const veil = 'veil';
+
+  /// A poetic transition drawn by `ink.frag`: ink bleeds across the screen
+  /// from a point with gold-leaf dust at its wet edge, then faint gold script
+  /// shows in it while rose petals drift over. Same [params] as [veil].
+  /// Colours: [rimArgb] gold, [armArgb] petals, [coreArgb] the ink.
+  static const ink = 'ink';
+
   /// A band of light that sweeps across `images[0]` every [period] seconds,
   /// lighting only its opaque pixels: lay it over a button or banner, same rect.
   static const shine = 'shine';
@@ -131,6 +154,7 @@ class ShaderEffect {
     'rimArgb': rimArgb,
     'armArgb': armArgb,
     'coreArgb': coreArgb,
+    'params': params,
   };
 
   factory ShaderEffect.fromJson(Map<String, dynamic> json) => ShaderEffect(
@@ -150,6 +174,9 @@ class ShaderEffect {
     rimArgb: (json['rimArgb'] as num?)?.toInt() ?? 0xFFB5400C,
     armArgb: (json['armArgb'] as num?)?.toInt() ?? 0xFFFFC53D,
     coreArgb: (json['coreArgb'] as num?)?.toInt() ?? 0xFFFFF1B8,
+    params: ((json['params'] as List?) ?? const [])
+        .map((e) => (e as num).toDouble())
+        .toList(),
   );
 }
 
@@ -178,6 +205,15 @@ class EffectShader {
 
   /// `ornate.frag`.
   static final ornate = EffectShader._('ornate.frag');
+
+  /// `portrait.frag`.
+  static final portrait = EffectShader._('portrait.frag');
+
+  /// `veil.frag`.
+  static final veil = EffectShader._('veil.frag');
+
+  /// `ink.frag`.
+  static final ink = EffectShader._('ink.frag');
 
   final String _assetKey;
   ui.FragmentProgram? _program;

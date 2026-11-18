@@ -213,6 +213,111 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('an EngineView with a portrait paints without error', (
+    tester,
+  ) async {
+    final w = World(width: 180, height: 320);
+    registerCoreComponents(w);
+    registerFlutterComponents(w);
+    final e = w.spawn();
+    w.componentsOf<Position>().set(e, Position(90, 160));
+    w.componentsOf<ShaderEffect>().set(
+      e,
+      ShaderEffect(
+        kind: ShaderEffect.portrait,
+        width: 80,
+        height: 100,
+        params: const [22, 1, 0, 0],
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: EngineView(
+          world: w,
+          atlasRegistry: AtlasRegistry(),
+          camera: Camera(),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('an EngineView with a veil paints without error', (tester) async {
+    final w = World(width: 180, height: 320);
+    registerCoreComponents(w);
+    registerFlutterComponents(w);
+    final e = w.spawn();
+    w.componentsOf<Position>().set(e, Position(90, 160));
+    w.componentsOf<ShaderEffect>().set(
+      e,
+      ShaderEffect(
+        kind: ShaderEffect.veil,
+        width: 80,
+        height: 100,
+        params: const [0.5, 0.5, 0.5],
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: EngineView(
+          world: w,
+          atlasRegistry: AtlasRegistry(),
+          camera: Camera(),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('an EngineView with a ink paints without error', (tester) async {
+    final w = World(width: 180, height: 320);
+    registerCoreComponents(w);
+    registerFlutterComponents(w);
+    final e = w.spawn();
+    w.componentsOf<Position>().set(e, Position(90, 160));
+    w.componentsOf<ShaderEffect>().set(
+      e,
+      ShaderEffect(
+        kind: ShaderEffect.ink,
+        width: 80,
+        height: 100,
+        params: const [0.5, 0.5, 0.5],
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: EngineView(
+          world: w,
+          atlasRegistry: AtlasRegistry(),
+          camera: Camera(),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(tester.takeException(), isNull);
+  });
+
+  test('params survive a JSON round trip', () {
+    final fx = ShaderEffect(
+      kind: ShaderEffect.portrait,
+      width: 1,
+      height: 1,
+      params: const [30, 0.8, 2, 4],
+    );
+    expect(ShaderEffect.fromJson(fx.toJson()).params, [30, 0.8, 2, 4]);
+    expect(ShaderEffect(width: 1, height: 1).params, isEmpty);
+  });
+
+  test('the portrait and veil shaders are bundled and listed', () {
+    final pubspec = File('pubspec.yaml').readAsStringSync();
+    for (final f in ['portrait', 'veil', 'ink']) {
+      expect(File('shaders/$f.frag').existsSync(), isTrue);
+      expect(pubspec, contains('shaders/$f.frag'));
+    }
+  });
+
   test('the ornate shader is bundled and listed in the pubspec', () {
     expect(File('shaders/ornate.frag').existsSync(), isTrue);
     expect(

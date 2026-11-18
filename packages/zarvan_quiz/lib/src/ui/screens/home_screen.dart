@@ -237,6 +237,7 @@ class QuizHomeScreen extends QuizScreen {
     );
     about.bg.shape!.alpha = 0;
     about.label.text!.colorArgb = theme.soft;
+    openVeil();
   }
 
   /// How many of the author's four stages have been passed.
@@ -332,6 +333,7 @@ class QuizHomeScreen extends QuizScreen {
 
   @override
   void update(double dt, World world) {
+    super.update(dt, world);
     _time += dt;
     _medal.update(dt);
     for (final t in _twinkles) {

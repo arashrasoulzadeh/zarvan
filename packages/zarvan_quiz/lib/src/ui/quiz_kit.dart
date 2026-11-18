@@ -75,23 +75,73 @@ class QuizSettings {
   }
 }
 
-/// Line portraits of the authors, packed in one sprite sheet the game
-/// registers (as its packed atlas): the shelf card of an author with a
-/// region named after their id shows it in place of the plain diamond.
+/// What an author wears on their head in a portrait.
+enum QuizHeadwear {
+  /// A turban with a tail hanging at one side.
+  turbanTail,
+  turban,
+
+  /// A tall felt cap.
+  sikke,
+  skullCap,
+  headband,
+  dervishHat,
+
+  /// A scarf falling to the shoulders.
+  scarf,
+}
+
+/// How one author's line portrait looks: the engine's `portrait` shader
+/// draws the face, and these pick what varies between people.
+class QuizPortraitStyle {
+  const QuizPortraitStyle({
+    this.beard = 0,
+    this.beardSpread = 1,
+    this.headwear = QuizHeadwear.turbanTail,
+    this.closedEyes = false,
+    this.feather = false,
+    this.collar = false,
+    this.woman = false,
+  });
+
+  /// How far the beard hangs below the chin (0 for none).
+  final double beard;
+
+  /// How wide it flares.
+  final double beardSpread;
+
+  final QuizHeadwear headwear;
+  final bool closedEyes;
+
+  /// A quill on the cap.
+  final bool feather;
+
+  /// A V-shaped collar.
+  final bool collar;
+  final bool woman;
+
+  /// The numbers the shader reads (beard, spread, headwear, flags).
+  List<double> get params => [
+    beard,
+    beardSpread,
+    headwear.index.toDouble(),
+    (closedEyes ? 1 : 0) +
+        (feather ? 2 : 0) +
+        (collar ? 4 : 0) +
+        (woman ? 8 : 0),
+  ];
+}
+
+/// Line portraits of the authors, drawn by the engine's `portrait` shader from
+/// a [QuizPortraitStyle] each: the shelf card of an author with a style shows
+/// their face in place of the plain diamond. No image files are involved.
 class QuizPortraits {
-  const QuizPortraits({required this.atlasId, required this.authors});
+  const QuizPortraits(this.styles);
 
-  /// The id the sheet is registered under.
-  final String atlasId;
+  /// The style of each author that has a portrait, by author id.
+  final Map<String, QuizPortraitStyle> styles;
 
-  /// The author ids that have a region in the sheet.
-  final Set<String> authors;
-
-  /// Size of one region, in pixels (all are the same).
-  static const regionWidth = 160.0;
-  static const regionHeight = 200.0;
-
-  bool has(String authorId) => authors.contains(authorId);
+  bool has(String authorId) => styles.containsKey(authorId);
 }
 
 /// What the quiz screens need from the app for rewarded ads, without the
@@ -132,6 +182,8 @@ class QuizKit {
     this.shareText,
     this.stageMode = const StageMode(),
     this.portraits,
+    this.transitions = true,
+    this.transitionKind = 'ink',
     DateTime Function()? now,
   }) : now = now ?? DateTime.now;
 
@@ -154,6 +206,17 @@ class QuizKit {
 
   /// The authors' portraits, or null for none.
   final QuizPortraits? portraits;
+
+  /// Whether leaving the menu for a game plays the veil transition.
+  final bool transitions;
+
+  /// Which engine shader draws the transition: the poetic `ink` (default) or
+  /// the plain `veil` (the names of the engine's `ShaderEffect` kinds).
+  final String transitionKind;
+
+  /// Set when a screen is leaving under a transition, so the next one knows
+  /// to lift it instead of appearing bare.
+  bool veilPending = false;
   final DateTime Function() now;
 
   QuizBank get bank => factory.bank;

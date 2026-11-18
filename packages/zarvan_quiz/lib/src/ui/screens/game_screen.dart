@@ -65,7 +65,7 @@ class QuizGameScreen extends QuizScreen {
     spread(0.08);
     titleBar(
       kit.strings.appName,
-      onBack: () => goTo(QuizHomeScreen(kit)),
+      onBack: () => navigate(QuizHomeScreen(kit)),
       showTitle: false,
     );
     _hud = [
@@ -79,10 +79,12 @@ class QuizGameScreen extends QuizScreen {
     ];
     _redraw();
     _refreshHud();
+    openVeil();
   }
 
   @override
   void update(double dt, World world) {
+    super.update(dt, world);
     _time += dt;
     for (final t in _twinkles) {
       t.apply(_time);

@@ -320,7 +320,7 @@ class QuizHomeScreen extends QuizScreen {
       cx,
       y + 34,
       44,
-      (current ? 0xFF : 0xE0) << 24 | (theme.accent & 0xFFFFFF),
+      current ? theme.ink : (0xE0 << 24 | (theme.accent & 0xFFFFFF)),
     );
     if (portrait == null) {
       diamondAt(cx, y + 36, 30, theme.accent, stroke: 1.2, alpha: 0.3);

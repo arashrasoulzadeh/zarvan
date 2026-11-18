@@ -128,7 +128,7 @@ extension QuizOrnaments on QuizScreen {
 
   /// A GPU night sky (nebula, aurora, stars, rising dust) behind the whole
   /// screen, in the theme's colours. Drawn by the engine's `aurora` shader.
-  void nightSky({double speed = 1}) {
+  void nightSky({double speed = 1, int? sky, int? nebula, int? star}) {
     final id = world.spawn();
     world.componentsOf<Position>().set(
       id,
@@ -142,11 +142,41 @@ extension QuizOrnaments on QuizScreen {
         height: world.height * 1.6,
         zIndex: -9,
         speed: speed,
-        rimArgb: theme.background,
-        armArgb: theme.accent,
-        coreArgb: theme.ink,
+        rimArgb: sky ?? theme.background,
+        armArgb: nebula ?? theme.accent,
+        coreArgb: star ?? theme.ink,
       ),
     );
+  }
+
+  /// Sparse drifting motes of light around [r] (and a little beyond, by
+  /// [margin]), drawn by the engine's `dust` shader.
+  EntityId dustAround(
+    UiRect r, {
+    double margin = 40,
+    double density = 1,
+    int? color,
+    int? accent,
+    int z = 9,
+  }) {
+    final id = world.spawn();
+    world.componentsOf<Position>().set(
+      id,
+      Position(r.centerX, r.centerY + yShift),
+    );
+    world.componentsOf<ShaderEffect>().set(
+      id,
+      ShaderEffect(
+        kind: ShaderEffect.dust,
+        width: r.width + 2 * margin,
+        height: r.height + 2 * margin,
+        zIndex: z,
+        rimArgb: color ?? 0xFFFFD98A,
+        armArgb: accent ?? 0xFFFFF4DC,
+        params: [density],
+      ),
+    );
+    return id;
   }
 
   /// A soft additive light of [color] centred in [rect] (bleeding past it),

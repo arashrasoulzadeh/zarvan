@@ -147,6 +147,12 @@ class ShaderEffect {
   /// velvet.
   static const curtain = 'curtain';
 
+  /// Drifting motes of light drawn by `dust.frag`: sparse fireflies / gold dust
+  /// that rise and sway with a soft halo and a twinkle, over a transparent
+  /// rect. [params] x is how many (default 1, up to 2). Colours: [rimArgb] the
+  /// motes, [armArgb] an occasional second kind.
+  static const dust = 'dust';
+
   /// A small eight-pointed progress seal drawn by `seal.frag`; [params] x is 0
   /// upcoming (dim), 1 current (bright, breathing light), 2 done (a tick).
   /// Colours: [rimArgb] gold, [armArgb] teal, [coreArgb] the dark.
@@ -225,6 +231,9 @@ class EffectShader {
   /// `pageturn.frag`, the page curl over a snapshot (see
   /// `SceneTransitionType.pageTurn`).
   static final pageTurn = EffectShader._('pageturn.frag');
+
+  /// `dust.frag`.
+  static final dust = EffectShader._('dust.frag');
 
   /// `ripple.frag`, rings spreading over a snapshot like water (see
   /// `SceneTransitionType.ripple`).

@@ -380,8 +380,42 @@ void main() {
       final fx = r.world.componentsOf<ShaderEffect>();
       final kinds = [for (var i = 0; i < fx.length; i++) fx.denseAt(i).kind];
       expect(kinds, contains(ShaderEffect.aurora));
-      expect(kinds.where((k) => k == ShaderEffect.glow), hasLength(1));
+      // Three coloured lights in the sky, the gold one behind the card, and the
+      // pen of light that rides on the writing.
+      expect(kinds.where((k) => k == ShaderEffect.glow), hasLength(5));
+      expect(kinds.where((k) => k == ShaderEffect.dust), hasLength(1));
     });
+
+    test(
+      'a pen of light follows the word being written, then goes out',
+      () async {
+        final r = await stage();
+        final fx = r.world.componentsOf<ShaderEffect>();
+        final pos = r.world.componentsOf<Position>();
+        Position? pen() {
+          for (var i = 0; i < fx.length; i++) {
+            final e = fx.denseAt(i);
+            if (e.kind == ShaderEffect.glow && e.coreArgb == 0xFFFFE08A) {
+              return pos.get(fx.entityAt(i));
+            }
+          }
+          return null;
+        }
+
+        r.run(0.4);
+        expect(
+          pen()!.x,
+          greaterThan(0),
+          reason: 'it sits on a word being written',
+        );
+        r.run(2);
+        expect(
+          pen()!.x,
+          lessThan(0),
+          reason: 'and is out once the poem is written',
+        );
+      },
+    );
 
     test('the poem is written word by word, then stays', () async {
       final r = await stage();
@@ -500,10 +534,10 @@ void main() {
         ].where((k) => k == ShaderEffect.glow).length;
       }
 
-      expect(glows(), 1);
+      expect(glows(), 5);
       r.tap(r.optionRight);
       r.run(0.1);
-      expect(glows(), 2, reason: 'the card and the right option both glow');
+      expect(glows(), 6, reason: 'the right option glows as well');
     });
 
     test('an answer throws a burst of sparks that then fades away', () async {

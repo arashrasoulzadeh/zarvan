@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:zarvan_core/zarvan_core.dart' show UiRect, World;
+import 'package:zarvan_core/zarvan_core.dart' show Position, UiRect, World;
 import 'package:zarvan_core/zarvan_core_quiz.dart';
 import 'package:zarvan_flutter/zarvan_flutter.dart'
     show UiButton, UiNode, measureText;
@@ -36,6 +36,7 @@ class QuizGameScreen extends QuizScreen {
   String? _revealFor;
   double _revealStart = 0;
   final List<_Word> _words = [];
+  Position? _penPos;
   final List<_Ring> _rings = [];
   UiButton? _shaking;
   double _shakeAge = 0;
@@ -60,7 +61,12 @@ class QuizGameScreen extends QuizScreen {
 
   @override
   void build() {
-    nightSky();
+    // A deeper, richer night than the menu's: indigo sky, teal nebula, warm
+    // stars, with a violet light from one side and a gold one low down.
+    nightSky(sky: 0xFF080F22, nebula: 0xFF2F8F99, star: 0xFFFFE8B5);
+    lightAt(UiRect(-90, 20, 260, 330), 0xFF7A5AC8, intensity: 0.38, z: 2);
+    lightAt(UiRect(200, 380, 260, 330), 0xFF2FB8A8, intensity: 0.22, z: 2);
+    lightAt(UiRect(60, 560, 240, 120), 0xFFE9B04F, intensity: 0.24, z: 2);
     _twinkles.addAll(sparkles(14));
     spread(0.08);
     titleBar(
@@ -77,6 +83,12 @@ class QuizGameScreen extends QuizScreen {
           size: _hudSize,
         ),
     ];
+    // Each number in its own colour: score gold, streak ember, the clock or
+    // lives cool, coins cream.
+    const hudColors = [0xFFFFD98A, 0xFFFFA45C, 0xFF9FE3D6, 0xFFF3E6C4];
+    for (var i = 0; i < 4; i++) {
+      _hud[i].text!.colorArgb = hudColors[i];
+    }
     _redraw();
     _refreshHud();
     openVeil();
@@ -243,11 +255,21 @@ class QuizGameScreen extends QuizScreen {
     _view.addId(
       lightAt(
         cardRect,
-        answered ? theme.correct : theme.accent,
-        intensity: answered ? 0.5 : 0.3,
+        answered ? theme.correct : 0xFFE9B04F,
+        intensity: answered ? 0.6 : 0.5,
         z: 3,
       ),
     );
+    // Gold dust drifting around the card, and a pen of light for the writing.
+    _view.addId(dustAround(cardRect, margin: 46, density: 1.1));
+    final pen = lightAt(
+      UiRect(-200, -200, 26, 26),
+      0xFFFFE08A,
+      intensity: 1.0,
+      z: 10,
+    );
+    _view.addId(pen);
+    _penPos = world.componentsOf<Position>().get(pen);
     // The card is parchment in an ornate frame, both drawn by one shader.
     _view.addId(
       ornateFrame(
@@ -539,17 +561,31 @@ class QuizGameScreen extends QuizScreen {
   /// turns from the accent gold to the ink colour, with a few sparks as it lands.
   void _stepWords() {
     final t = _time - _revealStart;
+    _Word? writing;
     for (final w in _words) {
       final k = ((t - w.delay) / _wordFade).clamp(0.0, 1.0);
       if (k > 0 && !w.started) {
         w.started = true;
-        _burst(w.node.pos.x, w.y, theme.accent, 3);
+        _burst(w.node.pos.x, w.y, 0xFFFFD98A, 4);
       }
       final ease = 1 - math.pow(1 - k, 3).toDouble();
       w.node.text!
         ..alpha = ease
         ..colorArgb = _mix(theme.accent, w.color, ease);
       w.node.pos.y = w.y + (1 - ease) * 7;
+      if (k > 0 && k < 1 && (writing == null || w.delay > writing.delay)) {
+        writing = w;
+      }
+    }
+    // The pen of light rides on the word being written, then goes out.
+    final pen = _penPos;
+    if (pen != null) {
+      if (writing != null) {
+        pen.x = writing.node.pos.x;
+        pen.y = writing.node.pos.y;
+      } else {
+        pen.x = -500;
+      }
     }
   }
 

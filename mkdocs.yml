@@ -48,7 +48,7 @@ theme:
         name: Switch to dark mode
 
 extra_css:
-  - stylesheets/zarvan.css?v=9
+  - stylesheets/zarvan.css?v=10
 
 extra_javascript:
   - javascripts/rtl.js
@@ -157,7 +157,8 @@ nav:
       - Procedural generation: concepts/procedural-generation.md
       - AI trees and state machines: concepts/ai.md
       - Tweens and particles: concepts/effects.md
-      - Cinematics and transitions: concepts/cinematics.md
+      - Cinematics and scene transitions: concepts/cinematics.md
+      - Transitions gallery: concepts/transitions.md
       - Performance: concepts/performance.md
       - Analytics and error reporting: concepts/analytics-and-errors.md
       - The agent API: concepts/agent-api.md

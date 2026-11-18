@@ -37,12 +37,14 @@ Built-in steps: `WaitStep`, `CallbackStep`, `TweenStep`, `MoveCameraStep`, `Foll
 
 ## Scene transitions
 
+See the [transitions gallery](transitions.md) for a sample of every type.
+
 `GameRunner` swaps scenes with `SceneController.loadSceneWithTransition(next, config)`. A transition plays in two
 phases of `duration` seconds each: cover the outgoing scene, swap, reveal the new one.
 
 ```dart
 const config = SceneTransitionConfig(
-  type: SceneTransitionType.fade,   // fade | iris | crossfade | slideLeft/Right/Up/Down | pixelDissolve
+  type: SceneTransitionType.fade,   // fade | iris | crossfade | slideLeft/Right/Up/Down | pixelDissolve | portal | pageTurn | lanterns | ripple
   duration: 0.6,
   easing: EasingType.easeInOutQuad,
   fadeColorArgb: 0xFF000000,        // the colour a fade goes through

@@ -53,7 +53,12 @@ class QuizGameScreen extends QuizScreen {
   void build() {
     nightSky();
     _twinkles.addAll(sparkles(14));
-    titleBar(kit.strings.appName, onBack: () => goTo(QuizHomeScreen(kit)));
+    spread(0.08);
+    titleBar(
+      kit.strings.appName,
+      onBack: () => goTo(QuizHomeScreen(kit)),
+      showTitle: false,
+    );
     _hud = [
       for (var i = 0; i < 4; i++)
         label(
@@ -163,7 +168,7 @@ class QuizGameScreen extends QuizScreen {
         sizes.fold<double>(0, (a, z) => a + z.height) +
         gap * (lines.length - 1);
     final cardTop = 104.0;
-    spread(0.15);
+    spread(0.2);
     final cardHeight = inner + 32;
     _view.addNode(
       box(
@@ -285,7 +290,7 @@ class QuizGameScreen extends QuizScreen {
     }
 
     // The four options.
-    spread(0.45);
+    spread(0.4);
     final optionShift = yShift;
     var oy = cardTop + cardHeight + 18;
     _optionRects.clear();
@@ -317,7 +322,7 @@ class QuizGameScreen extends QuizScreen {
 
     // After an answer: the author and Next. Before: the hint.
     final bottom = QuizScreen.worldHeight - 68;
-    spread(1);
+    spread(0.85);
     if (answered) {
       final item = kit.bank.byId(q.itemId);
       final author = item?.author == null

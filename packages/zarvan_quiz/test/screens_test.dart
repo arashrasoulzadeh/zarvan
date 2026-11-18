@@ -588,7 +588,7 @@ void main() {
         final tall = await Rig.make(bank: makeMultiBank())
           ..worldHeight = 780;
         await tall.open(QuizHomeScreen(tall.kit));
-        expect(aboutY(tall) - aboutY(short), closeTo(140, 1));
+        expect(aboutY(tall) - aboutY(short), closeTo(119, 1));
       },
     );
 
@@ -711,7 +711,7 @@ void main() {
         final fx = r.world.componentsOf<ShaderEffect>();
         final kinds = [for (var i = 0; i < fx.length; i++) fx.denseAt(i).kind];
         expect(kinds.where((k) => k == ShaderEffect.aurora), hasLength(1));
-        expect(kinds.where((k) => k == ShaderEffect.glow), hasLength(4));
+        expect(kinds.where((k) => k == ShaderEffect.glow), hasLength(3));
         final sky = [
           for (var i = 0; i < fx.length; i++) fx.denseAt(i),
         ].firstWhere((e) => e.kind == ShaderEffect.aurora);
@@ -770,7 +770,7 @@ void main() {
           reason: 'but cannot be pressed while it turns',
         );
         final fx = r.world.componentsOf<ShaderEffect>();
-        expect(fx.length, 6, reason: 'the medal brings its own light');
+        expect(fx.length, 5, reason: 'the medal brings its own light');
         r.run(0.3);
         final mid = r.world.componentsOf<BackdropBlur>().denseAt(0).sigma;
         expect(mid, greaterThan(0));
@@ -818,25 +818,15 @@ void main() {
       },
     );
 
-    test(
-      'the reward button shows only with an ad ready and pays 15 coins when watched',
-      () async {
-        final none = await Rig.make();
-        await none.open(QuizHomeScreen(none.kit));
-        expect(none.has('15 coins for an ad'), isFalse);
-        final r = await Rig.make(ads: true);
-        await r.open(QuizHomeScreen(r.kit));
-        r.tap('15 coins for an ad');
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-        expect(r.kit.session.progress.coins, 75);
-        expect(r.ads.shown, ['coins']);
-        final skip = await Rig.make(ads: true, earns: false);
-        await skip.open(QuizHomeScreen(skip.kit));
-        skip.tap('15 coins for an ad');
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-        expect(skip.kit.session.progress.coins, 60);
-      },
-    );
+    test('the home has no ad button and no title on top', () async {
+      final r = await Rig.make(ads: true);
+      await r.open(QuizHomeScreen(r.kit));
+      expect(r.has('15 coins for an ad'), isFalse);
+      expect(r.has('Shaer'), isFalse);
+      final g = await Rig.make();
+      await g.open(QuizGameScreen(g.kit));
+      expect(g.has('Shaer'), isFalse);
+    });
 
     test(
       'stages: later ones are locked with the hint until the one before is passed',

@@ -47,16 +47,9 @@ class QuizHomeScreen extends QuizScreen {
     nightSky();
     _twinkles.addAll(sparkles(16));
 
-    // Top bar: coins, the title plaque, settings.
+    // Top bar: coins and settings.
+    spread(0.1);
     _coinPill(20, 20, '${s.number(progress.coins)} ${s.coins}');
-    lightAt(UiRect(110, 16, 140, 44), theme.accent, intensity: 0.35, z: 2);
-    _twinkles.add(
-      Twinkle(
-        plaque(UiRect(110, 16, 140, 44), s.appName, size: 28),
-        low: 0.08,
-        high: 0.3,
-      ),
-    );
     final gear = button(
       UiRect(QuizScreen.worldWidth - 64, 16, 44, 44),
       '⚙',
@@ -66,24 +59,8 @@ class QuizHomeScreen extends QuizScreen {
     );
     gear.bg.shape!.cornerRadius = 22;
 
-    final ads = kit.ads;
-    if (ads != null && ads.isRewardedReady) {
-      button(
-        UiRect(16, 62, 160, 24),
-        s.rewardAd,
-        () async {
-          if (await ads.showRewarded('coins')) {
-            await session.rewardForAd();
-            goTo(QuizHomeScreen(kit));
-          }
-        },
-        style: QuizButtonStyle.outline,
-        size: 11,
-      );
-    }
-
     // The wall: heading, progress, and the shelves of authors.
-    spread(0.08);
+    spread(0.3);
     const cx = QuizScreen.worldWidth / 2;
     line(24, 108, 100, theme.accent);
     line(
@@ -113,7 +90,6 @@ class QuizHomeScreen extends QuizScreen {
     );
 
     final next = nextStage(kit.bank, progress);
-    spread(0.2);
     const perRow = 5;
     const cardW = 58.0;
     const cardH = 104.0;
@@ -147,7 +123,7 @@ class QuizHomeScreen extends QuizScreen {
     }
 
     // Daily challenge banner, then Endless and Race side by side.
-    spread(0.55);
+    spread(0.6);
     final today = kit.today;
     final played = progress.hasPlayedDaily(today);
     final daily = UiRect(
@@ -251,7 +227,7 @@ class QuizHomeScreen extends QuizScreen {
       },
       size: 17,
     );
-    spread(1);
+    spread(0.85);
     final about = button(
       UiRect(cx - 50, 598, 100, 28),
       s.about,

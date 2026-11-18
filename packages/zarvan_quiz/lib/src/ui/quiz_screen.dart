@@ -229,8 +229,8 @@ abstract class QuizScreen extends Scene {
 
   /// The title bar: [text] centred at the top, and (when [onBack] is given) a
   /// back button on the reading-start side.
-  void titleBar(String text, {void Function()? onBack}) {
-    label(text, worldWidth / 2, 36, size: 22);
+  void titleBar(String text, {void Function()? onBack, bool showTitle = true}) {
+    if (showTitle) label(text, worldWidth / 2, 36, size: 22);
     if (onBack != null) {
       final x = rtl ? worldWidth - margin - 36 : margin;
       final b = button(

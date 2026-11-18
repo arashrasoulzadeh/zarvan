@@ -114,7 +114,7 @@ class QuizHomeScreen extends QuizScreen {
     final next = nextStage(kit.bank, progress);
     const perRow = 5;
     const cardW = 58.0;
-    const cardH = 96.0;
+    const cardH = 104.0;
     const gap = 8.0;
     final left =
         (QuizScreen.worldWidth - (perRow * cardW + (perRow - 1) * gap)) / 2;
@@ -315,15 +315,24 @@ class QuizHomeScreen extends QuizScreen {
       dash: 3,
       z: 6,
     );
-    diamondAt(cx, y + 36, 30, theme.accent, stroke: 1.2, alpha: 0.3);
-    diamondAt(cx, y + 36, 14, theme.accent, stroke: 1.2, alpha: 0.35);
+    final portrait = portraitAt(
+      a.id,
+      cx,
+      y + 34,
+      44,
+      (current ? 0xFF : 0xE0) << 24 | (theme.accent & 0xFFFFFF),
+    );
+    if (portrait == null) {
+      diamondAt(cx, y + 36, 30, theme.accent, stroke: 1.2, alpha: 0.3);
+      diamondAt(cx, y + 36, 14, theme.accent, stroke: 1.2, alpha: 0.35);
+    }
     final passed = _passed(a);
     for (var i = 0; i < QuizTier.values.length; i++) {
       final px = cx + (i - 1.5) * 11;
       if (i < passed) {
-        dot(px, y + h - 12, 7, theme.accent, alpha: 0.95);
+        dot(px, y + h - 9, 7, theme.accent, alpha: 0.95);
       } else {
-        ringAt(px, y + h - 12, 7, theme.accent, stroke: 1, alpha: 0.6);
+        ringAt(px, y + h - 9, 7, theme.accent, stroke: 1, alpha: 0.6);
       }
     }
     if (current) diamondAt(cx, y + h, 11, theme.accent, z: 8);
@@ -335,7 +344,7 @@ class QuizHomeScreen extends QuizScreen {
       size: 12,
     );
     tap.bg.shape!.alpha = 0;
-    tap.label.pos.y -= 6;
+    tap.label.pos.y += portrait == null ? -6 : 21;
     tap.label.text!
       ..maxWidth = w - 8
       ..colorArgb = theme.ink;

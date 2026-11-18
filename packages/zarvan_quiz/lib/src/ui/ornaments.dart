@@ -2,8 +2,9 @@ import 'dart:math' as math;
 
 import 'package:zarvan_core/zarvan_core.dart' show EntityId, Position, UiRect;
 import 'package:zarvan_flutter/zarvan_flutter.dart'
-    show Shape, ShapeKind, ShaderEffect, UiNode;
+    show Shape, ShapeKind, ShaderEffect, Sprite, UiNode;
 
+import 'quiz_kit.dart';
 import 'quiz_screen.dart';
 
 /// Something that pulses or twinkles: [shape]'s alpha moves between [low] and
@@ -33,6 +34,35 @@ class Twinkle {
 /// all made of the engine's four flat shapes and a changing opacity: no
 /// gradients, blur or images, which the engine does not draw.
 extension QuizOrnaments on QuizScreen {
+  /// The line portrait of [authorId] centred at ([x], [y]), [width] wide and
+  /// tinted [color], or null when the game gave no portrait for them.
+  EntityId? portraitAt(
+    String authorId,
+    double x,
+    double y,
+    double width,
+    int color, {
+    int z = 7,
+  }) {
+    final portraits = kit.portraits;
+    if (portraits == null || !portraits.has(authorId)) return null;
+    final id = world.spawn();
+    world.componentsOf<Position>().set(id, Position(x, y));
+    final scale = width / QuizPortraits.regionWidth;
+    world.componentsOf<Sprite>().set(
+      id,
+      Sprite(
+        portraits.atlasId,
+        authorId,
+        scaleX: scale,
+        scaleY: scale,
+        zIndex: z,
+        tintArgb: color,
+      ),
+    );
+    return id;
+  }
+
   /// A GPU night sky (nebula, aurora, stars, rising dust) behind the whole
   /// screen, in the theme's colours. Drawn by the engine's `aurora` shader.
   void nightSky({double speed = 1}) {

@@ -75,6 +75,25 @@ class QuizSettings {
   }
 }
 
+/// Line portraits of the authors, packed in one sprite sheet the game
+/// registers (as its packed atlas): the shelf card of an author with a
+/// region named after their id shows it in place of the plain diamond.
+class QuizPortraits {
+  const QuizPortraits({required this.atlasId, required this.authors});
+
+  /// The id the sheet is registered under.
+  final String atlasId;
+
+  /// The author ids that have a region in the sheet.
+  final Set<String> authors;
+
+  /// Size of one region, in pixels (all are the same).
+  static const regionWidth = 160.0;
+  static const regionHeight = 200.0;
+
+  bool has(String authorId) => authors.contains(authorId);
+}
+
 /// What the quiz screens need from the app for rewarded ads, without the
 /// engine knowing which ad network is used.
 abstract interface class QuizAdGate {
@@ -112,6 +131,7 @@ class QuizKit {
     this.share,
     this.shareText,
     this.stageMode = const StageMode(),
+    this.portraits,
     DateTime Function()? now,
   }) : now = now ?? DateTime.now;
 
@@ -131,6 +151,9 @@ class QuizKit {
   /// shares a plain default.
   final String Function(String date, List<bool> results)? shareText;
   final StageMode stageMode;
+
+  /// The authors' portraits, or null for none.
+  final QuizPortraits? portraits;
   final DateTime Function() now;
 
   QuizBank get bank => factory.bank;

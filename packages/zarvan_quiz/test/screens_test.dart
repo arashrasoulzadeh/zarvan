@@ -135,6 +135,7 @@ class Rig {
     DateTime? now,
     void Function(QuizProgress)? setup,
     QuizBank? bank,
+    QuizPortraits? portraits,
   }) async {
     final kv = MemoryKeyValueStore();
     final session = await QuizSession.open(kv);
@@ -157,6 +158,7 @@ class Rig {
         sharedTexts.add(t);
         return outcome;
       },
+      portraits: portraits,
       now: () => now ?? DateTime(2026, 11, 17, 10),
     );
     gates[kit] = gate;
@@ -360,6 +362,31 @@ void main() {
       final early = poem();
       expect(early.length, greaterThan(20));
       expect(early.last, 0, reason: 'the end of the poem is not written yet');
+      r.run(1.6);
+      expect(poem().every((a) => a == 1), isTrue);
+    });
+
+    test('every next question is written again, both verses', () async {
+      final r = await stage();
+      List<double> poem() {
+        final t = r.world.componentsOf<eng.Text>();
+        return [
+          for (var i = 0; i < t.length; i++)
+            if (t.denseAt(i).fontSize == 20 &&
+                !r.kit.session.question!.options.contains(t.denseAt(i).text))
+              t.denseAt(i).alpha,
+        ];
+      }
+
+      r.run(2);
+      r.tap(r.optionRight);
+      r.run(0.2);
+      r.tap('Next');
+      r.run(0.2);
+      final early = poem();
+      expect(early.length, greaterThan(3));
+      expect(early.first, greaterThan(0));
+      expect(early.last, 0, reason: 'the second verse is written too');
       r.run(1.6);
       expect(poem().every((a) => a == 1), isTrue);
     });
@@ -674,6 +701,35 @@ void main() {
           for (var i = 0; i < fx.length; i++) fx.denseAt(i),
         ].firstWhere((e) => e.kind == ShaderEffect.aurora);
         expect(sky.zIndex, greaterThan(-10));
+      },
+    );
+
+    test(
+      'with portraits the shelf shows them instead of the diamonds',
+      () async {
+        int sprites(Rig r) => r.world.componentsOf<eng.Sprite>().length;
+        final plain = await Rig.make(bank: makeMultiBank());
+        await plain.open(QuizHomeScreen(plain.kit));
+        expect(sprites(plain), 0);
+        final shapesPlain = plain.world.componentsOf<Shape>().length;
+
+        final r = await Rig.make(
+          bank: makeMultiBank(),
+          portraits: const QuizPortraits(
+            atlasId: 'portraits',
+            authors: {'a', 'b'},
+          ),
+        );
+        await r.open(QuizHomeScreen(r.kit));
+        expect(sprites(r), 2, reason: 'a and b have one, c does not');
+        final first = r.world.componentsOf<eng.Sprite>().denseAt(0);
+        expect(first.atlasId, 'portraits');
+        expect(['a', 'b'], contains(first.region));
+        expect(
+          r.world.componentsOf<Shape>().length,
+          shapesPlain - 4,
+          reason: 'two diamonds less for each of the two portraits',
+        );
       },
     );
 

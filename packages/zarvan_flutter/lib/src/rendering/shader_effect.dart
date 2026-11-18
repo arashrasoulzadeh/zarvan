@@ -153,6 +153,13 @@ class ShaderEffect {
   /// motes, [armArgb] an occasional second kind.
   static const dust = 'dust';
 
+  /// An answer mark drawn by `mark.frag`: an eight-pointed star medallion with
+  /// a calligraphic tick or cross drawn in by a pen of light. [params] x is 0
+  /// for a tick, 1 for a cross; y is how much has been drawn (0..1). Colours:
+  /// [rimArgb] gold, [armArgb] the medallion, [coreArgb] its dark centre. The
+  /// medallion fills the middle of the rect and the rest holds its glow.
+  static const mark = 'mark';
+
   /// A small eight-pointed progress seal drawn by `seal.frag`; [params] x is 0
   /// upcoming (dim), 1 current (bright, breathing light), 2 done (a tick).
   /// Colours: [rimArgb] gold, [armArgb] teal, [coreArgb] the dark.
@@ -231,6 +238,9 @@ class EffectShader {
   /// `pageturn.frag`, the page curl over a snapshot (see
   /// `SceneTransitionType.pageTurn`).
   static final pageTurn = EffectShader._('pageturn.frag');
+
+  /// `mark.frag`.
+  static final mark = EffectShader._('mark.frag');
 
   /// `dust.frag`.
   static final dust = EffectShader._('dust.frag');

@@ -277,6 +277,54 @@ void main() {
     }
 
     test(
+      'the answer mark is a shader tick or cross that is drawn in by a pen',
+      () async {
+        List<List<double>> marks(Rig r) {
+          final fx = r.world.componentsOf<ShaderEffect>();
+          return [
+            for (var i = 0; i < fx.length; i++)
+              if (fx.denseAt(i).kind == ShaderEffect.mark) fx.denseAt(i).params,
+          ];
+        }
+
+        final right = await stage();
+        expect(marks(right), isEmpty, reason: 'no mark before an answer');
+        right.tap(right.optionRight);
+        right.run(0.1);
+        final early = marks(right).single;
+        expect(early[0], 0, reason: 'a tick');
+        expect(early[1], lessThan(0.5), reason: 'the pen has barely started');
+        right.run(0.8);
+        expect(marks(right).single[1], 1, reason: 'then it is fully drawn');
+        expect(
+          right.world.componentsOf<eng.Sprite>().length,
+          0,
+          reason: 'no images',
+        );
+
+        final wrong = await stage();
+        wrong.tap(wrong.optionWrong(0));
+        wrong.run(0.9);
+        final crosses = marks(wrong).where((m) => m[0] == 1);
+        expect(crosses.length, 1, reason: 'the wrong pick gets a cross');
+      },
+    );
+
+    test('a seal leaves room around its star for the glow', () async {
+      final r = await stage();
+      final fx = r.world.componentsOf<ShaderEffect>();
+      var seals = 0;
+      for (var i = 0; i < fx.length; i++) {
+        final e = fx.denseAt(i);
+        if (e.kind == ShaderEffect.seal) {
+          seals++;
+          expect(e.width, closeTo(38 * 1.9, 0.01));
+        }
+      }
+      expect(seals, 5);
+    });
+
+    test(
       'a stage shows five seals that follow the current question, drawn by a shader',
       () async {
         List<List<double>> seals(Rig r) {

@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:zarvan_core/zarvan_core.dart' show Position, UiRect, World;
 import 'package:zarvan_core/zarvan_core_quiz.dart';
 import 'package:zarvan_flutter/zarvan_flutter.dart'
-    show UiButton, UiNode, measureText;
+    show ShaderEffect, UiButton, UiNode, measureText;
 
 import '../../quiz_session.dart';
 import '../ornaments.dart';
@@ -18,7 +18,13 @@ import 'result_screen.dart';
 class QuizGameScreen extends QuizScreen {
   QuizGameScreen(super.kit);
 
-  static const _poemSize = 20.0;
+  static const _basePoemSize = 20.0;
+
+  /// The verses' size: the base size times the theme's poem scale.
+  double get _poemSize => _basePoemSize * theme.poemScale;
+
+  /// The verses' typeface: the theme's poem face, else its interface one.
+  String? get _poemFont => theme.poemFontFamily ?? theme.fontFamily;
   static const _hudSize = 13.0;
 
   /// The whole poem is written within this many seconds, and one word takes
@@ -37,6 +43,16 @@ class QuizGameScreen extends QuizScreen {
   double _revealStart = 0;
   final List<_Word> _words = [];
   Position? _penPos;
+
+  /// The answer marks on screen and when their pen started, so the strokes
+  /// are drawn in over [_markSeconds] rather than appearing at once.
+  final List<ShaderEffect> _marks = [];
+  double _markStart = -10;
+  static const _markSeconds = 0.55;
+
+  double get _markProgress =>
+      ((_time - _markStart) / _markSeconds).clamp(0.0, 1.0);
+
   final List<_Ring> _rings = [];
   UiButton? _shaking;
   double _shakeAge = 0;
@@ -103,6 +119,7 @@ class QuizGameScreen extends QuizScreen {
     }
     _stepBursts(dt);
     _stepWords();
+    _stepMarks();
     _stepRings(dt);
     _stepShake(dt);
     session.tick(Duration(microseconds: (dt * 1e6).round()));
@@ -200,6 +217,7 @@ class QuizGameScreen extends QuizScreen {
   void _redraw() {
     _view.clear();
     _words.clear();
+    _marks.clear();
     _shaking = null;
     final q = session.question;
     _stamp = (
@@ -218,7 +236,11 @@ class QuizGameScreen extends QuizScreen {
     final s = kit.strings;
     final theme = this.theme;
     final answered = session.answered;
-    final textWidth = QuizScreen.worldWidth - 2 * QuizScreen.margin - 32;
+    final textWidth =
+        QuizScreen.worldWidth -
+        2 * QuizScreen.margin -
+        32 -
+        2 * theme.poemInset;
 
     // The poem, with the blank or, after an answer, the right word.
     final answer = q.options[q.answerIndex];
@@ -233,15 +255,17 @@ class QuizGameScreen extends QuizScreen {
         measureText(
           l,
           fontSize: _poemSize,
-          fontFamily: theme.fontFamily,
+          fontFamily: _poemFont,
           rtl: rtl,
           maxWidth: textWidth,
         ),
     ];
+    // Rows are as tall as the face measures them, times the theme's factor
+    // (a calligraphic face has tall line metrics that leave big gaps).
+    final lineHeights = [for (final z in sizes) z.height * theme.poemLineScale];
     const gap = 8.0;
     final inner =
-        sizes.fold<double>(0, (a, z) => a + z.height) +
-        gap * (lines.length - 1);
+        lineHeights.fold<double>(0, (a, h) => a + h) + gap * (lines.length - 1);
     _stepper();
     final cardTop = _hasStepper ? 150.0 : 104.0;
     spread(0.2);
@@ -294,7 +318,7 @@ class QuizGameScreen extends QuizScreen {
     double wordsWidth(List<String> ws) => measureText(
       ws.join(' '),
       fontSize: _poemSize,
-      fontFamily: theme.fontFamily,
+      fontFamily: _poemFont,
       rtl: rtl,
     ).width;
     final finalColor = answered ? _parchmentCorrect : _parchmentInk;
@@ -303,7 +327,7 @@ class QuizGameScreen extends QuizScreen {
     for (var i = 0; i < lines.length; i++) {
       final words = lines[i].split(' ').where((w) => w.isNotEmpty).toList();
       if (words.isEmpty) {
-        y += sizes[i].height + gap;
+        y += lineHeights[i] + gap;
         continue;
       }
       // A verse too long for one row is broken into rows here, the same way
@@ -317,7 +341,7 @@ class QuizGameScreen extends QuizScreen {
           rows.last.add(w);
         }
       }
-      final rowHeight = sizes[i].height / rows.length;
+      final rowHeight = lineHeights[i] / rows.length;
       for (var r = 0; r < rows.length; r++) {
         final rowY = y + rowHeight * (r + 0.5);
         final row = rows[r];
@@ -336,6 +360,7 @@ class QuizGameScreen extends QuizScreen {
             rowY,
             size: _poemSize,
             color: _parchmentAccent,
+            fontFamily: _poemFont,
           );
           node.text!.alpha = 0;
           _view.addNode(node);
@@ -346,7 +371,7 @@ class QuizGameScreen extends QuizScreen {
           _words.add(word);
         }
       }
-      y += sizes[i].height + gap;
+      y += lineHeights[i] + gap;
     }
 
     // The four options.
@@ -535,30 +560,30 @@ class QuizGameScreen extends QuizScreen {
   /// A round glowing seal with a mark in it at the reading-start end of an
   /// answered option, so right and wrong read at a glance.
   void _badge(UiRect rect, String mark, int color) {
-    final x = rtl ? rect.right - 24 : rect.x + 24;
-    _view.addNode(dot(x, rect.centerY, 32, color, alpha: 0.35, z: 8));
-    _view.addNode(dot(x, rect.centerY, 24, color, z: 9));
-    // Drawn from dots, not a glyph: a tick or cross may be missing from the font.
-    final segments = mark == '✓'
-        ? const [((-6.0, 0.5), (-2.0, 5.0)), ((-2.0, 5.0), (7.0, -5.5))]
-        : const [((-5.5, -5.5), (5.5, 5.5)), ((5.5, -5.5), (-5.5, 5.5))];
-    for (final ((ax, ay), (bx, by)) in segments) {
-      for (var t = 0.0; t <= 1.0; t += 0.12) {
-        _view.addNode(
-          dot(
-            x + ax + (bx - ax) * t,
-            rect.centerY + ay + (by - ay) * t,
-            3.4,
-            theme.background,
-            z: 10,
-          ),
-        );
-      }
-    }
+    final x = rtl ? rect.right - 30 : rect.x + 30;
+    // The first time this answer is drawn the pen starts from nothing; a
+    // redraw (a hint, say) finds it already done or part-way.
+    if (!_wasAnswered) _markStart = _time;
+    final (id, fx) = markAt(
+      x,
+      rect.centerY,
+      64,
+      color,
+      cross: mark != '✓',
+      drawn: _markProgress,
+    );
+    _view.addId(id);
+    _marks.add(fx);
   }
 
   /// Brings each word of the poem in, in turn: it rises a little, fades in and
   /// turns from the accent gold to the ink colour, with a few sparks as it lands.
+  void _stepMarks() {
+    for (final m in _marks) {
+      m.params = [m.params[0], _markProgress];
+    }
+  }
+
   void _stepWords() {
     final t = _time - _revealStart;
     _Word? writing;

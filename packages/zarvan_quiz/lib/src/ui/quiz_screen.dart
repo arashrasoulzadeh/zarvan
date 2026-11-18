@@ -175,6 +175,7 @@ abstract class QuizScreen extends Scene {
     double? maxWidth,
     TextAlignment align = TextAlignment.center,
     int z = 6,
+    String? fontFamily,
   }) => UiNode.textNode(
     world,
     eng.Text(
@@ -188,7 +189,7 @@ abstract class QuizScreen extends Scene {
     ),
     x: x,
     y: y + yShift,
-    fontFamily: theme.fontFamily,
+    fontFamily: fontFamily ?? theme.fontFamily,
   );
 
   /// A rounded box.

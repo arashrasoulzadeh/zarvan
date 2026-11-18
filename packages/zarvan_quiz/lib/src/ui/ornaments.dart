@@ -71,9 +71,11 @@ extension QuizOrnaments on QuizScreen {
     world.componentsOf<ShaderEffect>().set(
       id,
       ShaderEffect(
+        // The rect is larger than the star so the glow and rays have room and
+        // are not cut off at its edge.
         kind: ShaderEffect.seal,
-        width: size,
-        height: size,
+        width: size * 1.9,
+        height: size * 1.9,
         zIndex: z,
         rimArgb: 0xFFE3C477,
         armArgb: theme.accent,
@@ -82,6 +84,36 @@ extension QuizOrnaments on QuizScreen {
       ),
     );
     return id;
+  }
+
+  /// An answer mark of [size] centred at ([x], [y]): a star medallion edged in
+  /// gold with a calligraphic tick or, when [cross], a cross, drawn in by a pen
+  /// of light as [ShaderEffect.params] y goes from 0 to 1 (the caller animates
+  /// it; the entity and its effect are returned for that). Drawn by the engine's `mark` shader; the rect is larger than the
+  /// medallion so its glow is not cut off.
+  (EntityId, ShaderEffect) markAt(
+    double x,
+    double y,
+    double size,
+    int color, {
+    bool cross = false,
+    double drawn = 1,
+    int z = 9,
+  }) {
+    final id = world.spawn();
+    world.componentsOf<Position>().set(id, Position(x, y + yShift));
+    final fx = ShaderEffect(
+      kind: ShaderEffect.mark,
+      width: size,
+      height: size,
+      zIndex: z,
+      rimArgb: 0xFFE3C477,
+      armArgb: color,
+      coreArgb: 0xFF0B2420,
+      params: [cross ? 1 : 0, drawn],
+    );
+    world.componentsOf<ShaderEffect>().set(id, fx);
+    return (id, fx);
   }
 
   /// An ornate Persian frame around [r], drawn by the engine's `ornate`

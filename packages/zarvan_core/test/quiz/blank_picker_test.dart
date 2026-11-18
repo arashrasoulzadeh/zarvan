@@ -25,28 +25,40 @@ Set<(int, int)> picked(
 void main() {
   final plain = item(['الف بب جج', 'دد ههه وو']);
 
-  test('R-BLANK-2: easy picks the last content word of a line', () {
-    expect(picked(plain, QuizTier.easy), {(0, 2), (1, 2)});
+  final every = {
+    for (var l = 0; l < 2; l++)
+      for (var t = 0; t < 3; t++) (l, t),
+  };
+
+  test('R-BLANK-2: every tier may pick any content word of the verse', () {
+    for (final tier in QuizTier.values) {
+      expect(picked(plain, tier), every, reason: tier.name);
+    }
   });
 
-  test(
-    'R-BLANK-2: a stop word at the end of a line moves the target one back',
-    () {
-      expect(picked(plain, QuizTier.easy, stop: {'جج'}), {(0, 1), (1, 2)});
-    },
-  );
-
-  test('R-BLANK-3: medium never picks the last word of a line', () {
-    expect(picked(plain, QuizTier.medium), {(0, 0), (0, 1), (1, 0), (1, 1)});
+  test('R-BLANK-2: a stop word is skipped wherever it stands', () {
+    expect(
+      picked(plain, QuizTier.easy, stop: {'جج'}),
+      every.difference({(0, 2)}),
+    );
   });
 
-  test('R-BLANK-4: hard and literary may pick any content word', () {
-    final all = {
-      for (var l = 0; l < 2; l++)
-        for (var t = 0; t < 3; t++) (l, t),
-    };
-    expect(picked(plain, QuizTier.hard), all);
-    expect(picked(plain, QuizTier.literary), all);
+  test('R-BLANK-3: the blank is not tied to the end of a line', () {
+    for (final tier in QuizTier.values) {
+      final got = picked(plain, tier);
+      expect(
+        got.any((p) => p.$2 == 2),
+        isTrue,
+        reason: '${tier.name}: last word',
+      );
+      expect(
+        got.any((p) => p.$2 < 2),
+        isTrue,
+        reason: '${tier.name}: earlier word',
+      );
+      expect(got.any((p) => p.$1 == 0), isTrue);
+      expect(got.any((p) => p.$1 == 1), isTrue, reason: 'either line');
+    }
   });
 
   test('R-BLANK-1: stop words and one-letter words are never picked', () {
@@ -57,10 +69,13 @@ void main() {
     expect(got.length, 4);
   });
 
-  test('R-BLANK-5: an empty tier set falls back to every content word', () {
-    final it = item(['از عشق', 'به دل']);
-    expect(picked(it, QuizTier.medium, stop: {'از', 'به'}), {(0, 1), (1, 1)});
-  });
+  test(
+    'R-BLANK-5: an item whose only content words end the lines is still asked',
+    () {
+      final it = item(['از عشق', 'به دل']);
+      expect(picked(it, QuizTier.medium, stop: {'از', 'به'}), {(0, 1), (1, 1)});
+    },
+  );
 
   test('R-BLANK-5: an item with no content word cannot be asked', () {
     expect(

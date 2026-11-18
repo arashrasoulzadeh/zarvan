@@ -153,15 +153,60 @@ void main() {
     },
   );
 
-  test(
-    'R-DIST-7: a stage short of candidates is filled from the whole index',
-    () {
-      final b = bank({
-        'a': [target, 'کتابخانه نسب'],
-      });
-      final r = pick(b, 'a0', 'عشق', QuizTier.easy);
-      expect(r.words.length, 2);
-      expect(r.usedAnyFallback, isTrue);
-    },
-  );
+  test('R-DIST-5c: short of rhymes, lengths fill in before anything else', () {
+    final b = bank({
+      'a': [target, 'کتابخانه نسب'],
+    });
+    final r = pick(b, 'a0', 'عشق', QuizTier.easy);
+    expect(r.words.length, 2);
+    expect(r.usedAnyFallback, isFalse, reason: 'lengths cover every word');
+  });
+
+  test('R-DIST-3: every tier offers rhymes of the answer first', () {
+    final b = bank({
+      'a': [target, 'نشق فشق خشق', 'سلم حکم نسب رحم'],
+    });
+    for (final tier in QuizTier.values) {
+      final r = pick(b, 'a0', 'عشق', tier);
+      expect(norm(r.words), {'نشق', 'فشق', 'خشق'}, reason: tier.name);
+    }
+  });
+
+  test('R-DIST-3: a longer shared ending comes before a shorter one', () {
+    // The answer ends in 'ست' / 'ایست': three letters win over two.
+    final b = bank({
+      'a': ['برایست دل', 'مایست زایست پایست', 'کاست خواست راست نیست'],
+    });
+    final r = pick(b, 'a0', 'برایست', QuizTier.medium);
+    expect(norm(r.words), {'مایست', 'زایست', 'پایست'});
+  });
+
+  test('R-DIST-4: easy prefers rhymes whose length is clearly different', () {
+    final b = bank({
+      'a': [target, 'تابشق روشنشق', 'نشق فشق خشق'],
+    });
+    for (var s = 0; s < 10; s++) {
+      final r = pick(b, 'a0', 'عشق', QuizTier.easy, seed: s);
+      expect(norm(r.words).containsAll({'تابشق', 'روشنشق'}), isTrue);
+      expect(r.words.length, 3);
+    }
+  });
+
+  test('R-DIST-5: medium prefers rhymes of the answer length', () {
+    final b = bank({
+      'a': [target, 'تابشق روشنشق', 'نشق فشق خشق'],
+    });
+    for (var s = 0; s < 10; s++) {
+      final r = pick(b, 'a0', 'عشق', QuizTier.medium, seed: s);
+      expect(norm(r.words), {'نشق', 'فشق', 'خشق'});
+    }
+  });
+
+  test('R-DIST-3: a short answer still rhymes by its last letter', () {
+    final b = bank({
+      'a': ['دل جان', 'گل بل ملل', 'سنگ رنگ'],
+    });
+    final r = pick(b, 'a0', 'دل', QuizTier.medium);
+    expect(norm(r.words).every((w) => w.endsWith('ل')), isTrue);
+  });
 }

@@ -72,6 +72,10 @@ class QuizGroup {
 ///
 /// The world is laid out for a portrait [worldWidth] x [worldHeight]; the
 /// game's viewport scales it to the device.
+/// The name of the transition kind that swirls the poems' own words over an
+/// ink wash (the others are engine `ShaderEffect` kinds).
+const quizVerseTransition = 'verse';
+
 abstract class QuizScreen extends Scene {
   QuizScreen(this.kit);
 
@@ -281,6 +285,7 @@ abstract class QuizScreen extends Scene {
   double _veilProgress = 0;
   double _veilDirection = 0;
   Scene? _veilNext;
+  eng.WordSwarm? _swarm;
 
   /// Moves on to [next] under the transition when the kit has them on, or at
   /// once when not.
@@ -295,7 +300,31 @@ abstract class QuizScreen extends Scene {
   /// Whether a transition is running (taps are ignored meanwhile).
   bool get veiled => _veilDirection != 0;
 
+  /// Words of the bank's poems for the verse transition.
+  List<String> _poemWords() {
+    final out = <String>[];
+    for (final item in kit.bank.items().take(80)) {
+      for (final line in item.lines) {
+        out.addAll(line.split(RegExp(r'\s+')).where((w) => w.length > 1));
+      }
+    }
+    return out;
+  }
+
   EntityId _spawnVeil(double progress, double x, double y) {
+    final verse = kit.transitionKind == quizVerseTransition;
+    if (verse) {
+      _swarm = eng.WordSwarm(
+        world,
+        _poemWords(),
+        width: worldWidth,
+        height: world.height,
+        fontFamily: theme.fontFamily ?? '',
+        color: 0xFFF3E6C4,
+        accentColor: 0xFFE3C477,
+        rtl: rtl,
+      )..apply(progress, originX: x, originY: y);
+    }
     final id = world.spawn();
     world.componentsOf<Position>().set(
       id,
@@ -304,7 +333,7 @@ abstract class QuizScreen extends Scene {
     world.componentsOf<ShaderEffect>().set(
       id,
       ShaderEffect(
-        kind: kit.transitionKind,
+        kind: verse ? ShaderEffect.ink : kit.transitionKind,
         width: worldWidth,
         height: world.height,
         zIndex: 100,
@@ -350,11 +379,20 @@ abstract class QuizScreen extends Scene {
     final done = _veilDirection > 0 ? _veilProgress >= 1 : _veilProgress <= 0;
     _veilProgress = _veilProgress.clamp(0.0, 1.0);
     final fx = world.componentsOf<ShaderEffect>().get(_veil!);
-    if (fx != null) fx.params = [_veilProgress, fx.params[1], fx.params[2]];
+    if (fx != null) {
+      fx.params = [_veilProgress, fx.params[1], fx.params[2]];
+      _swarm?.apply(
+        _veilProgress,
+        originX: fx.params[1],
+        originY: fx.params[2],
+      );
+    }
     if (!done) return;
     final next = _veilNext;
     final closing = _veilDirection > 0;
     _veilDirection = 0;
+    _swarm?.dispose();
+    _swarm = null;
     if (closing && next != null) {
       _veilNext = null;
       goTo(next);

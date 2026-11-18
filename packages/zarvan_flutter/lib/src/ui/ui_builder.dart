@@ -97,21 +97,32 @@ class UiButton {
     final shape = bg.shape;
     if (shape == null) return;
     final before = shape.alpha;
+    final beforeWidth = shape.width;
+    final beforeHeight = shape.height;
     final bgX = bg.pos.x, bgY = bg.pos.y;
     final labelX = label.pos.x, labelY = label.pos.y;
+    final labelSize = label.text?.fontSize;
     shape.alpha = (before * 0.62).clamp(0.0, 1.0);
+    shape
+      ..width = beforeWidth * 0.96
+      ..height = beforeHeight * 0.96;
     bg.pos.y = bgY + 2;
     label.pos.y = labelY + 2;
+    if (labelSize != null) label.text!.fontSize = labelSize * 0.98;
     unawaited(
       Future<void>.delayed(const Duration(milliseconds: 90), () {
         if (visible && bg.shape == shape) {
           shape.alpha = before;
+          shape
+            ..width = beforeWidth
+            ..height = beforeHeight;
           bg.pos
             ..x = bgX
             ..y = bgY;
           label.pos
             ..x = labelX
             ..y = labelY;
+          if (labelSize != null) label.text!.fontSize = labelSize;
         }
       }),
     );

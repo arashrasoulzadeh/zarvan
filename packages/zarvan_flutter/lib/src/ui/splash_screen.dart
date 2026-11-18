@@ -75,12 +75,14 @@ class SplashConfig {
   factory SplashConfig.fromArgb({
     String? title,
     String? logoAsset,
+    double logoSize = 160,
     int? backgroundArgb,
     int accentArgb = 0xFFC8A66A,
     bool showEngineVersion = true,
     Duration minDuration = Duration.zero,
   }) => SplashConfig(
     logo: logoAsset == null ? null : AssetImage(logoAsset),
+    logoSize: logoSize,
     title: title,
     backgroundColor: backgroundArgb == null ? null : Color(backgroundArgb),
     accentColor: Color(accentArgb),

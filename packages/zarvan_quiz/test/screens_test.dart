@@ -943,6 +943,39 @@ void main() {
     );
 
     test(
+      'the verse transition swirls poem words over an ink wash, then clears them',
+      () async {
+        final r = await Rig.make(
+          bank: makeMultiBank(),
+          transitions: true,
+          transitionKind: quizVerseTransition,
+        );
+        await r.open(QuizHomeScreen(r.kit));
+        final before = r.world.componentsOf<eng.Text>().length;
+        r.tap('Endless');
+        final words = r.world.componentsOf<eng.Text>().length - before;
+        expect(words, greaterThan(30), reason: 'a page of words was spawned');
+        final fx = r.world.componentsOf<ShaderEffect>();
+        expect([
+          for (var i = 0; i < fx.length; i++) fx.denseAt(i).kind,
+        ], contains(ShaderEffect.ink));
+        r.run(0.3);
+        final texts = r.world.componentsOf<eng.Text>();
+        final seen = [
+          for (var i = 0; i < texts.length; i++) texts.denseAt(i).alpha,
+        ].where((a) => a > 0 && a < 1.01).length;
+        expect(seen, greaterThan(10), reason: 'words are fading in');
+        r.run(0.6);
+        expect(r.loaded, isA<QuizGameScreen>());
+        expect(
+          r.world.componentsOf<eng.Text>().length,
+          before,
+          reason: 'the words are gone',
+        );
+      },
+    );
+
+    test(
       'tapping a poet blurs the screen and opens a medal with the levels',
       () async {
         final r = await Rig.make(bank: makeMultiBank());

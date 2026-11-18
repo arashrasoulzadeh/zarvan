@@ -7,6 +7,7 @@ import 'package:zarvan_flutter/zarvan_flutter.dart' show ShareOutcome;
 
 import '../quiz_session.dart';
 import 'quiz_strings.dart';
+import 'quiz_screen.dart' show quizVerseTransition;
 import 'quiz_theme.dart';
 
 /// The player's quiz settings, saved under [key] in a [KeyValueStore] and
@@ -183,7 +184,7 @@ class QuizKit {
     this.stageMode = const StageMode(),
     this.portraits,
     this.transitions = true,
-    this.transitionKind = 'kashi',
+    this.transitionKind = quizVerseTransition,
     DateTime Function()? now,
   }) : now = now ?? DateTime.now;
 
@@ -211,7 +212,8 @@ class QuizKit {
   final bool transitions;
 
   /// Which engine shader draws the transition, by the name of its
-  /// `ShaderEffect` kind: `kashi` (default), Persian tilework in the game's
+  /// `ShaderEffect` kind, or `verse` (default): the poems' own words swirl in
+  /// over an ink wash; `kashi`, Persian tilework in the game's
   /// own style; `ink`, a bleeding wash with petals; or the plain `veil`.
   final String transitionKind;
 

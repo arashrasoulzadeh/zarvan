@@ -249,6 +249,51 @@ void main() {
   });
 
   group('game screen', () {
+    test(
+      'with ornate frames the card and each option are drawn from sprites',
+      () async {
+        final r = await Rig.make(
+          portraits: const QuizPortraits(
+            atlasId: 'art',
+            authors: {},
+            frames: {
+              'card': QuizFrameSpec(
+                cornerWidth: 68,
+                cornerHeight: 68,
+                band: 38,
+              ),
+              'opt': QuizFrameSpec(
+                cornerWidth: 95,
+                cornerHeight: 65,
+                band: 30,
+                sides: false,
+              ),
+            },
+          ),
+        );
+        r.kit.session.begin(
+          QuizRound.stage(
+            r.kit.factory,
+            const StageMode(),
+            author: 'a',
+            tier: QuizTier.easy,
+          ),
+        );
+        await r.open(QuizGameScreen(r.kit));
+        final sprites = r.world.componentsOf<eng.Sprite>();
+        final regions = [
+          for (var i = 0; i < sprites.length; i++) sprites.denseAt(i).region,
+        ];
+        expect(
+          regions.where((x) => x.startsWith('card_')).length,
+          greaterThan(8),
+        );
+        expect(regions.where((x) => x == 'card_tl').length, 1);
+        expect(regions.where((x) => x == 'opt_tl').length, 4);
+        expect(regions.where((x) => x == 'opt_l').length, 0);
+      },
+    );
+
     Future<Rig> stage() async {
       final r = await Rig.make();
       r.kit.session.begin(

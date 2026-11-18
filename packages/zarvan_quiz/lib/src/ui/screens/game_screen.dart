@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:zarvan_core/zarvan_core.dart' show UiRect, World;
+import 'package:zarvan_core/zarvan_core.dart' show EntityId, UiRect, World;
 import 'package:zarvan_core/zarvan_core_quiz.dart';
 import 'package:zarvan_flutter/zarvan_flutter.dart'
     show UiButton, UiNode, measureText;
@@ -48,6 +48,14 @@ class QuizGameScreen extends QuizScreen {
   final math.Random _rng = math.Random(3);
 
   QuizSession get session => kit.session;
+
+  // The poem card is parchment when the game brought the ornate frame: warm
+  // paper with dark ink, unlike the night around it.
+  static const _parchment = 0xFFD9B97B;
+  static const _parchmentInk = 0xFF2A1A0E;
+  static const _parchmentAccent = 0xFF8A5A1E;
+  static const _parchmentCorrect = 0xFF1F6B3A;
+  static const _cardScale = 0.36;
 
   @override
   void build() {
@@ -168,6 +176,7 @@ class QuizGameScreen extends QuizScreen {
         sizes.fold<double>(0, (a, z) => a + z.height) +
         gap * (lines.length - 1);
     final cardTop = 104.0;
+    final art = kit.portraits?.frames.containsKey('card') ?? false;
     spread(0.2);
     final cardHeight = inner + 32;
     _view.addNode(
@@ -178,7 +187,7 @@ class QuizGameScreen extends QuizScreen {
           QuizScreen.worldWidth - 2 * QuizScreen.margin,
           cardHeight,
         ),
-        theme.surface,
+        art ? _parchment : theme.surface,
         radius: 16,
       ),
     );
@@ -196,31 +205,40 @@ class QuizGameScreen extends QuizScreen {
         z: 3,
       ),
     );
-    _view.addNode(
-      frame(
-        cardRect,
-        answered ? theme.correct : theme.accent,
-        alpha: 0.85,
-        radius: 16,
-      ),
-    );
-    _view.addNode(
-      frame(
-        UiRect(
-          cardRect.x + 6,
-          cardRect.y + 6,
-          cardRect.width - 12,
-          cardRect.height - 12,
+    final cardArt = art
+        ? ornateFrame(cardRect, 'card', scale: _cardScale, z: 7)
+        : const <EntityId>[];
+    if (cardArt.isNotEmpty) {
+      for (final id in cardArt) {
+        _view.addId(id);
+      }
+    } else {
+      _view.addNode(
+        frame(
+          cardRect,
+          answered ? theme.correct : theme.accent,
+          alpha: 0.85,
+          radius: 16,
         ),
-        theme.accent,
-        alpha: 0.25,
-        radius: 12,
-        dash: 3,
-      ),
-    );
-    for (final dx in [cardRect.x + 14, cardRect.right - 14]) {
-      for (final dy in [cardRect.y, cardRect.bottom]) {
-        _view.addNode(diamondAt(dx, dy, 9, theme.accent, z: 8));
+      );
+      _view.addNode(
+        frame(
+          UiRect(
+            cardRect.x + 6,
+            cardRect.y + 6,
+            cardRect.width - 12,
+            cardRect.height - 12,
+          ),
+          theme.accent,
+          alpha: 0.25,
+          radius: 12,
+          dash: 3,
+        ),
+      );
+      for (final dx in [cardRect.x + 14, cardRect.right - 14]) {
+        for (final dy in [cardRect.y, cardRect.bottom]) {
+          _view.addNode(diamondAt(dx, dy, 9, theme.accent, z: 8));
+        }
       }
     }
     // Writing the whole poem takes at most 1.5 s, however many verses it has.
@@ -237,7 +255,9 @@ class QuizGameScreen extends QuizScreen {
       fontFamily: theme.fontFamily,
       rtl: rtl,
     ).width;
-    final finalColor = answered ? theme.correct : theme.ink;
+    final finalColor = art
+        ? (answered ? _parchmentCorrect : _parchmentInk)
+        : (answered ? theme.correct : theme.ink);
     var y = cardTop + 16;
     var wordNo = 0;
     for (var i = 0; i < lines.length; i++) {
@@ -275,7 +295,7 @@ class QuizGameScreen extends QuizScreen {
             cx,
             rowY,
             size: _poemSize,
-            color: theme.accent,
+            color: art ? _parchmentAccent : theme.accent,
           );
           node.text!.alpha = 0;
           _view.addNode(node);
@@ -303,7 +323,19 @@ class QuizGameScreen extends QuizScreen {
         QuizScreen.buttonHeight,
       );
       _optionRects.add(optRect);
-      if (!removed && !answered) {
+      final optArt = !removed && !answered
+          ? ornateFrame(
+              optRect,
+              'opt',
+              scale: QuizScreen.buttonHeight / 130,
+              z: 7,
+            )
+          : const <EntityId>[];
+      if (optArt.isNotEmpty) {
+        for (final id in optArt) {
+          _view.addId(id);
+        }
+      } else if (!removed && !answered) {
         _view.addNode(frame(optRect, theme.accent, alpha: 0.4, radius: 14));
       }
       final b = button(
@@ -317,7 +349,7 @@ class QuizGameScreen extends QuizScreen {
       b.enabled = !answered && !removed && !session.offeringContinue;
       if (removed) _fade(b, 0.3);
       if (answered) _color(b, i, q, theme, optRect);
-      oy += QuizScreen.buttonHeight + 8;
+      oy += QuizScreen.buttonHeight + 14;
     }
 
     // After an answer: the author and Next. Before: the hint.

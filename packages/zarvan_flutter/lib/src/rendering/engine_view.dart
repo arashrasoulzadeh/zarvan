@@ -22,6 +22,7 @@ import 'sprite.dart';
 // brings into scope.
 import 'animation_transition.dart';
 import 'frame_stats.dart';
+import 'text_painter_cache.dart';
 import 'gpu_light_shader.dart';
 import 'ambient_lighting_shader.dart';
 import 'hud_bar.dart';
@@ -301,6 +302,7 @@ class _EngineViewState extends State<EngineView>
   Offset? _dragEnd;
 
   final _EffectShaderCache _effectShaders = _EffectShaderCache();
+  final TextPainterCache _textPainters = TextPainterCache();
 
   late final Ticker _ticker;
   Duration _lastTick = Duration.zero;
@@ -563,6 +565,7 @@ class _EngineViewState extends State<EngineView>
     _ticker.dispose();
     _focusNode.dispose();
     _effectShaders.dispose();
+    _textPainters.dispose();
     super.dispose();
   }
 
@@ -619,6 +622,7 @@ class _EngineViewState extends State<EngineView>
       showAutoTileBitmask: widget.showAutoTileBitmask,
       combinedTextureCache: _combinedTextureCache,
       effectShaders: _effectShaders,
+      textPainters: _textPainters,
     );
 
     Widget child;
@@ -986,6 +990,7 @@ class _EnginePainter extends CustomPainter {
   /// Key is "${diffuseAtlasId}:${normalAtlasId}".
   final Map<String, ui.Image> combinedTextureCache;
   final _EffectShaderCache effectShaders;
+  final TextPainterCache textPainters;
 
   _EnginePainter({
     required this.world,
@@ -1008,6 +1013,7 @@ class _EnginePainter extends CustomPainter {
     this.showAutoTileBitmask = false,
     required this.combinedTextureCache,
     required this.effectShaders,
+    required this.textPainters,
   }) : super(repaint: null);
 
   /// [current]'s position blended with wherever that entity was just
@@ -3510,64 +3516,85 @@ class _EnginePainter extends CustomPainter {
               : camera.worldToScreen(pos.x, pos.y, size, zIndex: text.zIndex);
           final scale = text.screenSpace ? 1.0 : camera.zoom;
           final effectiveFontSize = text.fontSize * scale * text.textScale;
-          final painter =
-              TextPainter(
-                text: TextSpan(
-                  text: text.text,
-                  style: TextStyle(
-                    color: Color(
-                      text.colorArgb,
-                    ).withValues(alpha: Color(text.colorArgb).a * text.alpha),
-                    fontSize: effectiveFontSize,
-                    // No fontFamily means "whatever the platform's default
-                    // is" — fine on mobile/desktop (the OS always has one)
-                    // but on Flutter Web's CanvasKit renderer that can mean
-                    // *no usable typeface at all*: layout still succeeds
-                    // (painter.width/height are sane) but nothing actually
-                    // paints, invisibly. Pin to the font this package bundles
-                    // (pubspec.yaml's `fonts:`) so `Text` never depends on
-                    // that resolution succeeding.
-                    // A font declared in a dependency package's pubspec.yaml
-                    // is only resolvable under this prefixed family name —
-                    // even from code inside that same package — per Flutter's
-                    // asset-bundling convention for package-provided fonts.
-                    fontFamily:
-                        text.fontFamily ??
-                        'packages/zarvan_flutter/EngineDefault',
-                    shadows: text.shadowArgb == null
-                        ? null
-                        : [
-                            Shadow(
-                              color: Color(text.shadowArgb!),
-                              offset: Offset(
-                                effectiveFontSize * 0.08,
-                                effectiveFontSize * 0.08,
+          final fontFamily =
+              text.fontFamily ?? 'packages/zarvan_flutter/EngineDefault';
+          final maxWidthPx = text.maxWidth == null
+              ? double.infinity
+              : text.maxWidth! * scale;
+          final color = Color(
+            text.colorArgb,
+          ).withValues(alpha: Color(text.colorArgb).a * text.alpha);
+          final key = (
+            text.text,
+            effectiveFontSize,
+            color.toARGB32(),
+            fontFamily,
+            text.shadowArgb,
+            text.rtl,
+            LocalizationFlutter.textDirection,
+            text.align,
+            maxWidthPx,
+          );
+          final painter = textPainters.obtain(
+            key,
+            () =>
+                TextPainter(
+                  text: TextSpan(
+                    text: text.text,
+                    style: TextStyle(
+                      color: Color(
+                        text.colorArgb,
+                      ).withValues(alpha: Color(text.colorArgb).a * text.alpha),
+                      fontSize: effectiveFontSize,
+                      // No fontFamily means "whatever the platform's default
+                      // is" — fine on mobile/desktop (the OS always has one)
+                      // but on Flutter Web's CanvasKit renderer that can mean
+                      // *no usable typeface at all*: layout still succeeds
+                      // (painter.width/height are sane) but nothing actually
+                      // paints, invisibly. Pin to the font this package bundles
+                      // (pubspec.yaml's `fonts:`) so `Text` never depends on
+                      // that resolution succeeding.
+                      // A font declared in a dependency package's pubspec.yaml
+                      // is only resolvable under this prefixed family name —
+                      // even from code inside that same package — per Flutter's
+                      // asset-bundling convention for package-provided fonts.
+                      fontFamily:
+                          text.fontFamily ??
+                          'packages/zarvan_flutter/EngineDefault',
+                      shadows: text.shadowArgb == null
+                          ? null
+                          : [
+                              Shadow(
+                                color: Color(text.shadowArgb!),
+                                offset: Offset(
+                                  effectiveFontSize * 0.08,
+                                  effectiveFontSize * 0.08,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                    ),
                   ),
+                  // Per-text override first, else locale-aware direction so
+                  // Persian/Arabic shape correctly; bitmask debug glyphs stay
+                  // LTR on purpose (ASCII digits).
+                  textDirection: switch (text.rtl) {
+                    true => TextDirection.rtl,
+                    false => TextDirection.ltr,
+                    null => LocalizationFlutter.textDirection,
+                  },
+                  // Wrapped lines follow the component's alignment inside its
+                  // box, not just the box itself.
+                  textAlign: switch (text.align) {
+                    txt.TextAlignment.left => TextAlign.left,
+                    txt.TextAlignment.center => TextAlign.center,
+                    txt.TextAlignment.right => TextAlign.right,
+                  },
+                )..layout(
+                  maxWidth: text.maxWidth == null
+                      ? double.infinity
+                      : text.maxWidth! * scale,
                 ),
-                // Per-text override first, else locale-aware direction so
-                // Persian/Arabic shape correctly; bitmask debug glyphs stay
-                // LTR on purpose (ASCII digits).
-                textDirection: switch (text.rtl) {
-                  true => TextDirection.rtl,
-                  false => TextDirection.ltr,
-                  null => LocalizationFlutter.textDirection,
-                },
-                // Wrapped lines follow the component's alignment inside its
-                // box, not just the box itself.
-                textAlign: switch (text.align) {
-                  txt.TextAlignment.left => TextAlign.left,
-                  txt.TextAlignment.center => TextAlign.center,
-                  txt.TextAlignment.right => TextAlign.right,
-                },
-              )..layout(
-                maxWidth: text.maxWidth == null
-                    ? double.infinity
-                    : text.maxWidth! * scale,
-              );
-
+          );
           final dx = switch (text.align) {
             txt.TextAlignment.left => 0.0,
             txt.TextAlignment.center => -painter.width / 2,
@@ -3700,6 +3727,7 @@ class _EnginePainter extends CustomPainter {
           fx.kind == ShaderEffect.portrait ||
           fx.kind == ShaderEffect.seal ||
           fx.kind == ShaderEffect.mark ||
+          fx.kind == ShaderEffect.disc ||
           fx.kind == ShaderEffect.emblem ||
           fx.kind == ShaderEffect.dust;
       final isVeil =
@@ -3740,6 +3768,8 @@ class _EnginePainter extends CustomPainter {
                     ? EffectShader.dust
                     : fx.kind == ShaderEffect.mark
                     ? EffectShader.mark
+                    : fx.kind == ShaderEffect.disc
+                    ? EffectShader.disc
                     : fx.kind == ShaderEffect.emblem
                     ? EffectShader.emblem
                     : EffectShader.portrait)
@@ -4200,6 +4230,7 @@ Future<Uint8List> captureWorldToPng(
     tileCullCache: {},
     combinedTextureCache: {},
     effectShaders: _EffectShaderCache(),
+    textPainters: TextPainterCache(capacity: 64),
   );
   final recorder = ui.PictureRecorder();
   painter.paint(Canvas(recorder), Size(width.toDouble(), height.toDouble()));

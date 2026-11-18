@@ -178,7 +178,7 @@ class QuizGameScreen extends QuizScreen {
         gap * (lines.length - 1);
     final cardTop = 104.0;
     spread(0.2);
-    final cardHeight = inner + 32;
+    final cardHeight = inner + 56;
     final cardRect = UiRect(
       QuizScreen.margin,
       cardTop,
@@ -221,7 +221,7 @@ class QuizGameScreen extends QuizScreen {
       rtl: rtl,
     ).width;
     final finalColor = answered ? _parchmentCorrect : _parchmentInk;
-    var y = cardTop + 16;
+    var y = cardTop + 28;
     var wordNo = 0;
     for (var i = 0; i < lines.length; i++) {
       final words = lines[i].split(' ').where((w) => w.isNotEmpty).toList();

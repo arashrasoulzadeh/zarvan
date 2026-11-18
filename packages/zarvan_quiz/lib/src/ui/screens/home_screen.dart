@@ -78,16 +78,6 @@ class QuizHomeScreen extends QuizScreen {
       ),
     );
     final authors = kit.bank.authors;
-    final done = authors
-        .where((a) => _passed(a) == QuizTier.values.length)
-        .length;
-    label(
-      '${s.number(done)} ${s.outOf} ${s.number(authors.length)} ${s.chaptersDone}',
-      cx,
-      134,
-      size: 12,
-      color: theme.soft,
-    );
 
     final next = nextStage(kit.bank, progress);
     const perRow = 5;

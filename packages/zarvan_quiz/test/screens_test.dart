@@ -774,7 +774,11 @@ void main() {
         ]) {
           expect(r.has(t), isTrue, reason: t);
         }
-        expect(r.has('0 of 3 complete'), isTrue);
+        expect(
+          r.texts.any((x) => x.contains('complete')),
+          isFalse,
+          reason: 'no "n of m complete" line on the menu',
+        );
         expect(r.hasPart('Daily'), isTrue);
         expect(r.hasPart('Continue · Poet a · Easy'), isTrue);
         final played = await Rig.make(
@@ -806,7 +810,7 @@ void main() {
           },
         );
         await r.open(QuizHomeScreen(r.kit));
-        expect(r.has('1 of 3 complete'), isTrue);
+
         expect(r.hasPart('Continue · Poet b · Medium'), isTrue);
         r.tap('Continue · Poet b · Medium');
         expect(r.loaded, isA<QuizGameScreen>());

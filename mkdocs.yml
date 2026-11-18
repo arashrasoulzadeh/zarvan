@@ -48,7 +48,7 @@ theme:
         name: Switch to dark mode
 
 extra_css:
-  - stylesheets/zarvan.css?v=8
+  - stylesheets/zarvan.css?v=9
 
 extra_javascript:
   - javascripts/rtl.js

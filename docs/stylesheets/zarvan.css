@@ -106,6 +106,10 @@ body { background-color: var(--md-default-bg-color); }
 .md-typeset .highlight pre, .md-typeset > pre { border: 1px solid var(--zv-line); box-shadow: var(--zv-shadow); }
 .md-typeset table:not([class]) { display: table; width: 100%; border: 1px solid var(--zv-line); border-radius: 10px; overflow: hidden; box-shadow: none; background: var(--zv-surface); font-size: .78rem; }
 .md-typeset table:not([class]) th { background: color-mix(in srgb, var(--zv-gold) 16%, transparent); font-weight: 700; }
+.md-typeset__table { display: block; width: 100%; }
+.md-typeset table:not([class]) td:first-child code, .md-typeset table:not([class]) th:first-child { white-space: nowrap; word-break: normal; overflow-wrap: normal; }
+.md-typeset table:not([class]) td, .md-typeset table:not([class]) th { overflow-wrap: break-word; vertical-align: top; }
+.md-typeset table:not([class]) td code { word-break: normal; }
 .md-typeset .admonition, .md-typeset details { border-radius: 12px; border-width: 1px; box-shadow: none; background: var(--zv-surface); }
 .md-typeset .grid.cards > ul > li { border-radius: var(--zv-radius); border: 1px solid var(--zv-line); background: var(--zv-surface); transition: transform .18s ease, border-color .18s ease; }
 .md-typeset .grid.cards > ul > li:hover { transform: translateY(-3px); border-color: var(--zv-gold); box-shadow: var(--zv-shadow); }

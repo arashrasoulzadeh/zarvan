@@ -63,65 +63,46 @@ extension QuizOrnaments on QuizScreen {
     return id;
   }
 
-  /// An ornate frame around [r] drawn from the sheet pieces named [name] at
-  /// [scale] world units per sheet pixel (a 68 px corner at 0.36 is about 24
-  /// units). Edge tiles repeat and are stretched a little so
-  /// a whole number of them fits. Returns what it made, or an empty list when
-  /// the game gave no such frame.
-  List<EntityId> ornateFrame(
-    UiRect r,
-    String name, {
-    required double scale,
+  /// An ornate Persian frame around [r], drawn by the engine's `ornate`
+  /// shader: a band [band] thick of a lattice with cells [cell] wide, gold
+  /// lines and corner rosettes, with the corners rounded by [radius]. Inside
+  /// it lays [fill] (parchment when [paper] is up, with [cusp] scallops on
+  /// the band's inner edge), or leaves the middle clear when [fill] is null.
+  EntityId ornateFrame(
+    UiRect r, {
+    double band = 14,
+    double cell = 9,
+    double radius = 14,
+    int? fill,
+    double paper = 0,
+    double cusp = 0,
+    int? gold,
+    int? teal,
     int z = 6,
   }) {
-    final spec = kit.portraits?.frames[name];
-    final atlas = kit.portraits?.atlasId;
-    if (spec == null || atlas == null) return const [];
-    final ids = <EntityId>[];
-    void put(String piece, double cx, double cy, double sx, double sy) {
-      final id = world.spawn();
-      world.componentsOf<Position>().set(id, Position(cx, cy + yShift));
-      world.componentsOf<Sprite>().set(
-        id,
-        Sprite(atlas, '${name}_$piece', scaleX: sx, scaleY: sy, zIndex: z),
-      );
-      ids.add(id);
-    }
-
-    final cw = spec.cornerWidth * scale;
-    final ch = spec.cornerHeight * scale;
-    final band = spec.band * scale;
-    put('tl', r.x + cw / 2, r.y + ch / 2, scale, scale);
-    put('tr', r.right - cw / 2, r.y + ch / 2, scale, scale);
-    put('bl', r.x + cw / 2, r.bottom - ch / 2, scale, scale);
-    put('br', r.right - cw / 2, r.bottom - ch / 2, scale, scale);
-    void run(
-      String piece,
-      double from,
-      double length,
-      bool horizontal,
-      double at,
-    ) {
-      if (length <= 0) return;
-      final n = (length / (spec.tile * scale)).round().clamp(1, 1000);
-      final step = length / n;
-      for (var i = 0; i < n; i++) {
-        final c = from + (i + 0.5) * step;
-        if (horizontal) {
-          put(piece, c, at, step / spec.tile, scale);
-        } else {
-          put(piece, at, c, scale, step / spec.tile);
-        }
-      }
-    }
-
-    run('t', r.x + cw, r.width - 2 * cw, true, r.y + band / 2);
-    run('b', r.x + cw, r.width - 2 * cw, true, r.bottom - band / 2);
-    if (spec.sides) {
-      run('l', r.y + ch, r.height - 2 * ch, false, r.x + band / 2);
-      run('r', r.y + ch, r.height - 2 * ch, false, r.right - band / 2);
-    }
-    return ids;
+    final id = world.spawn();
+    world.componentsOf<Position>().set(
+      id,
+      Position(r.centerX, r.centerY + yShift),
+    );
+    world.componentsOf<ShaderEffect>().set(
+      id,
+      ShaderEffect(
+        kind: ShaderEffect.ornate,
+        width: r.width,
+        height: r.height,
+        zIndex: z,
+        border: band,
+        detail: cell,
+        rimGlow: radius,
+        intensity: paper,
+        saturation: cusp,
+        rimArgb: gold ?? 0xFFE3C477,
+        armArgb: teal ?? 0xFF1F7A6E,
+        coreArgb: fill ?? 0x00000000,
+      ),
+    );
+    return id;
   }
 
   /// A GPU night sky (nebula, aurora, stars, rising dust) behind the whole

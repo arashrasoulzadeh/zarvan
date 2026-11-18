@@ -3647,7 +3647,9 @@ class _EnginePainter extends CustomPainter {
       final isGlow = fx.kind == ShaderEffect.glow || isShine;
       final isOrb = fx.kind == ShaderEffect.orb;
       final isAurora = fx.kind == ShaderEffect.aurora;
-      final isPicture = fx.kind == ShaderEffect.portal || isOrb || isAurora;
+      final isOrnate = fx.kind == ShaderEffect.ornate;
+      final isPicture =
+          fx.kind == ShaderEffect.portal || isOrb || isAurora || isOrnate;
       if (pos == null || (!isPicture && !isGlow)) continue;
       final center = camera.worldToScreen(
         pos.x,
@@ -3666,6 +3668,8 @@ class _EnginePainter extends CustomPainter {
                       ? EffectShader.orb
                       : isAurora
                       ? EffectShader.aurora
+                      : isOrnate
+                      ? EffectShader.ornate
                       : EffectShader.portal)
                   .shader();
           if (shader == null) return;
@@ -3712,7 +3716,14 @@ class _EnginePainter extends CustomPainter {
                 ..setFloat(k++, col.b)
                 ..setFloat(k++, col.a);
             }
-            if (!isOrb && !isShine && !isAurora) {
+            if (isOrnate) {
+              shader
+                ..setFloat(k++, fx.border * camera.zoom)
+                ..setFloat(k++, fx.detail * camera.zoom)
+                ..setFloat(k++, fx.rimGlow * camera.zoom)
+                ..setFloat(k++, fx.intensity)
+                ..setFloat(k++, fx.saturation);
+            } else if (!isOrb && !isShine && !isAurora) {
               shader
                 ..setFloat(k++, fx.detail)
                 ..setFloat(k++, fx.rimGlow)
@@ -3720,7 +3731,7 @@ class _EnginePainter extends CustomPainter {
                 ..setFloat(k++, fx.border);
             }
           }
-          if (!isAurora) {
+          if (!isAurora && !isOrnate) {
             shader
               ..setImageSampler(0, first ?? blankShaderImage())
               ..setImageSampler(1, second ?? first ?? blankShaderImage());

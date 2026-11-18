@@ -178,6 +178,49 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('an EngineView with an ornate frame paints without error', (
+    tester,
+  ) async {
+    final w = World(width: 180, height: 320);
+    registerCoreComponents(w);
+    registerFlutterComponents(w);
+    final e = w.spawn();
+    w.componentsOf<Position>().set(e, Position(90, 160));
+    w.componentsOf<ShaderEffect>().set(
+      e,
+      ShaderEffect(
+        kind: ShaderEffect.ornate,
+        width: 160,
+        height: 90,
+        border: 14,
+        detail: 9,
+        rimGlow: 14,
+        intensity: 1,
+        saturation: 0.4,
+        coreArgb: 0xFFD9B97B,
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: EngineView(
+          world: w,
+          atlasRegistry: AtlasRegistry(),
+          camera: Camera(),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(tester.takeException(), isNull);
+  });
+
+  test('the ornate shader is bundled and listed in the pubspec', () {
+    expect(File('shaders/ornate.frag').existsSync(), isTrue);
+    expect(
+      File('pubspec.yaml').readAsStringSync(),
+      contains('shaders/ornate.frag'),
+    );
+  });
+
   test('the aurora shader is bundled and listed in the pubspec', () {
     expect(File('shaders/aurora.frag').existsSync(), isTrue);
     expect(

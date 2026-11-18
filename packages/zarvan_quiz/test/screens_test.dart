@@ -249,51 +249,6 @@ void main() {
   });
 
   group('game screen', () {
-    test(
-      'with ornate frames the card and each option are drawn from sprites',
-      () async {
-        final r = await Rig.make(
-          portraits: const QuizPortraits(
-            atlasId: 'art',
-            authors: {},
-            frames: {
-              'card': QuizFrameSpec(
-                cornerWidth: 68,
-                cornerHeight: 68,
-                band: 38,
-              ),
-              'opt': QuizFrameSpec(
-                cornerWidth: 95,
-                cornerHeight: 65,
-                band: 30,
-                sides: false,
-              ),
-            },
-          ),
-        );
-        r.kit.session.begin(
-          QuizRound.stage(
-            r.kit.factory,
-            const StageMode(),
-            author: 'a',
-            tier: QuizTier.easy,
-          ),
-        );
-        await r.open(QuizGameScreen(r.kit));
-        final sprites = r.world.componentsOf<eng.Sprite>();
-        final regions = [
-          for (var i = 0; i < sprites.length; i++) sprites.denseAt(i).region,
-        ];
-        expect(
-          regions.where((x) => x.startsWith('card_')).length,
-          greaterThan(8),
-        );
-        expect(regions.where((x) => x == 'card_tl').length, 1);
-        expect(regions.where((x) => x == 'opt_tl').length, 4);
-        expect(regions.where((x) => x == 'opt_l').length, 0);
-      },
-    );
-
     Future<Rig> stage() async {
       final r = await Rig.make();
       r.kit.session.begin(
@@ -307,6 +262,25 @@ void main() {
       await r.open(QuizGameScreen(r.kit));
       return r;
     }
+
+    test(
+      'the card and each option are ornate shader frames, not images',
+      () async {
+        final r = await stage();
+        final fx = r.world.componentsOf<ShaderEffect>();
+        final ornate = [
+          for (var i = 0; i < fx.length; i++)
+            if (fx.denseAt(i).kind == ShaderEffect.ornate) fx.denseAt(i),
+        ];
+        expect(ornate.length, 5, reason: 'one card and four options');
+        expect(ornate.where((e) => e.coreArgb == 0xFFD9B97B).length, 1);
+        expect(
+          r.world.componentsOf<eng.Sprite>().length,
+          0,
+          reason: 'no art files',
+        );
+      },
+    );
 
     test('shows the HUD, the poem with its blank and four options', () async {
       final r = await stage();
@@ -475,9 +449,10 @@ void main() {
       final before = shapes();
       r.tap(r.optionRight);
       r.run(0.1);
-      expect(shapes(), greaterThan(before + 20));
+      final peak = shapes();
+      expect(peak, greaterThan(before + 20));
       r.run(2);
-      expect(shapes(), lessThan(before + 20));
+      expect(shapes(), lessThan(peak - 20), reason: 'the sparks are gone');
     });
 
     test('the right answer fills the blank, scores, and offers Next', () async {

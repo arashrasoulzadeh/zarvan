@@ -101,6 +101,15 @@ class ShaderEffect {
   /// stars. Opaque, so draw it behind everything.
   static const aurora = 'aurora';
 
+  /// An ornate Persian panel border drawn by `ornate.frag`: a teal band of
+  /// diamonds, stars and gold dots with gold lines and a rosette in each
+  /// corner, optionally around a sheet of parchment. Colours: [rimArgb] the
+  /// gold, [armArgb] the teal, [coreArgb] the middle (alpha 0 leaves it
+  /// clear). Sizes are world units: [border] band thickness, [detail] lattice
+  /// cell, [rimGlow] corner radius; [intensity] 0..1 parchment grain and
+  /// edge darkening; [saturation] 0..1 depth of the band's inner scallops.
+  static const ornate = 'ornate';
+
   /// A band of light that sweeps across `images[0]` every [period] seconds,
   /// lighting only its opaque pixels: lay it over a button or banner, same rect.
   static const shine = 'shine';
@@ -166,6 +175,9 @@ class EffectShader {
 
   /// `aurora.frag`.
   static final aurora = EffectShader._('aurora.frag');
+
+  /// `ornate.frag`.
+  static final ornate = EffectShader._('ornate.frag');
 
   final String _assetKey;
   ui.FragmentProgram? _program;

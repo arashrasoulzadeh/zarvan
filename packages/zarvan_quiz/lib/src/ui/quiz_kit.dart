@@ -79,14 +79,7 @@ class QuizSettings {
 /// registers (as its packed atlas): the shelf card of an author with a
 /// region named after their id shows it in place of the plain diamond.
 class QuizPortraits {
-  const QuizPortraits({
-    required this.atlasId,
-    required this.authors,
-    this.frames = const {},
-  });
-
-  /// Ornate frames cut into the same sheet, by name (see [QuizFrameSpec]).
-  final Map<String, QuizFrameSpec> frames;
+  const QuizPortraits({required this.atlasId, required this.authors});
 
   /// The id the sheet is registered under.
   final String atlasId;
@@ -99,33 +92,6 @@ class QuizPortraits {
   static const regionHeight = 200.0;
 
   bool has(String authorId) => authors.contains(authorId);
-}
-
-/// How an ornate frame is laid out in the sheet: regions `<name>_tl`, `_tr`,
-/// `_bl`, `_br` (corners), `_t`/`_b` (a tile that repeats along the top and
-/// bottom) and, when [sides], `_l`/`_r` (tiles for the sides). Sizes are in
-/// sheet pixels; the screen picks the scale at which it draws them.
-class QuizFrameSpec {
-  const QuizFrameSpec({
-    required this.cornerWidth,
-    required this.cornerHeight,
-    required this.band,
-    this.tile = 120,
-    this.sides = true,
-  });
-
-  final double cornerWidth;
-  final double cornerHeight;
-
-  /// Thickness of the edge tiles.
-  final double band;
-
-  /// Length of one repeating tile.
-  final double tile;
-
-  /// Whether the frame has side tiles (a frame as tall as its two corners
-  /// has none).
-  final bool sides;
 }
 
 /// What the quiz screens need from the app for rewarded ads, without the

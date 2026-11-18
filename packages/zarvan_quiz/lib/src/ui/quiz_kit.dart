@@ -184,7 +184,7 @@ class QuizKit {
     this.stageMode = const StageMode(),
     this.portraits,
     this.transitions = true,
-    this.transitionKind = quizVerseTransition,
+    this.transitionKind = 'curtain',
     DateTime Function()? now,
   }) : now = now ?? DateTime.now;
 
@@ -212,8 +212,9 @@ class QuizKit {
   final bool transitions;
 
   /// Which engine shader draws the transition, by the name of its
-  /// `ShaderEffect` kind, or `verse` (default): the poems' own words swirl in
-  /// over an ink wash; `kashi`, Persian tilework in the game's
+  /// `ShaderEffect` kind: `curtain` (default), embroidered velvet curtains
+  /// closing under moonlight; `verse`, the poems' own words swirling in over an
+  /// ink wash; `kashi`, Persian tilework in the game's
   /// own style; `ink`, a bleeding wash with petals; or the plain `veil`.
   final String transitionKind;
 

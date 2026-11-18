@@ -138,7 +138,7 @@ class Rig {
     QuizBank? bank,
     QuizPortraits? portraits,
     bool transitions = false,
-    String transitionKind = 'kashi',
+    String transitionKind = 'curtain',
   }) async {
     final kv = MemoryKeyValueStore();
     final session = await QuizSession.open(kv);
@@ -840,7 +840,8 @@ void main() {
           final fx = r.world.componentsOf<ShaderEffect>();
           for (var i = 0; i < fx.length; i++) {
             final k = fx.denseAt(i).kind;
-            if (k == ShaderEffect.kashi ||
+            if (k == ShaderEffect.curtain ||
+                k == ShaderEffect.kashi ||
                 k == ShaderEffect.ink ||
                 k == ShaderEffect.veil) {
               return fx.denseAt(i);
@@ -894,6 +895,7 @@ void main() {
       'going back from the game to the menu has a transition too, in either style',
       () async {
         for (final kind in [
+          ShaderEffect.curtain,
           ShaderEffect.kashi,
           ShaderEffect.ink,
           ShaderEffect.veil,

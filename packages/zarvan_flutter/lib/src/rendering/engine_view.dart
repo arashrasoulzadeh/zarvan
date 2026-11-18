@@ -3653,7 +3653,8 @@ class _EnginePainter extends CustomPainter {
       final isVeil =
           fx.kind == ShaderEffect.veil ||
           fx.kind == ShaderEffect.ink ||
-          fx.kind == ShaderEffect.kashi;
+          fx.kind == ShaderEffect.kashi ||
+          fx.kind == ShaderEffect.curtain;
       final isPicture =
           fx.kind == ShaderEffect.portal ||
           isOrb ||
@@ -3690,6 +3691,8 @@ class _EnginePainter extends CustomPainter {
                             ? EffectShader.ink
                             : fx.kind == ShaderEffect.kashi
                             ? EffectShader.kashi
+                            : fx.kind == ShaderEffect.curtain
+                            ? EffectShader.curtain
                             : EffectShader.veil)
                       : EffectShader.portal)
                   .shader();

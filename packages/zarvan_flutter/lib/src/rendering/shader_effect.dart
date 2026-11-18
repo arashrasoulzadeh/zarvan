@@ -140,6 +140,13 @@ class ShaderEffect {
   /// [coreArgb] the dark tile body.
   static const kashi = 'kashi';
 
+  /// A theatre curtain transition drawn by `curtain.frag`: two embroidered
+  /// velvet panels with gold braided edges slide shut from the sides under a
+  /// moonlight beam (and part again). [params] x is progress 0..1. Colours:
+  /// [rimArgb] gold braid and embroidery, [armArgb] moonlight, [coreArgb] the
+  /// velvet.
+  static const curtain = 'curtain';
+
   /// A small eight-pointed progress seal drawn by `seal.frag`; [params] x is 0
   /// upcoming (dim), 1 current (bright, breathing light), 2 done (a tick).
   /// Colours: [rimArgb] gold, [armArgb] teal, [coreArgb] the dark.
@@ -226,6 +233,9 @@ class EffectShader {
 
   /// `ink.frag`.
   static final ink = EffectShader._('ink.frag');
+
+  /// `curtain.frag`.
+  static final curtain = EffectShader._('curtain.frag');
 
   /// `kashi.frag`.
   static final kashi = EffectShader._('kashi.frag');

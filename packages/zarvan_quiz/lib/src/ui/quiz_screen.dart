@@ -341,11 +341,14 @@ abstract class QuizScreen extends Scene {
         armArgb: switch (kit.transitionKind) {
           ShaderEffect.ink => 0xFFE8A0AA,
           ShaderEffect.kashi => 0xFF1F7A6E,
+          ShaderEffect.curtain => 0xFFBFD4F0,
           _ => theme.accent,
         },
-        coreArgb: kit.transitionKind == ShaderEffect.ink
-            ? 0xFF0C1A30
-            : 0xFF0B2420,
+        coreArgb: switch (kit.transitionKind) {
+          ShaderEffect.ink => 0xFF0C1A30,
+          ShaderEffect.curtain => 0xFF1B2D5A,
+          _ => 0xFF0B2420,
+        },
         params: [progress, x, y],
       ),
     );

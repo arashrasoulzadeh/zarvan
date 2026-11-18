@@ -329,6 +329,36 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('an EngineView with a curtain paints without error', (
+    tester,
+  ) async {
+    final w = World(width: 180, height: 320);
+    registerCoreComponents(w);
+    registerFlutterComponents(w);
+    final e = w.spawn();
+    w.componentsOf<Position>().set(e, Position(90, 160));
+    w.componentsOf<ShaderEffect>().set(
+      e,
+      ShaderEffect(
+        kind: ShaderEffect.curtain,
+        width: 80,
+        height: 100,
+        params: const [0.5, 0.5, 0.5],
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: EngineView(
+          world: w,
+          atlasRegistry: AtlasRegistry(),
+          camera: Camera(),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('an EngineView with a seal paints without error', (tester) async {
     final w = World(width: 180, height: 320);
     registerCoreComponents(w);
@@ -370,7 +400,7 @@ void main() {
 
   test('the portrait and veil shaders are bundled and listed', () {
     final pubspec = File('pubspec.yaml').readAsStringSync();
-    for (final f in ['portrait', 'veil', 'ink', 'kashi', 'seal']) {
+    for (final f in ['portrait', 'veil', 'ink', 'kashi', 'seal', 'curtain']) {
       expect(File('shaders/$f.frag').existsSync(), isTrue);
       expect(pubspec, contains('shaders/$f.frag'));
     }

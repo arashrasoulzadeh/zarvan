@@ -170,19 +170,7 @@ class QuizGameScreen extends QuizScreen {
       final n = first + k;
       final x = cx + (rtl ? -1 : 1) * (k - (count - 1) / 2) * pitch;
       final state = n < current ? 2 : (n == current ? 1 : 0);
-      _view.addId(sealAt(x, y, size, state));
-      if (state != 2) {
-        _view.addNode(
-          label(
-            kit.strings.number(n + 1),
-            x,
-            y,
-            size: 14,
-            color: state == 1 ? 0xFFFFF1CC : 0xFFBFD8D0,
-            z: 8,
-          ),
-        );
-      }
+      _view.addId(sealAt(x, y, size, state, number: n + 1, western: !rtl));
     }
     final reach = (count - 1) * pitch / 2 + size / 2 + 10;
     _view.addNode(line(24, cx - reach, y, theme.accent));

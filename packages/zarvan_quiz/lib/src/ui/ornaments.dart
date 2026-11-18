@@ -64,8 +64,17 @@ extension QuizOrnaments on QuizScreen {
 
   /// A progress seal of [size] centred at ([x], [y]), drawn by the `seal`
   /// shader: [state] 0 for a step to come, 1 for the current one, 2 for one
-  /// done (it carries a tick).
-  EntityId sealAt(double x, double y, double size, int state, {int z = 6}) {
+  /// done (it carries a tick). A step to come or the current one shows [number]
+  /// (0..99) in Persian digits, or Western when [western].
+  EntityId sealAt(
+    double x,
+    double y,
+    double size,
+    int state, {
+    int? number,
+    bool western = false,
+    int z = 6,
+  }) {
     final id = world.spawn();
     world.componentsOf<Position>().set(id, Position(x, y + yShift));
     world.componentsOf<ShaderEffect>().set(
@@ -80,7 +89,9 @@ extension QuizOrnaments on QuizScreen {
         rimArgb: 0xFFE3C477,
         armArgb: theme.accent,
         coreArgb: 0xFF0B2420,
-        params: [state.toDouble()],
+        // The number is drawn by the shader itself, in Persian or Western
+        // digits, so the seal needs no text on top.
+        params: [state.toDouble(), (number ?? -1).toDouble(), western ? 1 : 0],
       ),
     );
     return id;

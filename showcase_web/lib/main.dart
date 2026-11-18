@@ -59,7 +59,12 @@ class ShowcaseGame extends Game {
   );
 
   @override
-  Scene createInitialScene() => GameScene(demo, input.state);
+  Scene createInitialScene() => demo == 'transitions'
+      ? TransitionDemoScene(
+          blue: true,
+          config: transitionConfigFor(Uri.base.queryParameters['type']),
+        )
+      : GameScene(demo, input.state);
 
   void _syncHtmlLoader() {
     if (loadingProgress.fraction < 1) return;
@@ -524,5 +529,89 @@ class BreakoutSystem implements System {
       }
     }
     (w.getComponent<ztext.Text>(scoreText!)!).text = '$score  ·  $lives';
+  }
+}
+
+/// The transition a `?demo=transitions&type=<name>` page plays between its two
+/// scenes; an unknown or missing name falls back to the ripple.
+SceneTransitionConfig transitionConfigFor(String? name) {
+  final type = SceneTransitionType.values.firstWhere(
+    (t) => t.name == name,
+    orElse: () => SceneTransitionType.ripple,
+  );
+  return SceneTransitionConfig(type: type, duration: 0.8);
+}
+
+/// One of two plain full-screen scenes (blue and red) the docs' transition
+/// gallery swaps between with the real engine, so every type is shown exactly
+/// as a game would draw it. It swaps on a tap and, so an unattended page still
+/// shows something, every couple of seconds.
+class TransitionDemoScene extends Scene {
+  TransitionDemoScene({required this.blue, required this.config});
+  final bool blue;
+  final SceneTransitionConfig config;
+
+  Scene get _other => TransitionDemoScene(blue: !blue, config: config);
+
+  @override
+  Future<void> populate(
+    World world,
+    SceneController scenes,
+    GameState state,
+  ) async {
+    box(world, 400, 240, 800, 480, blue ? 0xFF2F5BE0 : 0xFFD43A3A);
+    ring(world, 400, 240, 180, 0x55FFFFFF);
+    dot(world, 400, 240, 70, 0xFFFFFFFF);
+    final label = world.spawn();
+    world.setComponent(label, Position(400, 24));
+    world.setComponent(
+      label,
+      ztext.Text(
+        blue ? 'BLUE' : 'RED',
+        fontSize: 26,
+        colorArgb: 0xFFFFFFFF,
+        screenSpace: true,
+        align: ztext.TextAlignment.center,
+        zIndex: 100,
+      ),
+    );
+    final hint = world.spawn();
+    world.setComponent(hint, Position(400, 450));
+    world.setComponent(
+      hint,
+      ztext.Text(
+        '${config.type.name} · tap to switch',
+        fontSize: 12,
+        colorArgb: 0xCCFFFFFF,
+        screenSpace: true,
+        align: ztext.TextAlignment.center,
+        zIndex: 100,
+      ),
+    );
+    world.addSystem(_AutoSwitch(() => _go(scenes)));
+  }
+
+  void _go(SceneController scenes) =>
+      scenes.loadSceneWithTransition(_other, transition: config);
+
+  @override
+  void handleTap(World world, SceneController scenes, Offset worldPosition) =>
+      _go(scenes);
+}
+
+class _AutoSwitch implements System {
+  _AutoSwitch(this.go);
+  final void Function() go;
+  double _wait = 2.2;
+
+  @override
+  String get name => 'autoSwitch';
+
+  @override
+  void update(World world, double dt) {
+    _wait -= dt;
+    if (_wait > 0) return;
+    _wait = 1e9;
+    go();
   }
 }

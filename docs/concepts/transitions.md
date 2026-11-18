@@ -21,16 +21,39 @@ sceneController.loadSceneWithTransition(
 );
 ```
 
-A `null` config swaps immediately. The previews below are looping illustrations
-of each motion, not recordings of the engine; shader effects are approximated.
+A `null` config swaps immediately.
 
-## The gallery
+## Play every transition
+
+This is the live ZARVAN runtime (`zarvan_core` and `zarvan_flutter`, compiled to the web), swapping between a blue
+scene and a red scene with the real engine: nothing here is a mock-up. Pick a type; the scenes switch every couple
+of seconds, or tap the screen to switch now.
+
+<div class="zv-live-demo" data-app="../../showcase/app/">
+<div class="zv-live-bar">
+<button class="is-active" data-query="demo=transitions&type=ripple" data-hint="ripple: tap the screen to switch scenes">ripple</button>
+<button data-query="demo=transitions&type=pageTurn" data-hint="pageTurn: tap the screen to switch scenes">pageTurn</button>
+<button data-query="demo=transitions&type=lanterns" data-hint="lanterns: tap the screen to switch scenes">lanterns</button>
+<button data-query="demo=transitions&type=portal" data-hint="portal: tap the screen to switch scenes">portal</button>
+<button data-query="demo=transitions&type=fade" data-hint="fade: tap the screen to switch scenes">fade</button>
+<button data-query="demo=transitions&type=iris" data-hint="iris: tap the screen to switch scenes">iris</button>
+<button data-query="demo=transitions&type=crossfade" data-hint="crossfade: tap the screen to switch scenes">crossfade</button>
+<button data-query="demo=transitions&type=pixelDissolve" data-hint="pixelDissolve: tap the screen to switch scenes">pixelDissolve</button>
+<button data-query="demo=transitions&type=slideLeft" data-hint="slideLeft: tap the screen to switch scenes">slideLeft</button>
+<button data-query="demo=transitions&type=slideRight" data-hint="slideRight: tap the screen to switch scenes">slideRight</button>
+<button data-query="demo=transitions&type=slideUp" data-hint="slideUp: tap the screen to switch scenes">slideUp</button>
+<button data-query="demo=transitions&type=slideDown" data-hint="slideDown: tap the screen to switch scenes">slideDown</button>
+<a data-open href="../../showcase/app/?demo=transitions&type=ripple">Open full screen ↗</a>
+</div>
+<div class="zv-live-stage"><div class="zv-live-box"><div class="zv-spin"><i></i>Loading the engine…</div><iframe src="../../showcase/app/?demo=transitions&type=ripple" title="Live ZARVAN transition demo" loading="lazy"></iframe></div></div>
+<div class="zv-live-hint">ripple: tap the screen to switch scenes</div>
+</div>
+
+## Each type in code
 
 <div class="zv-showcase-grid" markdown>
 
 <article class="zv-showcase-card" markdown>
-<div class="zv-output zv-tr zv-tr--fade" aria-hidden="true"><i class="zv-tr-a">A</i><i class="zv-tr-b">B</i><i class="zv-tr-fx"></i></div>
-
 ### `fade`
 
 A solid colour covers the scene, the swap happens behind it, then it clears. Not a snapshot: drawn by a screen-tint component.
@@ -45,8 +68,6 @@ SceneTransitionConfig(
 </article>
 
 <article class="zv-showcase-card" markdown>
-<div class="zv-output zv-tr zv-tr--iris" aria-hidden="true"><i class="zv-tr-a">A</i><i class="zv-tr-b">B</i><i class="zv-tr-fx"></i></div>
-
 ### `iris`
 
 A circle closes on the outgoing scene and opens on the next. Drawn by a clip component.
@@ -60,8 +81,6 @@ SceneTransitionConfig(
 </article>
 
 <article class="zv-showcase-card" markdown>
-<div class="zv-output zv-tr zv-tr--crossfade" aria-hidden="true"><i class="zv-tr-a">A</i><i class="zv-tr-b">B</i><i class="zv-tr-fx"></i></div>
-
 ### `crossfade`
 
 The outgoing scene fades out over the new one, which is already loaded underneath.
@@ -75,8 +94,6 @@ SceneTransitionConfig(
 </article>
 
 <article class="zv-showcase-card" markdown>
-<div class="zv-output zv-tr zv-tr--slide-left" aria-hidden="true"><i class="zv-tr-a">A</i><i class="zv-tr-b">B</i><i class="zv-tr-fx"></i></div>
-
 ### `slideLeft`
 
 The outgoing scene slides off to the left. `slideRight`, `slideUp` and `slideDown` are the same with another direction.
@@ -90,8 +107,6 @@ SceneTransitionConfig(
 </article>
 
 <article class="zv-showcase-card" markdown>
-<div class="zv-output zv-tr zv-tr--slide-up" aria-hidden="true"><i class="zv-tr-a">A</i><i class="zv-tr-b">B</i><i class="zv-tr-fx"></i></div>
-
 ### `slideUp`
 
 Slide off upward: a good fit for opening a menu or a pause screen.
@@ -105,8 +120,6 @@ SceneTransitionConfig(
 </article>
 
 <article class="zv-showcase-card" markdown>
-<div class="zv-output zv-tr zv-tr--dissolve" aria-hidden="true"><i class="zv-tr-a">A</i><i class="zv-tr-b">B</i><i class="zv-tr-fx"></i></div>
-
 ### `pixelDissolve`
 
 The outgoing scene breaks into blocks that vanish in a scattered order. The same `seed` always gives the same pattern.
@@ -120,24 +133,19 @@ SceneTransitionConfig(
 </article>
 
 <article class="zv-showcase-card" markdown>
-<div class="zv-output zv-tr zv-tr--portal" aria-hidden="true"><i class="zv-tr-a">A</i><i class="zv-tr-b">B</i><i class="zv-tr-fx"></i></div>
-
 ### `portal`
 
-A ring grows from a point you choose (`portalX`, `portalY`) in a colour you choose; `portalReverse` collapses it instead.
+A ring grows from the centre in a colour you choose (`portalColorArgb`); `portalReverse` collapses it instead.
 
 ```dart
 SceneTransitionConfig(
   type: SceneTransitionType.portal,
-  portalX: 0.3, portalY: 0.6,
   portalColorArgb: 0xFF7FD6FF,
 )
 ```
 </article>
 
 <article class="zv-showcase-card" markdown>
-<div class="zv-output zv-tr zv-tr--pageturn" aria-hidden="true"><i class="zv-tr-a">A</i><i class="zv-tr-b">B</i><i class="zv-tr-fx"></i></div>
-
 ### `pageTurn`
 
 The real screen is lifted from its right edge and rolled toward the left over the next scene, with the paper's back showing and a shadow ahead of the curl. Drawn by the `pageturn.frag` shader.
@@ -151,8 +159,6 @@ SceneTransitionConfig(
 </article>
 
 <article class="zv-showcase-card" markdown>
-<div class="zv-output zv-tr zv-tr--lanterns" aria-hidden="true"><i class="zv-tr-a">A</i><i class="zv-tr-b">B</i><i class="zv-tr-fx"></i></div>
-
 ### `lanterns`
 
 Three layers of swaying, flickering paper lanterns on strings carry the screen up and away, lighting its underside (`lanterns.frag`).
@@ -166,8 +172,6 @@ SceneTransitionConfig(
 </article>
 
 <article class="zv-showcase-card" markdown>
-<div class="zv-output zv-tr zv-tr--ripple" aria-hidden="true"><i class="zv-tr-a">A</i><i class="zv-tr-b">B</i><i class="zv-tr-fx"></i></div>
-
 ### `ripple`
 
 A drop falls where the player touched and rings bend the real screen as they pass; the next scene appears behind the leading ring (`ripple.frag`). Start it at the last touch with `originX` / `originY`.
@@ -205,7 +209,7 @@ SceneTransitionConfig(
 | `duration` | Seconds per phase. |
 | `easing` | Any `EasingType`. |
 | `fadeColorArgb` | The colour a `fade` goes through (default black). |
-| `portalX`, `portalY`, `portalColorArgb`, `portalReverse` | Where the portal ring starts, its colour and its direction. |
+| `portalColorArgb`, `portalReverse`, `portalX`, `portalY` | The portal ring's colour, its direction, and its centre in screen pixels. |
 | `originX`, `originY` | Where `ripple` starts, as fractions of the screen (0..1). |
 
 The config round-trips as JSON, so a level or scene file can name its own transition:

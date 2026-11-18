@@ -14,7 +14,7 @@
     root.querySelectorAll("button[data-demo]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         root.querySelectorAll("button[data-demo]").forEach(function (b) { b.classList.toggle("is-active", b === btn); });
-        var src = "app/?demo=" + btn.dataset.demo;
+        var src = (root.dataset.app || "app/") + "?" + (btn.dataset.query || "demo=" + btn.dataset.demo);
         busy(true);
         frame.src = src;
         if (open) open.href = src;

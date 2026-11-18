@@ -219,6 +219,7 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
       captureScreenshot: _captureScreenshot,
     );
     EffectShader.pageTurn.warmUp();
+    EffectShader.lanterns.warmUp();
     _gameState = widget.game.createInitialState();
     _future = _loadInitial(widget.game.createInitialScene());
   }
@@ -315,6 +316,8 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
     // slides off as a stand-in.
     if (transition.type == SceneTransitionType.pageTurn) {
       await EffectShader.pageTurn.warmUp();
+    } else if (transition.type == SceneTransitionType.lanterns) {
+      await EffectShader.lanterns.warmUp();
     }
     final snapshot = await _captureImage();
     _loadScene(next);

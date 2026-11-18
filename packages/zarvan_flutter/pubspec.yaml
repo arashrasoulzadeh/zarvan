@@ -74,6 +74,7 @@ flutter:
     - shaders/orb.frag
     - shaders/aurora.frag
     - shaders/pageturn.frag
+    - shaders/lanterns.frag
     - shaders/ornate.frag
     - shaders/portrait.frag
     - shaders/veil.frag

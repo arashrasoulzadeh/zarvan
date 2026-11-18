@@ -226,6 +226,10 @@ class EffectShader {
   /// `SceneTransitionType.pageTurn`).
   static final pageTurn = EffectShader._('pageturn.frag');
 
+  /// `lanterns.frag`, the page lifted by paper lanterns (see
+  /// `SceneTransitionType.lanterns`).
+  static final lanterns = EffectShader._('lanterns.frag');
+
   /// `ornate.frag`.
   static final ornate = EffectShader._('ornate.frag');
 

@@ -65,7 +65,7 @@ class QuizGameScreen extends QuizScreen {
     spread(0.08);
     titleBar(
       kit.strings.appName,
-      onBack: () => navigate(QuizHomeScreen(kit)),
+      onBack: () => navigate(QuizHomeScreen(kit), returning: true),
       showTitle: false,
     );
     _hud = [

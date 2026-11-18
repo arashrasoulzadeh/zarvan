@@ -78,6 +78,10 @@ class QuizGroup {
 /// away from the right over the next screen (the engine's `pageTurn`).
 const quizPageTurnTransition = 'page';
 
+/// The transition kind in which paper lanterns lift the screen up and away
+/// (the engine's `lanterns`).
+const quizLanternsTransition = 'lanterns';
+
 /// The name of the transition kind that swirls the poems' own words over an
 /// ink wash (the others are engine `ShaderEffect` kinds).
 const quizVerseTransition = 'verse';
@@ -294,21 +298,31 @@ abstract class QuizScreen extends Scene {
   eng.WordSwarm? _swarm;
 
   /// Moves on to [next] under the transition when the kit has them on, or at
-  /// once when not.
-  void navigate(Scene next) {
+  /// once when not. [returning] picks the kit's transition for going back to
+  /// the menu rather than the one for going into a game.
+  void navigate(Scene next, {bool returning = false}) {
     if (!kit.transitions) {
       goTo(next);
-    } else if (kit.transitionKind == quizPageTurnTransition) {
-      // A snapshot of this screen curls away from the right while the next
-      // one is already loaded underneath: no cover phase, no pause.
+      return;
+    }
+    final kind = returning ? kit.returnTransitionKind : kit.transitionKind;
+    // These two are snapshots of this screen that the engine carries over the
+    // next one, which is already loaded underneath: no cover phase, no pause.
+    final snapshot = switch (kind) {
+      quizPageTurnTransition => (SceneTransitionType.pageTurn, 0.9),
+      quizLanternsTransition => (SceneTransitionType.lanterns, 1.2),
+      _ => null,
+    };
+    if (snapshot != null) {
       scenes.loadSceneWithTransition(
         next,
-        transition: const SceneTransitionConfig(
-          type: SceneTransitionType.pageTurn,
-          duration: 0.9,
+        transition: SceneTransitionConfig(
+          type: snapshot.$1,
+          duration: snapshot.$2,
         ),
       );
     } else {
+      kit.veilKind = kind;
       veilTo(next);
     }
   }
@@ -328,7 +342,8 @@ abstract class QuizScreen extends Scene {
   }
 
   EntityId _spawnVeil(double progress, double x, double y) {
-    final verse = kit.transitionKind == quizVerseTransition;
+    final kind = kit.veilKind ?? kit.transitionKind;
+    final verse = kind == quizVerseTransition;
     if (verse) {
       _swarm = eng.WordSwarm(
         world,
@@ -349,18 +364,18 @@ abstract class QuizScreen extends Scene {
     world.componentsOf<ShaderEffect>().set(
       id,
       ShaderEffect(
-        kind: verse ? ShaderEffect.ink : kit.transitionKind,
+        kind: verse ? ShaderEffect.ink : kind,
         width: worldWidth,
         height: world.height,
         zIndex: 100,
         rimArgb: 0xFFE3C477,
-        armArgb: switch (kit.transitionKind) {
+        armArgb: switch (kind) {
           ShaderEffect.ink => 0xFFE8A0AA,
           ShaderEffect.kashi => 0xFF1F7A6E,
           ShaderEffect.curtain => 0xFFBFD4F0,
           _ => theme.accent,
         },
-        coreArgb: switch (kit.transitionKind) {
+        coreArgb: switch (kind) {
           ShaderEffect.ink => 0xFF0C1A30,
           ShaderEffect.curtain => 0xFF1B2D5A,
           _ => 0xFF0B2420,

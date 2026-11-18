@@ -142,6 +142,7 @@ class Rig {
     QuizPortraits? portraits,
     bool transitions = false,
     String transitionKind = 'curtain',
+    String? returnTransitionKind,
   }) async {
     final kv = MemoryKeyValueStore();
     final session = await QuizSession.open(kv);
@@ -167,6 +168,7 @@ class Rig {
       portraits: portraits,
       transitions: transitions,
       transitionKind: transitionKind,
+      returnTransitionKind: returnTransitionKind ?? transitionKind,
       now: () => now ?? DateTime(2026, 11, 17, 10),
     );
     gates[kit] = gate;
@@ -1006,6 +1008,31 @@ void main() {
           isNot(contains(ShaderEffect.veil)),
           reason: 'no overlay is drawn by the screen itself',
         );
+      },
+    );
+
+    test(
+      'going back to the menu is carried up on lanterns by the engine',
+      () async {
+        final r = await Rig.make(
+          bank: makeMultiBank(),
+          transitions: true,
+          transitionKind: quizPageTurnTransition,
+          returnTransitionKind: quizLanternsTransition,
+        );
+        r.kit.session.begin(
+          QuizRound.endless(r.kit.factory, const EndlessMode(), seedBase: 's'),
+        );
+        await r.open(QuizGameScreen(r.kit));
+        r.run(1);
+        r.tap('←');
+        expect(
+          r.loaded,
+          isA<QuizHomeScreen>(),
+          reason: 'the menu is loaded at once, underneath',
+        );
+        expect(r.loadedWith?.type, SceneTransitionType.lanterns);
+        expect(r.kit.veilPending, isFalse, reason: 'no overlay to lift');
       },
     );
 

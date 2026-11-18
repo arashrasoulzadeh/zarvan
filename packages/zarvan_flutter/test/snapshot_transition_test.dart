@@ -282,6 +282,31 @@ void main() {
       },
     );
 
+    test(
+      'lanterns slide the page up until their shader is ready, then it is gone',
+      () async {
+        final snap = await _solid(const Color(0xFF00FF00));
+        Future<double> covered(double t) async => _coverage(
+          await _render(
+            SnapshotTransitionPainter(
+              snapshot: snap,
+              type: SceneTransitionType.lanterns,
+              progress: t,
+            ),
+          ),
+        );
+        expect(await covered(0), greaterThan(0.95));
+        expect(await covered(0.5), inInclusiveRange(0.4, 0.6));
+        expect(await covered(1), lessThan(0.05));
+        expect(SceneTransitionType.lanterns.usesSnapshot, isTrue);
+        expect(File('shaders/lanterns.frag').existsSync(), isTrue);
+        expect(
+          File('pubspec.yaml').readAsStringSync(),
+          contains('shaders/lanterns.frag'),
+        );
+      },
+    );
+
     test('its shader is bundled and listed in the pubspec', () {
       expect(File('shaders/pageturn.frag').existsSync(), isTrue);
       expect(

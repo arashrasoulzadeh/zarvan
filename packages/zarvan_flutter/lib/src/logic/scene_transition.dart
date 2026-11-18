@@ -34,6 +34,11 @@ enum SceneTransitionType {
   /// toward the left over the new scene, with the paper's back showing where it
   /// has folded over (a real curl, drawn by `pageturn.frag`).
   pageTurn,
+
+  /// The outgoing scene hangs from strings tied to paper lanterns that lift it
+  /// up and off the top of the screen, lighting it from below, while the new
+  /// scene is revealed underneath (drawn by `lanterns.frag`).
+  lanterns,
 }
 
 extension SceneTransitionTypeX on SceneTransitionType {

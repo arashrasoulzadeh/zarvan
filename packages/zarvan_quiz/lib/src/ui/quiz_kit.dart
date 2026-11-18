@@ -7,7 +7,7 @@ import 'package:zarvan_flutter/zarvan_flutter.dart' show ShareOutcome;
 
 import '../quiz_session.dart';
 import 'quiz_strings.dart';
-import 'quiz_screen.dart' show quizPageTurnTransition;
+import 'quiz_screen.dart' show quizLanternsTransition, quizPageTurnTransition;
 import 'quiz_theme.dart';
 
 /// The player's quiz settings, saved under [key] in a [KeyValueStore] and
@@ -185,6 +185,7 @@ class QuizKit {
     this.portraits,
     this.transitions = true,
     this.transitionKind = quizPageTurnTransition,
+    this.returnTransitionKind = quizLanternsTransition,
     DateTime Function()? now,
   }) : now = now ?? DateTime.now;
 
@@ -216,6 +217,14 @@ class QuizKit {
   /// an engine `ShaderEffect` kind, an overlay drawn over it: `curtain`,
   /// `kashi`, `ink`, `veil`; or `verse`, poem words swirling in over ink.
   final String transitionKind;
+
+  /// The same, for going back to the menu (default `lanterns`, the screen
+  /// carried up on paper lanterns).
+  final String returnTransitionKind;
+
+  /// The overlay kind of the transition now running, so the screen that opens
+  /// lifts it in the same style; set by the screen that starts one.
+  String? veilKind;
 
   /// Set when a screen is leaving under a transition, so the next one knows
   /// to lift it instead of appearing bare.

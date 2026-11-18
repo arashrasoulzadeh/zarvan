@@ -76,7 +76,7 @@ class QuizResultScreen extends QuizScreen {
     button(
       row(by),
       s.backToMenu,
-      () => navigate(QuizHomeScreen(kit)),
+      () => navigate(QuizHomeScreen(kit), returning: true),
       style: QuizButtonStyle.outline,
     );
   }

@@ -98,6 +98,8 @@ class SnapshotTransitionPainter extends CustomPainter {
         _paintPortal(canvas, size, src, t);
       case SceneTransitionType.pageTurn:
         _paintPageTurn(canvas, size, t);
+      case SceneTransitionType.lanterns:
+        _paintLanterns(canvas, size, t);
       case SceneTransitionType.fade:
       case SceneTransitionType.iris:
         // World-based transitions (screen tint / clip shape); they never paint a
@@ -137,6 +139,34 @@ class SnapshotTransitionPainter extends CustomPainter {
       ..setFloat(8, 0.88)
       ..setFloat(9, 0.78)
       ..setFloat(10, 1)
+      ..setImageSampler(0, snapshot);
+    canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
+  }
+
+  /// The page rising on lanterns; until the shader has compiled the page just
+  /// slides up.
+  void _paintLanterns(Canvas canvas, Size size, double t) {
+    final shader = EffectShader.lanterns.shader();
+    if (shader == null) {
+      canvas.drawImageRect(
+        snapshot,
+        Rect.fromLTWH(
+          0,
+          0,
+          snapshot.width.toDouble(),
+          snapshot.height.toDouble(),
+        ),
+        (Offset.zero & size).shift(Offset(0, -size.height * t)),
+        Paint(),
+      );
+      return;
+    }
+    shader
+      ..setFloat(0, size.width)
+      ..setFloat(1, size.height)
+      ..setFloat(2, snapshot.width.toDouble())
+      ..setFloat(3, snapshot.height.toDouble())
+      ..setFloat(4, t)
       ..setImageSampler(0, snapshot);
     canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
   }

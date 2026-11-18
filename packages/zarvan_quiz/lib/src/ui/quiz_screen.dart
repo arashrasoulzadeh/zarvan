@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' show Offset;
 
 import 'package:zarvan_core/zarvan_core_quiz.dart'
@@ -156,7 +157,7 @@ abstract class QuizScreen extends Scene {
 
   @override
   void handleTap(World world, SceneController scenes, Offset worldPosition) {
-    if (veiled) return;
+    if (veiled || kit.inputGrace > 0) return;
     _lastTap = Offset(
       (worldPosition.dx / worldWidth).clamp(0.0, 1.0),
       (worldPosition.dy / world.height).clamp(0.0, 1.0),
@@ -423,6 +424,7 @@ abstract class QuizScreen extends Scene {
   }
 
   void _stepVeil(double dt) {
+    if (kit.inputGrace > 0) kit.inputGrace = math.max(0, kit.inputGrace - dt);
     if (_veilDirection == 0) return;
     _veilProgress += _veilDirection * dt / veilSeconds;
     final done = _veilDirection > 0 ? _veilProgress >= 1 : _veilProgress <= 0;
@@ -448,6 +450,8 @@ abstract class QuizScreen extends Scene {
     } else if (_veil != null) {
       world.destroy(_veil!);
       _veil = null;
+      // A tap meant for the screen that left must not land on this one.
+      kit.inputGrace = QuizKit.inputGraceSeconds;
     }
   }
 

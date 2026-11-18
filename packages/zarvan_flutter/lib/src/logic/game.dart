@@ -294,15 +294,41 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
       _loadScene(next);
       return;
     }
-    if (transition.type.usesSnapshot) {
-      await _loadSceneWithSnapshot(next, transition);
-      return;
+    // Nothing can be tapped while a transition runs, nor for a moment after,
+    // so a finger still on its way to the old screen cannot hit the new one.
+    _lockInput();
+    try {
+      if (transition.type.usesSnapshot) {
+        await _loadSceneWithSnapshot(next, transition);
+        return;
+      }
+      final outgoingWorld = (await _future).world;
+      await _runTransitionPhase(outgoingWorld, transition, covering: true);
+      _loadScene(next);
+      final incomingWorld = (await _future).world;
+      await _runTransitionPhase(incomingWorld, transition, covering: false);
+    } finally {
+      _unlockInputAfter(transition.inputGraceSeconds);
     }
-    final outgoingWorld = (await _future).world;
-    await _runTransitionPhase(outgoingWorld, transition, covering: true);
-    _loadScene(next);
-    final incomingWorld = (await _future).world;
-    await _runTransitionPhase(incomingWorld, transition, covering: false);
+  }
+
+  /// True while a transition is running and for `inputGraceSeconds` after it:
+  /// the scene on screen takes no taps, drags or key presses meanwhile.
+  bool _inputLocked = false;
+  Timer? _unlockTimer;
+
+  void _lockInput() {
+    _unlockTimer?.cancel();
+    _unlockTimer = null;
+    if (!_inputLocked && mounted) setState(() => _inputLocked = true);
+  }
+
+  void _unlockInputAfter(double seconds) {
+    _unlockTimer?.cancel();
+    _unlockTimer = Timer(Duration(milliseconds: (seconds * 1000).round()), () {
+      _unlockTimer = null;
+      if (mounted) setState(() => _inputLocked = false);
+    });
   }
 
   /// Slide / crossfade / pixel-dissolve: snapshot the outgoing scene, load
@@ -590,6 +616,7 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _unlockTimer?.cancel();
     final active = _snapshotTransition;
     if (active != null) {
       active.$1.dispose();
@@ -788,7 +815,10 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
             ),
           );
         }
-        return children.length == 1 ? engineView : Stack(children: children);
+        final shown = children.length == 1
+            ? engineView
+            : Stack(children: children);
+        return AbsorbPointer(absorbing: _inputLocked, child: shown);
       },
     );
   }

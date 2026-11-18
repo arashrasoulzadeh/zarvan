@@ -88,6 +88,10 @@ class SceneTransitionConfig {
   final double originX;
   final double originY;
 
+  /// How long the scene still takes no input once the transition has ended,
+  /// in seconds, so a tap meant for the old screen cannot land on the new one.
+  final double inputGraceSeconds;
+
   const SceneTransitionConfig({
     this.type = SceneTransitionType.fade,
     this.duration = 0.5,
@@ -99,6 +103,7 @@ class SceneTransitionConfig {
     this.portalReverse = false,
     this.originX = 0.5,
     this.originY = 0.5,
+    this.inputGraceSeconds = 0.1,
   });
 
   Map<String, dynamic> toJson() => {
@@ -112,28 +117,30 @@ class SceneTransitionConfig {
     'portalReverse': portalReverse,
     'originX': originX,
     'originY': originY,
+    'inputGraceSeconds': inputGraceSeconds,
   };
 
-  factory SceneTransitionConfig.fromJson(Map<String, dynamic> json) =>
-      SceneTransitionConfig(
-        type: SceneTransitionType.values.firstWhere(
-          (t) => t.name == json['type'],
-          orElse: () => SceneTransitionType.fade,
-        ),
-        duration: (json['duration'] as num?)?.toDouble() ?? 0.5,
-        easing: EasingType.values.firstWhere(
-          (e) => e.name == json['easing'],
-          orElse: () => EasingType.easeInOutQuad,
-        ),
-        fadeColorArgb: (json['fadeColorArgb'] as num?)?.toInt() ?? 0xFF000000,
-        portalX: (json['portalX'] as num?)?.toDouble() ?? 0,
-        portalY: (json['portalY'] as num?)?.toDouble() ?? 0,
-        portalColorArgb:
-            (json['portalColorArgb'] as num?)?.toInt() ?? 0xFFFFFFFF,
-        portalReverse: json['portalReverse'] == true,
-        originX: (json['originX'] as num?)?.toDouble() ?? 0.5,
-        originY: (json['originY'] as num?)?.toDouble() ?? 0.5,
-      );
+  factory SceneTransitionConfig.fromJson(
+    Map<String, dynamic> json,
+  ) => SceneTransitionConfig(
+    type: SceneTransitionType.values.firstWhere(
+      (t) => t.name == json['type'],
+      orElse: () => SceneTransitionType.fade,
+    ),
+    duration: (json['duration'] as num?)?.toDouble() ?? 0.5,
+    easing: EasingType.values.firstWhere(
+      (e) => e.name == json['easing'],
+      orElse: () => EasingType.easeInOutQuad,
+    ),
+    fadeColorArgb: (json['fadeColorArgb'] as num?)?.toInt() ?? 0xFF000000,
+    portalX: (json['portalX'] as num?)?.toDouble() ?? 0,
+    portalY: (json['portalY'] as num?)?.toDouble() ?? 0,
+    portalColorArgb: (json['portalColorArgb'] as num?)?.toInt() ?? 0xFFFFFFFF,
+    portalReverse: json['portalReverse'] == true,
+    originX: (json['originX'] as num?)?.toDouble() ?? 0.5,
+    originY: (json['originY'] as num?)?.toDouble() ?? 0.5,
+    inputGraceSeconds: (json['inputGraceSeconds'] as num?)?.toDouble() ?? 0.1,
+  );
 }
 
 /// Component attached to an entity that manages a scene transition.

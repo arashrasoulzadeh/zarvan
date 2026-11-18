@@ -226,6 +226,12 @@ class QuizKit {
   /// lifts it in the same style; set by the screen that starts one.
   String? veilKind;
 
+  /// How long the screen takes no taps once a transition has ended.
+  static const inputGraceSeconds = 0.1;
+
+  /// Seconds of that grace still to run; counted down by the open screen.
+  double inputGrace = 0;
+
   /// Set when a screen is leaving under a transition, so the next one knows
   /// to lift it instead of appearing bare.
   bool veilPending = false;

@@ -1086,6 +1086,37 @@ void main() {
     });
 
     test(
+      'after an overlay transition the screen takes no taps for 0.1 s more',
+      () async {
+        final r = await Rig.make(
+          bank: makeMultiBank(),
+          transitions: true,
+          transitionKind: ShaderEffect.curtain,
+        );
+        r.kit.session.begin(
+          QuizRound.endless(r.kit.factory, const EndlessMode(), seedBase: 's'),
+        );
+        r.kit.veilPending = true;
+        await r.open(QuizGameScreen(r.kit));
+        r.run(0.65);
+        expect(
+          r.kit.inputGrace,
+          greaterThan(0),
+          reason: 'the veil has just lifted',
+        );
+        r.tap(r.optionRight);
+        expect(
+          r.kit.session.answered,
+          isFalse,
+          reason: 'a tap in the grace does nothing',
+        );
+        r.run(0.15);
+        r.tap(r.optionRight);
+        expect(r.kit.session.answered, isTrue, reason: 'afterwards it counts');
+      },
+    );
+
+    test(
       'tapping a poet blurs the screen and opens a medal with the levels',
       () async {
         final r = await Rig.make(bank: makeMultiBank());

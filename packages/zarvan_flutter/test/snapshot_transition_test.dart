@@ -229,6 +229,52 @@ void main() {
 
   group('GameRunner integration', () {
     testWidgets(
+      'the new scene takes no taps while a transition runs, nor for 0.1 s after',
+      (tester) async {
+        final first = _Scene('first');
+        final second = _Scene('second');
+        await tester.pumpWidget(
+          MaterialApp(home: GameRunner(game: _Game(first))),
+        );
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 20));
+        await tester.tapAt(const Offset(100, 100));
+        expect(first.taps, 1, reason: 'taps work before any transition');
+
+        await tester.runAsync(() async {
+          first.scenes.loadSceneWithTransition(
+            second,
+            transition: const SceneTransitionConfig(
+              type: SceneTransitionType.slideLeft,
+              duration: 0.3,
+            ),
+          );
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        });
+        await tester.pump();
+        await tester.pump();
+        await tester.tapAt(const Offset(100, 100));
+        expect(second.taps, 0, reason: 'locked while the page is leaving');
+
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byKey(const Key('snapshot-transition')), findsNothing);
+        await tester.tapAt(const Offset(100, 100));
+        expect(second.taps, 0, reason: 'still locked right after it ended');
+
+        // The unlock timer runs in real time (the load started outside the
+        // test's fake clock).
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 250)),
+        );
+        await tester.pump();
+        await tester.tapAt(const Offset(100, 100));
+        expect(second.taps, 1, reason: 'taps work again after the grace');
+      },
+    );
+
+    testWidgets(
       'loadSceneWithTransition(slide) swaps the scene and clears the overlay when done',
       (tester) async {
         final first = _Scene('first');
@@ -373,6 +419,12 @@ class _Scene extends Scene {
   ) async {
     this.scenes = scenes;
     populated = true;
+  }
+
+  int taps = 0;
+  @override
+  void handleTap(World world, SceneController scenes, Offset worldPosition) {
+    taps++;
   }
 }
 

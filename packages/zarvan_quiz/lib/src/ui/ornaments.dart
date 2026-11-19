@@ -675,14 +675,17 @@ class DriftingCloud {
     final fx = world.componentsOf<ShaderEffect>().get(_id)!;
     if (!onScreen) _variant = rng.nextInt(4);
     // A new shape, size and motion each time it comes in.
-    final scale = 0.8 + rng.nextDouble() * 0.5;
+    // Depth: a far cloud is small, slow and pale, a near one large, quicker
+    // and stronger, so the sky reads as having distance (parallax).
+    final depth = rng.nextDouble();
+    final scale = 0.65 + 0.7 * depth;
     fx.width = _w * scale;
     fx.height = _h * scale;
     // The head leads, so it is mirrored when the cloud drifts to the right.
     fx.params = [
       _variant.toDouble(),
       right ? 1 : 0,
-      0.95,
+      0.7 + 0.25 * depth,
       rng.nextDouble() * 6,
     ];
     final y = _top + rng.nextDouble() * (_bottom - _top) + fx.height / 2;
@@ -691,7 +694,7 @@ class DriftingCloud {
         : (right
               ? -_offscreen(fx.width)
               : QuizScreen.worldWidth + _offscreen(fx.width));
-    _speed = (right ? 1 : -1) * (6 + rng.nextDouble() * 9);
+    _speed = (right ? 1 : -1) * (4 + 11 * depth);
     world.componentsOf<Position>().set(_id, Position(x, y + _shift));
   }
 

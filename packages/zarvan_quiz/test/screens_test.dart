@@ -1458,6 +1458,28 @@ void main() {
       },
     );
 
+    test('far clouds are smaller, slower and paler than near ones', () async {
+      final r = await Rig.make(bank: makeMultiBank());
+      await r.open(QuizHomeScreen(r.kit));
+      final sizes = <double>{};
+      final opacities = <double>{};
+      for (var i = 0; i < 60; i++) {
+        r.run(10);
+        final fx = r.world.componentsOf<ShaderEffect>();
+        for (var k = 0; k < fx.length; k++) {
+          final e = fx.denseAt(k);
+          if (e.kind != ShaderEffect.cloud) continue;
+          sizes.add(e.width);
+          opacities.add(e.params[2]);
+        }
+      }
+      expect(sizes.length, greaterThan(3), reason: 'depths differ');
+      for (final o in opacities) {
+        expect(o, inInclusiveRange(0.7, 0.95));
+      }
+      expect(opacities.reduce((a, b) => a < b ? a : b), lessThan(0.85));
+    });
+
     test('the home has no ad button and no title on top', () async {
       final r = await Rig.make(ads: true);
       await r.open(QuizHomeScreen(r.kit));

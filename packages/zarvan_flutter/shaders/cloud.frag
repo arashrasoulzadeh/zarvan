@@ -73,7 +73,9 @@ void main() {
   float b1 = 1.0 + 0.035 * sin(t * 0.55);
   float b2 = 1.0 + 0.04 * sin(t * 0.7 + 1.7);
   float b3 = 1.0 + 0.04 * sin(t * 0.45 + 3.1);
-  float ph = t * 0.4;
+  // Waves run from the head down the tail, as a ribbon streams in wind.
+  float ph = -t * 0.8;
+  float ph2 = -t * 0.95;
 
   vec2 hc;
   float hr;
@@ -89,7 +91,7 @@ void main() {
     d = smin(d, circ(p, hc + vec2(-0.1, 0.21), hr * 0.5 * b3), 0.08);
     float end = aspect * 0.95;
     d = smin(d, ribbon(p, hc.x, end, 0.56, 0.07, 5.2, ph, 0.17), 0.1);
-    d = smin(d, ribbon(p, hc.x + 0.1, end * 0.86, 0.66, 0.06, 6.4, -ph + 1.3, 0.09), 0.08);
+    d = smin(d, ribbon(p, hc.x + 0.1, end * 0.86, 0.66, 0.06, 6.4, ph2 + 1.3, 0.09), 0.08);
   } else if (v < 1.5) {
     // A long low streak with a small curl at the front.
     hc = vec2(0.2, 0.52 + 0.01 * sin(t * 0.5));
@@ -98,7 +100,7 @@ void main() {
     d = smin(d, circ(p, hc + vec2(0.13, -0.1), hr * 0.65 * b2), 0.06);
     float end = aspect * 0.98;
     d = smin(d, ribbon(p, hc.x, end, 0.52, 0.045, 3.4, ph, 0.11), 0.07);
-    d = smin(d, ribbon(p, hc.x + 0.2, end * 0.92, 0.6, 0.04, 4.1, -ph + 0.6, 0.06), 0.05);
+    d = smin(d, ribbon(p, hc.x + 0.2, end * 0.92, 0.6, 0.04, 4.1, ph2 + 0.6, 0.06), 0.05);
     d = smin(d, ribbon(p, hc.x + 0.1, end * 0.8, 0.45, 0.04, 4.8, ph + 2.0, 0.05), 0.05);
   } else if (v < 2.5) {
     // A round heap of puffs with a stub of tail.
@@ -122,7 +124,7 @@ void main() {
     d = smin(d, circ(p, h2, r2), 0.08);
     d = smin(d, circ(p, h2 + vec2(0.14, 0.1), r2 * 0.6 * b2), 0.07);
     d = smin(d, ribbon(p, hc.x, h2.x, 0.56, 0.05, 6.0, ph, 0.09), 0.08);
-    d = smin(d, ribbon(p, h2.x, aspect * 0.97, 0.64, 0.06, 5.0, -ph, 0.1), 0.08);
+    d = smin(d, ribbon(p, h2.x, aspect * 0.97, 0.64, 0.06, 5.0, ph2, 0.1), 0.08);
   }
 
   float depth = -d;

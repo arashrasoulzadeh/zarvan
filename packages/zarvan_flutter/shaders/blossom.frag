@@ -40,6 +40,15 @@ float n2(vec2 p) {
   return mix(mix(a, b2, f.x), mix(c2, d2, f.x), f.y);
 }
 
+// One breeze for the whole page: a slow sway with a gust that comes and goes,
+// reaching each part a little later than the one before (lag, in seconds), so
+// the limb bends first and the leaves and flowers follow it. About -0.35..1.
+float wind(float lag) {
+  float t = uTime - uOrigin.x * 0.004 - lag;
+  float gust = pow(0.5 + 0.5 * sin(t * 0.23 + 1.0), 3.0);
+  return 0.35 * sin(t * 0.45) + gust * (0.65 + 0.35 * sin(t * 1.7));
+}
+
 float hash(float n) {
   return fract(sin(n * 127.1) * 43758.5453);
 }
@@ -161,6 +170,15 @@ vec2 bloomAt(float f, float w) {
          vec2(side * w * (0.1 + 0.12 * fract(f * 0.618)), -0.03 * sin(f * 2.0));
 }
 
+// Where blossom [f] hangs now: nodding, and swung by the breeze a beat after
+// the limb it grows from.
+vec2 bloomMoved(float f, float w, float dirW) {
+  vec2 c = bloomAt(f, w);
+  c.y += 0.004 * sin(uTime * 0.9 + f * 2.1);
+  c.x += dirW * 0.009 * wind(0.2 + 0.07 * f);
+  return c;
+}
+
 // A leaf from [a] along [dir]: distance to its outline (negative inside).
 float leaf(vec2 p, vec2 a, vec2 dir, float len, float wid) {
   vec2 q = p - a;
@@ -233,7 +251,11 @@ void main() {
   if (uParams.x > 0.5) p.x = w - p.x;
   // The whole branch leans a hair with the breeze, more toward the tip.
   float tipness = clamp(1.0 - p.y, 0.0, 1.0);
-  p.x += 0.010 * tipness * tipness * sin(uTime * 0.7 + p.y * 2.0);
+  // The breeze blows one way on the page, so a mirrored branch pushes the
+  // other way in its own frame.
+  float dirW = uParams.x > 0.5 ? -1.0 : 1.0;
+  p.x -= dirW * 0.016 * tipness * tipness * wind(0.0);
+  p.x += 0.004 * tipness * tipness * sin(uTime * 0.7 + p.y * 2.0);
   float bloom = uParams.y > 0.0 ? uParams.y : 1.0;
   vec3 green = uCore.rgb;
 
@@ -249,7 +271,8 @@ void main() {
     float f = float(i);
     vec2 a = limb(0.1 + 0.15 * f, w);
     float side = mod(f, 2.0) < 0.5 ? 1.0 : -1.0;
-    float an = 0.9 * side - 1.2 + 0.15 * sin(uTime * 0.6 + f * 1.3);
+    float an = 0.9 * side - 1.2 + 0.1 * sin(uTime * 0.6 + f * 1.3) +
+               dirW * 0.3 * wind(0.3 + 0.08 * f);
     vec2 dir = vec2(cos(an), sin(an));
     float len = 0.17 - 0.008 * f;
     vec2 q = p - a;
@@ -297,7 +320,7 @@ void main() {
   // Thin twigs carry each blossom to the limb.
   for (int i = 0; i < 5; i++) {
     float f = float(i);
-    float td = seg(p, limb(bloomT(f), w), bloomAt(f, w));
+    float td = seg(p, limb(bloomT(f), w), bloomMoved(f, w, dirW));
     float tb = 1.0 - smoothstep(0.004, 0.008, td);
     outc = outc * (1.0 - tb) + vec4(uArm.rgb * 0.9, 1.0) * tb;
   }
@@ -320,15 +343,15 @@ void main() {
   for (int i = 0; i < 5; i++) {
     float f = float(i);
     if (f / 5.0 > bloom) continue;
-    vec2 c = bloomAt(f, w);
-    c.y += 0.004 * sin(uTime * 0.9 + f * 2.1);
+    vec2 c = bloomMoved(f, w, dirW);
     float r = 0.062 - 0.004 * f + 0.006 * sin(f * 3.1);
-    float rot = f * 0.9 + 0.1 * sin(uTime * 0.6 + f * 1.7);
+    float rot = f * 0.9 + 0.1 * sin(uTime * 0.6 + f * 1.7) -
+                dirW * 0.35 * wind(0.45 + 0.1 * f);
     vec4 b = blossom(p, c, r, rot, uRim.rgb, f);
     outc = outc * (1.0 - b.a) + vec4(b.rgb, 1.0) * b.a;
   }
-  vec4 tipb = blossom(p, limb(1.0, w) + vec2(0.0, 0.025), 0.056,
-                      0.4 + 0.1 * sin(uTime * 0.6), uRim.rgb, 9.0);
+  vec4 tipb = blossom(p, limb(1.0, w) + vec2(dirW * 0.011 * wind(0.15), 0.025), 0.056,
+                      0.4 + 0.1 * sin(uTime * 0.6) - dirW * 0.35 * wind(0.4), uRim.rgb, 9.0);
   outc = outc * (1.0 - tipb.a) + vec4(tipb.rgb, 1.0) * tipb.a;
 
   // Blossoms and a bud on the side branch.
@@ -336,8 +359,10 @@ void main() {
     float f = float(i);
     vec2 c = fork(0.5 + 0.4 * f, w) + vec2(0.0, -0.02);
     c.y += 0.004 * sin(uTime * 0.8 + f * 2.7);
+    c.x += dirW * 0.01 * wind(0.25 + 0.1 * f);
     float r = 0.05 - 0.006 * f;
-    vec4 b = blossom(p, c, r, f * 1.7 + 0.1 * sin(uTime * 0.5 + f), uRim.rgb, f + 20.0);
+    vec4 b = blossom(p, c, r, f * 1.7 + 0.1 * sin(uTime * 0.5 + f) - dirW * 0.3 * wind(0.5 + 0.1 * f),
+                     uRim.rgb, f + 20.0);
     outc = outc * (1.0 - b.a) + vec4(b.rgb, 1.0) * b.a;
   }
 
@@ -346,12 +371,16 @@ void main() {
     float kf = float(k);
     float life = fract(uTime / (6.0 + kf * 1.7) + kf * 0.37);
     vec2 from = bloomAt(kf * 2.0 + 1.0, w);
-    vec2 pc = from + vec2(0.05 * sin(life * 9.0 + kf) + life * 0.05 * (kf < 2.0 ? 1.0 : -1.0),
+    // It zigzags as it falls and is carried off by the breeze.
+    vec2 pc = from + vec2(0.05 * sin(life * 9.0 + kf) * (0.4 + life) +
+                          dirW * life * (0.03 + 0.12 * max(wind(life * 3.0), 0.0)),
                           life * 0.45);
     float ang = life * 7.0 + kf;
     vec2 d2 = p - pc;
     vec2 rp = vec2(cos(ang) * d2.x + sin(ang) * d2.y, -sin(ang) * d2.x + cos(ang) * d2.y);
-    float pd = length(rp * vec2(1.0, 1.7)) - 0.014;
+    // Turning edge-on and back as it tumbles, so it flutters.
+    float flutter = 0.35 + 0.65 * abs(cos(life * 11.0 + kf * 2.0));
+    float pd = length(rp * vec2(1.0 / flutter, 1.7)) - 0.014;
     float fade = smoothstep(0.0, 0.06, life) * (1.0 - smoothstep(0.7, 1.0, life));
     float pm = (1.0 - smoothstep(-0.002, 0.002, pd)) * fade;
     vec3 pcol = mix(vec3(1.0, 0.95, 0.92), uRim.rgb, 0.45 + 0.3 * clamp(rp.x / 0.014, -1.0, 1.0));

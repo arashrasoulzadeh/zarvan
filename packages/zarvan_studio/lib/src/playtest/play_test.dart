@@ -161,12 +161,20 @@ class PlayTest {
       ..createSync(recursive: true)
       ..writeAsStringSync('');
     final sink = log.openWrite(mode: FileMode.append);
-    process.stdout.listen(sink.add, onDone: () {});
-    process.stderr.listen(sink.add, onDone: () {});
+    // The log is best effort: if the project folder disappears while the game
+    // is still running (a closed project, a test's temp directory), the write
+    // error must not escape as an unhandled async error.
+    sink.done.catchError((Object _) {});
+    process.stdout.listen(sink.add, onDone: () {}, onError: (Object _) {});
+    process.stderr.listen(sink.add, onDone: () {}, onError: (Object _) {});
     process.exitCode.then((code) {
-      sink
-        ..writeln('\n[play-test exited with code $code]')
-        ..close();
+      try {
+        sink
+          ..writeln('\n[play-test exited with code $code]')
+          ..close();
+      } on Object {
+        // Same reason as above: a lost log is not worth a crash.
+      }
     });
   }
 }

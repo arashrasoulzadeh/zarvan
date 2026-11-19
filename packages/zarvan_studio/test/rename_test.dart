@@ -7,6 +7,12 @@ import 'package:flutter/services.dart';
 import 'package:zarvan_studio/src/lsp/edits.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+/// How long to keep retrying while the real Dart server starts and finishes
+/// its first analysis. A wall-clock deadline, not an attempt count: under a
+/// loaded full-suite run each attempt takes far longer than alone, so counting
+/// attempts made the budget shrink exactly when it was needed most.
+const _serverBudget = Duration(seconds: 120);
+
 void main() {
   _editorTest();
   group('parseWorkspaceEdit', () {
@@ -76,7 +82,8 @@ void main() {
       session.openFile(use, useSource);
 
       Map<String, List<TextEdit>> grouped = const {};
-      for (var attempt = 0; attempt < 80 && grouped.length < 2; attempt++) {
+      final clock = Stopwatch()..start();
+      while (grouped.length < 2 && clock.elapsed < _serverBudget) {
         try {
           grouped = await session.renameAt(hero, 0, 6, 'Champion');
         } on Object {
@@ -91,7 +98,7 @@ void main() {
       expect(applyEdits(useSource, grouped[use]!), contains('Champion()'));
       await session.close();
     },
-    timeout: const Timeout(Duration(minutes: 2)),
+    timeout: const Timeout(Duration(minutes: 4)),
   );
 }
 
@@ -129,8 +136,9 @@ void _editorTest() {
       await tester.pump();
       _placeCursorOnHero(tester);
 
+      final clock = Stopwatch()..start();
       bool renamed = false;
-      for (var attempt = 0; attempt < 60 && !renamed; attempt++) {
+      while (!renamed && clock.elapsed < _serverBudget) {
         await tester.sendKeyEvent(LogicalKeyboardKey.f2);
         await tester.pump(const Duration(milliseconds: 100));
         renamed = find.byKey(const Key('rename-input')).evaluate().isNotEmpty;
@@ -150,8 +158,11 @@ void _editorTest() {
         'Hero',
       );
 
+      clock
+        ..reset()
+        ..start();
       bool applied = false;
-      for (var attempt = 0; attempt < 30 && !applied; attempt++) {
+      while (!applied && clock.elapsed < _serverBudget) {
         await tester.enterText(
           find.byKey(const Key('rename-input')),
           'Champion',
@@ -190,8 +201,15 @@ void _editorTest() {
       await tester.tap(find.byKey(const Key('rename-apply')));
       await tester.pump();
       expect(File(use).readAsStringSync(), contains('Champion()'));
+
+      // Unmount so the language server shuts down before the temp directory
+      // is deleted, instead of analysing a folder that is going away.
+      await tester.pumpWidget(const SizedBox());
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
     },
-    timeout: const Timeout(Duration(minutes: 2)),
+    timeout: const Timeout(Duration(minutes: 4)),
   );
 }
 

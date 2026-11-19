@@ -88,14 +88,6 @@ Package: `packages/zarvan_studio`.
     - code signing and notarization;
     - a release server and signing key (the update client exists; nothing to talk to).
 
-### Tests
-
-- [ ] **Flaky `play_test_test.dart`**: "devices and stopping the device in use appears
-      in the launch arguments" failed once in CI with "failed after test completion"
-      (a timer or stream outliving the test). Not reproduced locally.
-- [ ] `rename_test.dart` is sensitive to load timing; it uses larger retry budgets
-      but can still flake on a busy machine.
-
 ### Features
 
 - [ ] **Debugger**: its own phase, not in the current IDE scope.

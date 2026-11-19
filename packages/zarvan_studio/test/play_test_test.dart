@@ -35,7 +35,15 @@ class _Recorder {
     this.executable = executable;
     this.arguments = arguments;
     this.workingDirectory = workingDirectory;
-    return Process.start('true', []);
+    return _ExitedProcess();
+  }
+}
+
+/// A game that has already exited, writing nothing, so launching it leaves no
+/// real child process or pending file I/O behind to outlive the test.
+class _ExitedProcess extends _LongProcess {
+  _ExitedProcess() {
+    kill();
   }
 }
 

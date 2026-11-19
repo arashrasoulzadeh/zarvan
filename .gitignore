@@ -65,3 +65,10 @@ packages/**/coverage/
 /site/
 showcase_web/build/
 mobarez/
+gravity/
+
+# Local game project (not part of the engine repo)
+circles/
+
+# Local game built on the engine (not part of this repo)
+dishwasher/

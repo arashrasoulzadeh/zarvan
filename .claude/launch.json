@@ -4,14 +4,65 @@
     {
       "name": "test_game-web",
       "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "cd test_game && flutter run --no-pub -d web-server --web-port 5176"],
+      "runtimeArgs": [
+        "-c",
+        "cd test_game && flutter run --no-pub -d web-server --web-port 5176"
+      ],
       "port": 5176
     },
     {
       "name": "mobarez-web",
       "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "cd mobarez/game && export PATH=$PATH:/Users/arashrasoulzadeh/develop/flutter/bin && flutter run --no-pub -d web-server --web-port 5177"],
+      "runtimeArgs": [
+        "-c",
+        "cd mobarez/game && export PATH=$PATH:/Users/arashrasoulzadeh/develop/flutter/bin && flutter run --no-pub -d web-server --web-port 5177"
+      ],
       "port": 5177
+    },
+    {
+      "name": "adad-web",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8099",
+        "--directory",
+        "adad_bazi/build/web"
+      ],
+      "port": 8099
+    },
+    {
+      "name": "gravity-web",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "cd gravity && export PATH=$PATH:/Users/arashrasoulzadeh/develop/flutter/bin && flutter run --no-pub -d web-server --web-port 5178"
+      ],
+      "port": 5178
+    },
+    {
+      "name": "shaer-web",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8765",
+        "--directory",
+        "/Users/arashrasoulzadeh/Documents/projects/shaer/game/build/web"
+      ],
+      "port": 8765
+    },
+    {
+      "name": "circles-web",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8123",
+        "--directory",
+        "circles/circles_game/build/web"
+      ],
+      "port": 8123
     }
   ]
 }

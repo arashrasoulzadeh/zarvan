@@ -415,6 +415,44 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('an EngineView with a flat disc paints without error', (
+    tester,
+  ) async {
+    final w = World(width: 180, height: 320);
+    registerCoreComponents(w);
+    registerFlutterComponents(w);
+    final e = w.spawn();
+    w.componentsOf<Position>().set(e, Position(90, 160));
+    w.componentsOf<ShaderEffect>().set(
+      e,
+      ShaderEffect(
+        kind: ShaderEffect.disc,
+        width: 80,
+        height: 80,
+        rimArgb: 0xFFFFFFFF,
+        armArgb: 0xFF112233,
+        coreArgb: 0x55FFFFFF,
+        blur: 0.4,
+        params: const [0.2, 0.1, 1, 0.37],
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: EngineView(
+          world: w,
+          atlasRegistry: AtlasRegistry(),
+          camera: Camera(),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(tester.takeException(), isNull);
+    expect(
+      ShaderEffect.fromJson(w.getComponent<ShaderEffect>(e)!.toJson()).kind,
+      ShaderEffect.disc,
+    );
+  });
+
   testWidgets('an EngineView with a mark paints without error', (tester) async {
     final w = World(width: 180, height: 320);
     registerCoreComponents(w);
@@ -496,6 +534,7 @@ void main() {
       'dust',
       'mark',
       'emblem',
+      'disc',
     ]) {
       expect(File('shaders/$f.frag').existsSync(), isTrue);
       expect(pubspec, contains('shaders/$f.frag'));
@@ -517,4 +556,61 @@ void main() {
       contains('shaders/aurora.frag'),
     );
   });
+
+  test('the cartouche, cloud, blossom and lapis kinds each have a shader', () {
+    for (final kind in [
+      ShaderEffect.cartouche,
+      ShaderEffect.cloud,
+      ShaderEffect.blossom,
+      ShaderEffect.lapis,
+    ]) {
+      expect(EffectShader.forKind(kind), isNotNull, reason: kind);
+    }
+    expect(EffectShader.forKind(ShaderEffect.portal), isNull);
+    expect(
+      EffectShader.forKind(ShaderEffect.cloud),
+      isNot(same(EffectShader.forKind(ShaderEffect.blossom))),
+    );
+  });
+
+  test('every shader file is listed in the pubspec so it ships', () {
+    final pubspec = File('pubspec.yaml').readAsStringSync();
+    for (final f in ['cartouche', 'cloud', 'blossom', 'lapis']) {
+      expect(File('shaders/$f.frag').existsSync(), isTrue);
+      expect(pubspec, contains('shaders/$f.frag'));
+    }
+  });
+
+  test(
+    'an effect wholly off the screen is not drawn, one that touches it is',
+    () {
+      const view = Size(360, 640);
+      expect(
+        shaderEffectOnScreen(const Rect.fromLTWH(10, 10, 50, 50), view),
+        isTrue,
+      );
+      expect(
+        shaderEffectOnScreen(const Rect.fromLTWH(-40, 100, 50, 50), view),
+        isTrue,
+        reason: 'half in',
+      );
+      expect(
+        shaderEffectOnScreen(const Rect.fromLTWH(-60, 100, 50, 50), view),
+        isFalse,
+      );
+      expect(
+        shaderEffectOnScreen(const Rect.fromLTWH(361, 100, 50, 50), view),
+        isFalse,
+      );
+      expect(
+        shaderEffectOnScreen(const Rect.fromLTWH(100, 641, 50, 50), view),
+        isFalse,
+      );
+      expect(
+        shaderEffectOnScreen(const Rect.fromLTWH(-100, -100, 600, 900), view),
+        isTrue,
+        reason: 'covers it',
+      );
+    },
+  );
 }

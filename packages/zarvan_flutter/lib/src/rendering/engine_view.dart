@@ -3723,13 +3723,7 @@ class _EnginePainter extends CustomPainter {
       final isOrb = fx.kind == ShaderEffect.orb;
       final isAurora = fx.kind == ShaderEffect.aurora;
       final isOrnate = fx.kind == ShaderEffect.ornate;
-      final isPortrait =
-          fx.kind == ShaderEffect.portrait ||
-          fx.kind == ShaderEffect.seal ||
-          fx.kind == ShaderEffect.mark ||
-          fx.kind == ShaderEffect.disc ||
-          fx.kind == ShaderEffect.emblem ||
-          fx.kind == ShaderEffect.dust;
+      final isPortrait = EffectShader.forKind(fx.kind) != null;
       final isVeil =
           fx.kind == ShaderEffect.veil ||
           fx.kind == ShaderEffect.ink ||
@@ -3751,6 +3745,18 @@ class _EnginePainter extends CustomPainter {
       );
       items.add(
         _DrawItem(fx.zIndex, order++, (canvas) {
+          // An effect wholly off the screen (a cloud drifting out, a panel
+          // being faded) costs a full fragment pass for nothing: skip it.
+          if (!shaderEffectOnScreen(
+            Rect.fromCenter(
+              center: center,
+              width: fx.width * camera.zoom,
+              height: fx.height * camera.zoom,
+            ),
+            size,
+          )) {
+            return;
+          }
           final effectShader = (isShine
               ? EffectShader.shine
               : isGlow
@@ -3762,17 +3768,7 @@ class _EnginePainter extends CustomPainter {
               : isOrnate
               ? EffectShader.ornate
               : isPortrait
-              ? (fx.kind == ShaderEffect.seal
-                    ? EffectShader.seal
-                    : fx.kind == ShaderEffect.dust
-                    ? EffectShader.dust
-                    : fx.kind == ShaderEffect.mark
-                    ? EffectShader.mark
-                    : fx.kind == ShaderEffect.disc
-                    ? EffectShader.disc
-                    : fx.kind == ShaderEffect.emblem
-                    ? EffectShader.emblem
-                    : EffectShader.portrait)
+              ? EffectShader.forKind(fx.kind)!
               : isVeil
               ? (fx.kind == ShaderEffect.ink
                     ? EffectShader.ink

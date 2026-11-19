@@ -160,6 +160,40 @@ class ShaderEffect {
   /// medallion fills the middle of the rect and the rest holds its glow.
   static const mark = 'mark';
 
+  /// A flat, anti-aliased disc with no shading: for plain-geometry games where
+  /// the glossy [orb] would read as a bubble. [rimArgb] is the body colour,
+  /// [armArgb] the eyes and [coreArgb] a ripple (its alpha is the strength;
+  /// zero turns it off). `params` is `[ring, wobble, eyes, seed]`: `ring`
+  /// (0..1) turns the disc into an outline of that thickness as a share of the
+  /// radius; `wobble` (0..0.5) makes the edge ripple like water; `eyes` above
+  /// 0.5 draws two blinking eyes; `seed` keeps neighbours out of step. [blur]
+  /// (0..1, as a share of the radius) feathers the edge like an out-of-focus
+  /// dot; keep it `0` for a crisp disc. Fills the circle inscribed in the rect.
+  static const disc = 'disc';
+
+  /// A gilded cartouche drawn by `cartouche.frag`: a long banner drawn out to
+  /// points (green velvet or parchment) or a tall arch card with a flowered
+  /// border, a window of colour and a name plaque. [params] are `[shape (0
+  /// banner, 1 arch), gleam 0..1, parchment 1 / velvet 0 (banner), plaque
+  /// height share (arch)]`. Colours: [rimArgb] the gold, [armArgb] the blue
+  /// line and medallions, [coreArgb] the velvet or the window.
+  static const cartouche = 'cartouche';
+
+  /// A swirling Persian cloud drawn by `cloud.frag`: [params] are `[variant
+  /// 0..3, mirror 1, opacity]`. Colours: [rimArgb] the gold outline,
+  /// [armArgb] the body's blue, [coreArgb] the cream rim and contours.
+  static const cloud = 'cloud';
+
+  /// A flowering branch drawn by `blossom.frag`: [params] are `[mirror 1,
+  /// bloom 0..1]`. Colours: [rimArgb] the petals' edge, [armArgb] the bark,
+  /// [coreArgb] the leaves.
+  static const blossom = 'blossom';
+
+  /// Mottled blue handmade paper with gold-leaf flecks, drawn by `lapis.frag`;
+  /// opaque, for behind everything. Colours: [rimArgb] the base blue, [armArgb]
+  /// the lighter blue, [coreArgb] the gold.
+  static const lapis = 'lapis';
+
   /// A small line-art emblem drawn by `emblem.frag`: [params] x picks it (0 cup,
   /// 1 rose, 2 reed flute, 3 jug, 4 book, 5 crown, 6 bird, 7 lute, 8 staff, 9
   /// quill). Colours: [rimArgb] the line, [armArgb] its glow. The icon fills the
@@ -251,6 +285,37 @@ class EffectShader {
   /// `mark.frag`.
   static final mark = EffectShader._('mark.frag');
 
+  static final disc = EffectShader._('disc.frag');
+
+  /// `cartouche.frag`.
+  static final cartouche = EffectShader._('cartouche.frag');
+
+  /// `cloud.frag`.
+  static final cloud = EffectShader._('cloud.frag');
+
+  /// `blossom.frag`.
+  static final blossom = EffectShader._('blossom.frag');
+
+  /// `lapis.frag`.
+  static final lapis = EffectShader._('lapis.frag');
+
+  /// The shader for the effects that share the three-colour-and-params layout
+  /// (everything but portal, orb, glow, aurora, ornate and the veils), or null
+  /// for a kind that is not one of them.
+  static EffectShader? forKind(String kind) => switch (kind) {
+    ShaderEffect.portrait => portrait,
+    ShaderEffect.seal => seal,
+    ShaderEffect.dust => dust,
+    ShaderEffect.mark => mark,
+    ShaderEffect.disc => disc,
+    ShaderEffect.emblem => emblem,
+    ShaderEffect.cartouche => cartouche,
+    ShaderEffect.cloud => cloud,
+    ShaderEffect.blossom => blossom,
+    ShaderEffect.lapis => lapis,
+    _ => null,
+  };
+
   /// `dust.frag`.
   static final dust = EffectShader._('dust.frag');
 
@@ -320,3 +385,11 @@ ui.Image blankShaderImage() {
     return rec.endRecording().toImageSync(1, 1);
   }();
 }
+
+/// Whether a shader effect drawn over [rect] shows anywhere on a view of size
+/// [view]: false when it lies wholly outside, so the draw can be skipped.
+bool shaderEffectOnScreen(ui.Rect rect, ui.Size view) =>
+    rect.right > 0 &&
+    rect.bottom > 0 &&
+    rect.left < view.width &&
+    rect.top < view.height;

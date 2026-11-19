@@ -27,6 +27,9 @@ class QuizGameScreen extends QuizScreen {
   String? get _poemFont => theme.poemFontFamily ?? theme.fontFamily;
   static const _hudSize = 13.0;
 
+  /// How far the poem card's peaks stand above and below the text's area.
+  static const _peak = 14.0;
+
   /// The whole poem is written within this many seconds, and one word takes
   /// [_wordFade] seconds to come in.
   static const _writeSeconds = 1.5;
@@ -59,31 +62,31 @@ class QuizGameScreen extends QuizScreen {
   double _shakeBgX = 0;
   double _shakeLabelX = 0;
   double _time = 0;
-  final List<Twinkle> _twinkles = [];
+  final List<DriftingCloud> _clouds = [];
   final List<_Particle> _bursts = [];
   final List<UiRect> _optionRects = [];
   final math.Random _rng = math.Random(3);
 
   QuizSession get session => kit.session;
 
-  // The poem card is parchment when the game brought the ornate frame: warm
-  // paper with dark ink, unlike the night around it.
-  static const _parchment = 0xFFD9B97B;
+  // The poem card is parchment with dark ink, on the blue paper around it.
   static const _parchmentInk = 0xFF2A1A0E;
   static const _parchmentAccent = 0xFF8A5A1E;
   static const _parchmentCorrect = 0xFF1F6B3A;
-  static const _optionFill = 0xFF1B4F47;
   static const _optionInk = 0xFFF5E9C8;
 
   @override
   void build() {
-    // A deeper, richer night than the menu's: indigo sky, teal nebula, warm
-    // stars, with a violet light from one side and a gold one low down.
-    nightSky(sky: 0xFF080F22, nebula: 0xFF2F8F99, star: 0xFFFFE8B5);
-    lightAt(UiRect(-90, 20, 260, 330), 0xFF7A5AC8, intensity: 0.38, z: 2);
-    lightAt(UiRect(200, 380, 260, 330), 0xFF2FB8A8, intensity: 0.22, z: 2);
-    lightAt(UiRect(60, 560, 240, 120), 0xFFE9B04F, intensity: 0.24, z: 2);
-    _twinkles.addAll(sparkles(14));
+    // The same blue paper as the menu, with clouds drifting across it and
+    // blossoming branches on rocks in the bottom corners.
+    lapisSky();
+    spread(0);
+    _clouds.add(DriftingCloud(this, 0, -44, -24));
+    _clouds.add(DriftingCloud(this, 1, -30, -6));
+    spread(0.85);
+    _clouds.add(DriftingCloud(this, 2, 540, 590));
+    spread(1);
+    footBlossoms(width: 84, height: 135);
     spread(0.08);
     titleBar(
       kit.strings.appName,
@@ -114,8 +117,8 @@ class QuizGameScreen extends QuizScreen {
   void update(double dt, World world) {
     super.update(dt, world);
     _time += dt;
-    for (final t in _twinkles) {
-      t.apply(_time);
+    for (final c in _clouds) {
+      c.step(dt, _rng);
     }
     _stepBursts(dt);
     _stepWords();
@@ -227,7 +230,7 @@ class QuizGameScreen extends QuizScreen {
     final textWidth =
         QuizScreen.worldWidth -
         2 * QuizScreen.margin -
-        32 -
+        56 -
         2 * theme.poemInset;
 
     // The poem, with the blank or, after an answer, the right word.
@@ -238,24 +241,38 @@ class QuizGameScreen extends QuizScreen {
             ? l.replaceFirst(defaultBlankMarker, answer)
             : keepBlankTogether(l),
     ];
-    final sizes = [
-      for (final l in lines)
-        measureText(
-          l,
-          fontSize: _poemSize,
-          fontFamily: _poemFont,
-          rtl: rtl,
-          maxWidth: textWidth,
-        ),
-    ];
-    // Rows are as tall as the face measures them, times the theme's factor
-    // (a calligraphic face has tall line metrics that leave big gaps).
-    final lineHeights = [for (final z in sizes) z.height * theme.poemLineScale];
     const gap = 8.0;
-    final inner =
-        lineHeights.fold<double>(0, (a, h) => a + h) + gap * (lines.length - 1);
-    _stepper();
     final cardTop = _hasStepper ? 150.0 : 104.0;
+    // The tallest the card may be and still leave room for four options of the
+    // least height: a long poem is set smaller until it fits.
+    final room = 362 + extra * 0.45 - cardTop - _peak - 18;
+    var poemSize = _poemSize;
+    late List<dynamic> sizes;
+    late List<double> lineHeights;
+    late double inner;
+    for (var attempt = 0; attempt < 8; attempt++) {
+      sizes = [
+        for (final l in lines)
+          measureText(
+            l,
+            fontSize: poemSize,
+            fontFamily: _poemFont,
+            rtl: rtl,
+            maxWidth: textWidth,
+          ),
+      ];
+      // Rows are as tall as the face measures them, times the theme's factor
+      // (a calligraphic face has tall line metrics that leave big gaps).
+      lineHeights = [
+        for (final z in sizes) (z.height as double) * theme.poemLineScale,
+      ];
+      inner =
+          lineHeights.fold<double>(0, (a, h) => a + h) +
+          gap * (lines.length - 1);
+      if (inner + 56 <= room || poemSize <= 14) break;
+      poemSize = math.max(14, poemSize * 0.9);
+    }
+    _stepper();
     spread(0.2);
     final cardHeight = inner + 56;
     final cardRect = UiRect(
@@ -282,16 +299,19 @@ class QuizGameScreen extends QuizScreen {
     );
     _view.addId(pen);
     _penPos = world.componentsOf<Position>().get(pen);
-    // The card is parchment in an ornate frame, both drawn by one shader.
+    // The card is parchment in a blue vine band with sprays of blossom in its
+    // corners, all drawn by one shader.
+    // The shape's peaks stand outside the rectangle the text fills.
     _view.addId(
-      ornateFrame(
-        cardRect,
-        band: 16,
-        cell: 9,
-        radius: 16,
-        fill: _parchment,
-        paper: 1,
-        cusp: 0.4,
+      cartoucheAt(
+        UiRect(
+          cardRect.x,
+          cardRect.y - _peak,
+          cardRect.width,
+          cardRect.height + 2 * _peak,
+        ),
+        card: true,
+        flowers: 1,
         z: 5,
       ),
     );
@@ -305,7 +325,7 @@ class QuizGameScreen extends QuizScreen {
         : 0.0;
     double wordsWidth(List<String> ws) => measureText(
       ws.join(' '),
-      fontSize: _poemSize,
+      fontSize: poemSize,
       fontFamily: _poemFont,
       rtl: rtl,
     ).width;
@@ -346,7 +366,7 @@ class QuizGameScreen extends QuizScreen {
             row[k],
             cx,
             rowY,
-            size: _poemSize,
+            size: poemSize,
             color: _parchmentAccent,
             fontFamily: _poemFont,
           );
@@ -365,30 +385,31 @@ class QuizGameScreen extends QuizScreen {
     // The four options.
     spread(0.4);
     final optionShift = yShift;
-    var oy = cardTop + cardHeight + 18;
+    var oy = cardTop + cardHeight + 18 + _peak;
     _optionRects.clear();
+    // A long poem leaves less room: squeeze the gaps, then the banners, so the
+    // last option never runs into the button below.
+    final free = QuizScreen.worldHeight - 68 + extra * 0.45 - oy - 14;
+    var optH = QuizScreen.buttonHeight;
+    var optGap = 14.0;
+    final optCount = q.options.length;
+    if (free < optCount * optH + (optCount - 1) * optGap) {
+      optGap = ((free - optCount * optH) / (optCount - 1)).clamp(4.0, 14.0);
+      if (free < optCount * optH + (optCount - 1) * optGap) {
+        optH = ((free - (optCount - 1) * optGap) / optCount).clamp(38.0, optH);
+      }
+    }
     for (var i = 0; i < q.options.length; i++) {
       final removed = q.removedByHint.contains(i);
       final optRect = UiRect(
         QuizScreen.margin,
         oy,
         QuizScreen.worldWidth - 2 * QuizScreen.margin,
-        QuizScreen.buttonHeight,
+        optH,
       );
       _optionRects.add(optRect);
       if (!removed) {
-        _view.addId(
-          ornateFrame(
-            optRect,
-            band: 6,
-            cell: 6,
-            radius: 14,
-            fill: _optionFill,
-            paper: 0,
-            cusp: 0,
-            z: 5,
-          ),
-        );
+        _view.addId(cartoucheAt(optRect, flowers: 1, z: 5));
       }
       final b = button(
         optRect,
@@ -405,7 +426,7 @@ class QuizGameScreen extends QuizScreen {
       b.enabled = !answered && !removed && !session.offeringContinue;
       if (removed) _fade(b, 0.3);
       if (answered) _color(b, i, q, theme, optRect);
-      oy += QuizScreen.buttonHeight + 14;
+      oy += optH + optGap;
     }
 
     // After an answer: the author and Next. Before: the hint.
@@ -431,18 +452,33 @@ class QuizGameScreen extends QuizScreen {
         );
       }
       if (session.round?.mode is! RaceMode) {
-        final n = button(row(bottom), s.next, session.next, group: _view);
+        final nr = _narrow(row(bottom));
+        _view.addId(cartoucheAt(nr, flowers: 1, gleam: 0.5, z: 5));
+        final n = button(
+          nr,
+          s.next,
+          session.next,
+          style: QuizButtonStyle.option,
+          size: 18,
+          group: _view,
+        );
+        n.bg.shape!.alpha = 0;
+        n.label.text!.colorArgb = _optionInk;
         n.enabled = !session.offeringContinue;
       }
     } else if (session.round?.mode is! RaceMode) {
+      final hr = _narrow(row(bottom));
+      _view.addId(cartoucheAt(hr, flowers: 1, window: 0xFF1F4E86, z: 5));
       final hint = button(
-        row(bottom),
+        hr,
         '${s.hint} · ${s.number(QuizProgress.hintCost)}',
         session.useHint,
-        style: QuizButtonStyle.outline,
+        style: QuizButtonStyle.option,
         size: 16,
         group: _view,
       );
+      hint.bg.shape!.alpha = 0;
+      hint.label.text!.colorArgb = _optionInk;
       hint.enabled = session.canHint && !session.offeringContinue;
       if (!hint.enabled) _fade(hint, 0.4);
     }
@@ -465,6 +501,9 @@ class QuizGameScreen extends QuizScreen {
     if (session.offeringContinue && !_asked) _askContinue();
     if (!session.offeringContinue) _dialog.clear();
   }
+
+  /// The bottom button's rect, narrowed so the branches in the corners show.
+  UiRect _narrow(UiRect r) => UiRect(r.centerX - 105, r.y, 210, r.height);
 
   /// A burst of light at ([x], [y]): sparks fly out, fall a little and fade.
   void _burst(double x, double y, int color, int count) {
@@ -664,11 +703,11 @@ class QuizGameScreen extends QuizScreen {
     veil.pos.x = QuizScreen.worldWidth / 2;
     veil.pos.y = world.height / 2;
     _dialog.addNode(veil);
-    _dialog.addNode(
-      box(
-        UiRect(30, 210, QuizScreen.worldWidth - 60, 230),
-        theme.surface,
-        radius: 18,
+    _dialog.addId(
+      cartoucheAt(
+        UiRect(24, 196, QuizScreen.worldWidth - 48, 262),
+        card: true,
+        flowers: 1,
         z: 31,
       ),
     );
@@ -678,12 +717,13 @@ class QuizGameScreen extends QuizScreen {
         QuizScreen.worldWidth / 2,
         262,
         size: 18,
-        maxWidth: QuizScreen.worldWidth - 100,
+        maxWidth: QuizScreen.worldWidth - 120,
+        color: _parchmentInk,
         z: 33,
       ),
     );
-    final yes = button(
-      UiRect(50, 322, QuizScreen.worldWidth - 100, QuizScreen.buttonHeight),
+    final yes = bannerButton(
+      UiRect(50, 318, QuizScreen.worldWidth - 100, 52),
       s.continueWithAd,
       () async {
         final earned = await ads.showRewarded('continue');
@@ -695,17 +735,21 @@ class QuizGameScreen extends QuizScreen {
           session.declineContinue();
         }
       },
+      gleam: 0.5,
+      z: 32,
       group: _dialog,
     );
-    final no = button(
-      UiRect(50, 380, QuizScreen.worldWidth - 100, QuizScreen.buttonHeight),
+    final no = bannerButton(
+      UiRect(50, 380, QuizScreen.worldWidth - 100, 52),
       s.noThanks,
       () {
         _asked = false;
         _dialog.clear();
         session.declineContinue();
       },
-      style: QuizButtonStyle.outline,
+      color: 0xFF1F4E86,
+      flowers: 0,
+      z: 32,
       group: _dialog,
     );
     for (final b in [yes, no]) {

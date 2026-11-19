@@ -20,6 +20,7 @@ import 'package:zarvan_flutter/zarvan_flutter.dart'
         Shape,
         ShapeKind,
         ShareOutcome;
+import 'package:zarvan_quiz/src/ui/medal_overlay.dart';
 import 'package:zarvan_quiz/zarvan_quiz.dart';
 
 import 'support.dart';
@@ -141,6 +142,7 @@ class Rig {
     void Function(QuizProgress)? setup,
     QuizBank? bank,
     QuizPortraits? portraits,
+    QuizCardArt? cardArt,
     bool transitions = false,
     String transitionKind = 'curtain',
     String? returnTransitionKind,
@@ -167,6 +169,7 @@ class Rig {
         return outcome;
       },
       portraits: portraits,
+      cardArt: cardArt,
       transitions: transitions,
       transitionKind: transitionKind,
       returnTransitionKind: returnTransitionKind ?? transitionKind,
@@ -376,16 +379,21 @@ void main() {
     );
 
     test(
-      'the card and each option are ornate shader frames, not images',
+      'the card and each option are gilded cartouches drawn by a shader, not images',
       () async {
         final r = await stage();
         final fx = r.world.componentsOf<ShaderEffect>();
-        final ornate = [
+        final shapes = [
           for (var i = 0; i < fx.length; i++)
-            if (fx.denseAt(i).kind == ShaderEffect.ornate) fx.denseAt(i),
+            if (fx.denseAt(i).kind == ShaderEffect.cartouche)
+              fx.denseAt(i).params[0],
         ];
-        expect(ornate.length, 5, reason: 'one card and four options');
-        expect(ornate.where((e) => e.coreArgb == 0xFFD9B97B).length, 1);
+        expect(shapes.where((p) => p == 2).length, 1, reason: 'the poem card');
+        expect(
+          shapes.where((p) => p == 0).length,
+          5,
+          reason: 'four options and the hint, all banners',
+        );
         expect(
           r.world.componentsOf<eng.Sprite>().length,
           0,
@@ -424,16 +432,22 @@ void main() {
       },
     );
 
-    test('the game has the night sky and lights the poem card', () async {
-      final r = await stage();
-      final fx = r.world.componentsOf<ShaderEffect>();
-      final kinds = [for (var i = 0; i < fx.length; i++) fx.denseAt(i).kind];
-      expect(kinds, contains(ShaderEffect.aurora));
-      // Three coloured lights in the sky, the gold one behind the card, and the
-      // pen of light that rides on the writing.
-      expect(kinds.where((k) => k == ShaderEffect.glow), hasLength(5));
-      expect(kinds.where((k) => k == ShaderEffect.dust), hasLength(1));
-    });
+    test(
+      'the game is blue paper with clouds and blossoms, and lights the poem card',
+      () async {
+        final r = await stage();
+        final fx = r.world.componentsOf<ShaderEffect>();
+        final kinds = [for (var i = 0; i < fx.length; i++) fx.denseAt(i).kind];
+        expect(kinds, contains(ShaderEffect.lapis));
+        expect(kinds, isNot(contains(ShaderEffect.aurora)));
+        expect(kinds.where((k) => k == ShaderEffect.cloud), hasLength(3));
+        expect(kinds.where((k) => k == ShaderEffect.blossom), hasLength(2));
+        // The gold light behind the card and the pen of light that rides on the
+        // writing.
+        expect(kinds.where((k) => k == ShaderEffect.glow), hasLength(2));
+        expect(kinds.where((k) => k == ShaderEffect.dust), hasLength(1));
+      },
+    );
 
     test(
       'a pen of light follows the word being written, then goes out',
@@ -472,7 +486,8 @@ void main() {
         final t = r.world.componentsOf<eng.Text>();
         return [
           for (var i = 0; i < t.length; i++)
-            if (t.denseAt(i).fontSize == 20 &&
+            if (t.denseAt(i).fontSize != 13 &&
+                !t.denseAt(i).text.startsWith('Hint') &&
                 !r.kit.session.question!.options.contains(t.denseAt(i).text))
               t.denseAt(i).alpha,
         ];
@@ -493,7 +508,8 @@ void main() {
         final t = r.world.componentsOf<eng.Text>();
         return [
           for (var i = 0; i < t.length; i++)
-            if (t.denseAt(i).fontSize == 20 &&
+            if (t.denseAt(i).fontSize != 13 &&
+                !t.denseAt(i).text.startsWith('Hint') &&
                 !r.kit.session.question!.options.contains(t.denseAt(i).text))
               t.denseAt(i).alpha,
         ];
@@ -518,7 +534,8 @@ void main() {
         final t = r.world.componentsOf<eng.Text>();
         return [
           for (var i = 0; i < t.length; i++)
-            if (t.denseAt(i).fontSize == 20 &&
+            if (t.denseAt(i).fontSize != 13 &&
+                !t.denseAt(i).text.startsWith('Hint') &&
                 !r.kit.session.question!.options.contains(t.denseAt(i).text))
               t.denseAt(i).alpha,
         ];
@@ -532,13 +549,49 @@ void main() {
       expect(poem().every((a) => a == 1), isTrue);
     });
 
+    test(
+      'a long poem squeezes the options so none runs into the hint',
+      () async {
+        final r = await Rig.make(bank: makeBank(wordsPerLine: 14));
+        r.kit.session.begin(
+          QuizRound.stage(
+            r.kit.factory,
+            const StageMode(),
+            author: 'a',
+            tier: QuizTier.easy,
+          ),
+        );
+        await r.open(QuizGameScreen(r.kit));
+        final fx = r.world.componentsOf<ShaderEffect>();
+        final pos = r.world.componentsOf<Position>();
+        final banners = <(double, double)>[];
+        for (var i = 0; i < fx.length; i++) {
+          final e = fx.denseAt(i);
+          if (e.kind == ShaderEffect.cartouche && e.params[0] == 0) {
+            final y = pos.get(fx.entityAt(i))!.y;
+            banners.add((y - e.height / 2, y + e.height / 2));
+          }
+        }
+        banners.sort((a, b) => a.$1.compareTo(b.$1));
+        expect(banners, hasLength(5), reason: 'four options and the hint');
+        for (var i = 1; i < banners.length; i++) {
+          expect(
+            banners[i].$1,
+            greaterThanOrEqualTo(banners[i - 1].$2),
+            reason: 'banner $i must start below the one above it',
+          );
+        }
+      },
+    );
+
     test('every next question is written again, both verses', () async {
       final r = await stage();
       List<double> poem() {
         final t = r.world.componentsOf<eng.Text>();
         return [
           for (var i = 0; i < t.length; i++)
-            if (t.denseAt(i).fontSize == 20 &&
+            if (t.denseAt(i).fontSize != 13 &&
+                !t.denseAt(i).text.startsWith('Hint') &&
                 !r.kit.session.question!.options.contains(t.denseAt(i).text))
               t.denseAt(i).alpha,
         ];
@@ -583,10 +636,10 @@ void main() {
         ].where((k) => k == ShaderEffect.glow).length;
       }
 
-      expect(glows(), 5);
+      expect(glows(), 2);
       r.tap(r.optionRight);
       r.run(0.1);
-      expect(glows(), 6, reason: 'the right option glows as well');
+      expect(glows(), 3, reason: 'the right option glows as well');
     });
 
     test('an answer throws a burst of sparks that then fades away', () async {
@@ -754,7 +807,7 @@ void main() {
         final tall = await Rig.make(bank: makeMultiBank())
           ..worldHeight = 780;
         await tall.open(QuizHomeScreen(tall.kit));
-        expect(aboutY(tall) - aboutY(short), closeTo(119, 1));
+        expect(aboutY(tall) - aboutY(short), closeTo(140 * 0.92, 1));
       },
     );
 
@@ -766,8 +819,6 @@ void main() {
         expect(r.has('60 coins'), isTrue);
         for (final t in [
           'Wall of divans',
-          'Endless',
-          'Race',
           'About',
           'Poet a',
           'Poet b',
@@ -781,7 +832,10 @@ void main() {
           reason: 'no "n of m complete" line on the menu',
         );
         expect(r.hasPart('Daily'), isTrue);
-        expect(r.hasPart('Continue · Poet a · Easy'), isTrue);
+        expect(r.has('Continue'), isTrue);
+        expect(r.has('Poet a · Easy'), isTrue);
+        expect(r.has('Endless'), isFalse, reason: 'taken off the home for now');
+        expect(r.has('Race'), isFalse, reason: 'taken off the home for now');
         final played = await Rig.make(
           setup: (p) =>
               p.daily.results['2026-11-17'] = [true, true, false, true, true],
@@ -812,8 +866,8 @@ void main() {
         );
         await r.open(QuizHomeScreen(r.kit));
 
-        expect(r.hasPart('Continue · Poet b · Medium'), isTrue);
-        r.tap('Continue · Poet b · Medium');
+        expect(r.has('Poet b · Medium'), isTrue);
+        r.tap('Continue');
         expect(r.loaded, isA<QuizGameScreen>());
         expect(r.kit.session.round!.author, 'b');
         expect(r.kit.session.round!.tier, QuizTier.medium);
@@ -845,7 +899,7 @@ void main() {
     );
 
     test(
-      'home buttons start the daily, endless and race, and open settings and about',
+      'home buttons start the daily and the next stage, and open settings and about',
       () async {
         Future<Scene?> press(String t) async {
           final r = await Rig.make(ads: true);
@@ -862,30 +916,81 @@ void main() {
         daily.tap('Daily · Five new poems');
         expect(daily.loaded, isA<QuizGameScreen>());
         expect(daily.kit.session.round!.date, '2026-11-17');
-        final endless = await Rig.make();
-        await endless.open(QuizHomeScreen(endless.kit));
-        endless.tap('Endless');
-        expect(endless.kit.session.round!.mode, isA<EndlessMode>());
-        final race = await Rig.make();
-        await race.open(QuizHomeScreen(race.kit));
-        race.tap('Race');
-        expect(race.kit.session.round!.mode, isA<RaceMode>());
+        final go = await Rig.make();
+        await go.open(QuizHomeScreen(go.kit));
+        go.tap('Continue');
+        expect(go.loaded, isA<QuizGameScreen>());
+        expect(go.kit.session.round!.author, 'a');
       },
     );
 
     test(
-      'the menu has a GPU night sky behind it and a light on the next poet',
+      'the menu is blue paper with clouds, gilded cards and blossoms, and a light on the next poet',
       () async {
         final r = await Rig.make(bank: makeMultiBank());
         await r.open(QuizHomeScreen(r.kit));
         final fx = r.world.componentsOf<ShaderEffect>();
         final kinds = [for (var i = 0; i < fx.length; i++) fx.denseAt(i).kind];
-        expect(kinds.where((k) => k == ShaderEffect.aurora), hasLength(1));
+        expect(kinds.where((k) => k == ShaderEffect.lapis), hasLength(1));
+        expect(kinds.where((k) => k == ShaderEffect.aurora), isEmpty);
         expect(kinds.where((k) => k == ShaderEffect.glow), hasLength(3));
+        expect(kinds.where((k) => k == ShaderEffect.cloud), hasLength(3));
+        expect(kinds.where((k) => k == ShaderEffect.blossom), hasLength(2));
+        final cards = [
+          for (var i = 0; i < fx.length; i++) fx.denseAt(i),
+        ].where((e) => e.kind == ShaderEffect.cartouche && e.params[0] == 1);
+        expect(cards, hasLength(3), reason: 'one arched card for each poet');
+        expect(
+          cards.where((e) => e.params[1] > 0),
+          hasLength(1),
+          reason: 'only the next poet gleams',
+        );
         final sky = [
           for (var i = 0; i < fx.length; i++) fx.denseAt(i),
-        ].firstWhere((e) => e.kind == ShaderEffect.aurora);
+        ].firstWhere((e) => e.kind == ShaderEffect.lapis);
         expect(sky.zIndex, greaterThan(-10));
+      },
+    );
+
+    test(
+      'with card art the cards are the pictures, at their own proportions',
+      () async {
+        const art = QuizCardArt(
+          atlasId: 'cards',
+          width: 240,
+          height: 405,
+          authors: {'a', 'b'},
+        );
+        final r = await Rig.make(bank: makeMultiBank(), cardArt: art);
+        await r.open(QuizHomeScreen(r.kit));
+        final sprites = r.world.componentsOf<eng.Sprite>();
+        expect(
+          sprites.length,
+          2,
+          reason: 'a and b have one, c has the shader card',
+        );
+        for (var i = 0; i < sprites.length; i++) {
+          final s = sprites.denseAt(i);
+          expect(s.atlasId, 'cards');
+          expect(s.scaleX, s.scaleY, reason: 'never stretched');
+          expect(240 * s.scaleX, closeTo(62, 0.001));
+          expect(405 * s.scaleY, closeTo(art.heightFor(62), 0.001));
+        }
+        expect(art.heightFor(62), closeTo(104.6, 0.1));
+        final fx = r.world.componentsOf<ShaderEffect>();
+        final arches = [
+          for (var i = 0; i < fx.length; i++)
+            if (fx.denseAt(i).kind == ShaderEffect.cartouche &&
+                fx.denseAt(i).params[0] == 1)
+              fx.denseAt(i),
+        ];
+        expect(arches, hasLength(1), reason: 'only c is still a shader card');
+        r.tap('Poet a');
+        expect(
+          r.world.componentsOf<BackdropBlur>().length,
+          1,
+          reason: 'still tappable',
+        );
       },
     );
 
@@ -901,7 +1006,6 @@ void main() {
       final plain = await Rig.make(bank: makeMultiBank());
       await plain.open(QuizHomeScreen(plain.kit));
       expect(portraits(plain), isEmpty);
-      final shapesPlain = plain.world.componentsOf<Shape>().length;
 
       final r = await Rig.make(
         bank: makeMultiBank(),
@@ -922,11 +1026,6 @@ void main() {
         reason: 'the style reaches the shader as numbers',
       );
       expect(r.world.componentsOf<eng.Sprite>().length, 0, reason: 'no images');
-      expect(
-        r.world.componentsOf<Shape>().length,
-        shapesPlain - 4,
-        reason: 'two diamonds less for each of the two portraits',
-      );
     });
 
     test(
@@ -949,7 +1048,7 @@ void main() {
         final r = await Rig.make(bank: makeMultiBank(), transitions: true);
         await r.open(QuizHomeScreen(r.kit));
         expect(veil(r), isNull);
-        r.tap('Endless');
+        r.tap('Continue');
         expect(
           r.loaded,
           isNull,
@@ -960,10 +1059,10 @@ void main() {
         final half = veil(r)!.params[0];
         expect(half, greaterThan(0.3));
         expect(half, lessThan(1));
-        r.tap('Race');
+        r.tap('Daily · Five new poems');
         expect(
           r.kit.session.round!.mode,
-          isA<EndlessMode>(),
+          isNot(isA<DailyMode>()),
           reason: 'taps are ignored under the veil',
         );
         r.run(0.5);
@@ -1050,7 +1149,7 @@ void main() {
         );
         await r.open(QuizHomeScreen(r.kit));
         final before = r.world.componentsOf<eng.Text>().length;
-        r.tap('Endless');
+        r.tap('Continue');
         final words = r.world.componentsOf<eng.Text>().length - before;
         expect(words, greaterThan(30), reason: 'a page of words was spawned');
         final fx = r.world.componentsOf<ShaderEffect>();
@@ -1082,7 +1181,7 @@ void main() {
           transitionKind: quizPageTurnTransition,
         );
         await r.open(QuizHomeScreen(r.kit));
-        r.tap('Endless');
+        r.tap('Continue');
         expect(
           r.loaded,
           isA<QuizGameScreen>(),
@@ -1130,10 +1229,10 @@ void main() {
         transitionKind: quizRippleTransition,
       );
       await r.open(QuizHomeScreen(r.kit));
-      r.tap('Endless');
+      r.tap('Continue');
       expect(r.loadedWith?.type, SceneTransitionType.ripple);
       final cfg = r.loadedWith!;
-      final p = r._at('Endless');
+      final p = r._at('Continue');
       expect(cfg.originX, closeTo(p.x / 360, 0.08));
       expect(cfg.originY, closeTo(p.y / r.world.height, 0.08));
     });
@@ -1170,7 +1269,7 @@ void main() {
     );
 
     test(
-      'cards show an emblem, no stage dots; the medal adds the epithet and a bigger emblem',
+      'cards show no emblem or stage dots; the medal adds the epithet and an emblem',
       () async {
         List<ShaderEffect> emblems(Rig r) {
           final fx = r.world.componentsOf<ShaderEffect>();
@@ -1195,9 +1294,9 @@ void main() {
         );
         await r.open(QuizHomeScreen(r.kit));
         expect(
-          emblems(r).map((e) => e.params[0]).toSet(),
-          {0.0, 1.0},
-          reason: 'cup and rose on the two cards',
+          emblems(r),
+          isEmpty,
+          reason: 'the gilded cards carry a portrait and a name, no emblem',
         );
         final shapes = r.world.componentsOf<Shape>();
         var pips = 0;
@@ -1216,7 +1315,7 @@ void main() {
         );
         expect(
           emblems(r).length,
-          3,
+          1,
           reason: 'the medal brings its own larger emblem',
         );
       },
@@ -1228,6 +1327,7 @@ void main() {
         final r = await Rig.make(bank: makeMultiBank());
         await r.open(QuizHomeScreen(r.kit));
         expect(r.world.componentsOf<BackdropBlur>().length, 0);
+        final before = r.world.componentsOf<ShaderEffect>().length;
         r.tap('Poet b');
         expect(r.loaded, isNull);
         expect(r.world.componentsOf<BackdropBlur>().length, 1);
@@ -1244,7 +1344,11 @@ void main() {
           reason: 'but cannot be pressed while it turns',
         );
         final fx = r.world.componentsOf<ShaderEffect>();
-        expect(fx.length, 5, reason: 'the medal brings its own light');
+        expect(
+          fx.length - before,
+          greaterThan(0),
+          reason: 'the medal brings its own light',
+        );
         r.run(0.3);
         final mid = r.world.componentsOf<BackdropBlur>().denseAt(0).sigma;
         expect(mid, greaterThan(0));
@@ -1255,6 +1359,56 @@ void main() {
         r.tap('Stage Easy');
         expect(r.loaded, isA<QuizGameScreen>());
         expect(r.kit.session.round!.author, 'b');
+      },
+    );
+
+    test(
+      'the panel fades in quietly: no spin, it only grows a few percent',
+      () async {
+        final r = await Rig.make(bank: makeMultiBank());
+        await r.open(QuizHomeScreen(r.kit));
+        r.tap('Poet a');
+        ShaderEffect panel() {
+          final fx = r.world.componentsOf<ShaderEffect>();
+          return [for (var i = 0; i < fx.length; i++) fx.denseAt(i)].firstWhere(
+            (e) => e.kind == ShaderEffect.cartouche && e.params[0] == 3,
+          );
+        }
+
+        expect(panel().blur, 1, reason: 'invisible at the start');
+        expect(panel().width, closeTo(MedalOverlay.medalW * 0.92, 0.01));
+        r.run(0.1);
+        final mid = panel();
+        expect(mid.blur, inExclusiveRange(0, 1));
+        expect(mid.width, greaterThan(MedalOverlay.medalW * 0.92));
+        expect(mid.width, lessThan(MedalOverlay.medalW));
+        r.run(0.3);
+        expect(panel().blur, 0);
+        expect(panel().width, closeTo(MedalOverlay.medalW, 0.01));
+        expect(MedalOverlay.seconds, lessThan(0.3), reason: 'brief');
+      },
+    );
+
+    test(
+      'a level that can be played is velvet, a locked one parchment with lozenges',
+      () async {
+        final r = await Rig.make(bank: makeMultiBank());
+        await r.open(QuizHomeScreen(r.kit));
+        r.tap('Poet a');
+        r.run(0.5);
+        final fx = r.world.componentsOf<ShaderEffect>();
+        final banners = [
+          for (var i = 0; i < fx.length; i++)
+            if (fx.denseAt(i).kind == ShaderEffect.cartouche &&
+                fx.denseAt(i).params[0] == 0 &&
+                fx.denseAt(i).height == 60)
+              fx.denseAt(i),
+        ];
+        expect(banners, hasLength(4));
+        expect(banners.first.params[2], 0, reason: 'the open one is velvet');
+        expect(banners.first.params[3], greaterThan(0), reason: 'with flowers');
+        expect(banners.last.params[2], 1, reason: 'a locked one is parchment');
+        expect(banners.last.params[3], lessThan(0), reason: 'with lozenges');
       },
     );
 
@@ -1273,22 +1427,34 @@ void main() {
     });
 
     test(
-      'the menu animates: glows and sparkles change opacity over time',
+      'the clouds drift across the page and come back from a side',
       () async {
         final r = await Rig.make(bank: makeMultiBank());
         await r.open(QuizHomeScreen(r.kit));
-        double sum() {
-          final shapes = r.world.componentsOf<Shape>();
-          var s = 0.0;
-          for (var i = 0; i < shapes.length; i++) {
-            s += shapes.denseAt(i).alpha;
-          }
-          return s;
+        List<double> xs() {
+          final fx = r.world.componentsOf<ShaderEffect>();
+          final pos = r.world.componentsOf<Position>();
+          return [
+            for (var i = 0; i < fx.length; i++)
+              if (fx.denseAt(i).kind == ShaderEffect.cloud)
+                pos.get(fx.entityAt(i))!.x,
+          ];
         }
 
-        final before = sum();
+        final before = xs();
         r.run(0.8);
-        expect(sum(), isNot(before));
+        final after = xs();
+        expect(after, isNot(before), reason: 'they move by themselves');
+        var wrapped = false;
+        for (var i = 0; i < 400 && !wrapped; i++) {
+          r.run(1);
+          for (final x in xs()) {
+            if (x < -90 || x > 450) wrapped = true;
+          }
+          for (final x in xs()) {
+            expect(x, inInclusiveRange(-200.0, 560.0), reason: 'never lost');
+          }
+        }
       },
     );
 
@@ -1346,9 +1512,9 @@ void main() {
       await r2.open(next);
       expect(r2.backgroundColor, isNot(before));
       expect(r2.backgroundColor, 0xFF101010);
-      r2.tap('Sound · ✓');
+      r2.tap('Sound');
       expect(r.kit.settings.sound, isFalse);
-      r2.tap('Haptics · ✓');
+      r2.tap('Haptics');
       expect(r.kit.settings.haptics, isFalse);
     });
 
@@ -1408,7 +1574,18 @@ void main() {
           ),
         );
         expect(r.hasPart('Score'), isTrue);
-        expect(r.has('★★★'), isTrue);
+        final fx = r.world.componentsOf<ShaderEffect>();
+        final earned = [
+          for (var i = 0; i < fx.length; i++)
+            if (fx.denseAt(i).kind == ShaderEffect.seal &&
+                fx.denseAt(i).params[0] == 2)
+              fx.denseAt(i),
+        ];
+        expect(
+          earned,
+          hasLength(3),
+          reason: 'three stars, drawn as ticked seals',
+        );
         expect(r.has('Passed'), isTrue);
         expect(r.hasPart('Coins earned'), isTrue);
         r.tap('Again');

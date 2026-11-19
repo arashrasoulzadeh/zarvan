@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:zarvan_core/zarvan_core.dart' show EntityId, Position, UiRect;
 import 'package:zarvan_flutter/zarvan_flutter.dart'
-    show Shape, ShapeKind, ShaderEffect, UiNode;
+    show Shape, ShapeKind, ShaderEffect, Sprite, UiButton, UiNode;
 
 import 'quiz_screen.dart';
 
@@ -154,6 +154,226 @@ extension QuizOrnaments on QuizScreen {
     );
     world.componentsOf<ShaderEffect>().set(id, fx);
     return (id, fx);
+  }
+
+  /// The finished card picture of [authorId] over [r], from the kit's card art:
+  /// drawn at [r]'s width and the picture's own proportions (never stretched),
+  /// centred on [r]. Null when the kit has none for them.
+  EntityId? cardPictureAt(String authorId, UiRect r, {int z = 5}) {
+    final art = kit.cardArt;
+    if (art == null || !art.has(authorId)) return null;
+    final id = world.spawn();
+    world.componentsOf<Position>().set(
+      id,
+      Position(r.centerX, r.centerY + yShift),
+    );
+    final scale = r.width / art.width;
+    world.componentsOf<Sprite>().set(
+      id,
+      Sprite(art.atlasId, authorId, scaleX: scale, scaleY: scale, zIndex: z),
+    );
+    return id;
+  }
+
+  /// A gilded cartouche over [r], drawn by the engine's `cartouche` shader: a
+  /// banner drawn out to points (green velvet, or parchment when [paper]) or,
+  /// with [arch], a tall card with a flowered border around a window of
+  /// [window] colour and, when [plaque] is above 0, a name plaque taking that
+  /// share of its height; a banner shows sprays of blossoms at its ends, clipped
+  /// to it and swaying, in proportion to [flowers] (0..1). [gleam] (0..1) brightens the gold for a card that
+  /// is chosen. With [card] it is instead a wide panel for text (parchment in a
+  /// blue vine band, medallions on its peaks and, in proportion to [flowers],
+  /// sprays of blossom in its corners). With [dialog] it is a tall panel of deep
+  /// blue paper with a parchment header taking [header] of its height. A banner
+  /// with negative [flowers] has blue lozenges at its ends instead. The shape
+  /// fills [r] exactly; the effect's `blur` (0..1) fades it out.
+  EntityId cartoucheAt(
+    UiRect r, {
+    bool arch = false,
+    bool card = false,
+    bool dialog = false,
+    double header = 0,
+    bool paper = false,
+    double plaque = 0,
+    double flowers = 0,
+    double gleam = 0,
+    int? window,
+    int z = 5,
+  }) {
+    final id = world.spawn();
+    world.componentsOf<Position>().set(
+      id,
+      Position(r.centerX, r.centerY + yShift),
+    );
+    world.componentsOf<ShaderEffect>().set(
+      id,
+      ShaderEffect(
+        kind: ShaderEffect.cartouche,
+        width: r.width,
+        height: r.height,
+        zIndex: z,
+        rimArgb: 0xFFE8B23A,
+        armArgb: 0xFF1F4E9C,
+        coreArgb: window ?? 0xFF1B6B3A,
+        params: [
+          dialog ? 3 : (card ? 2 : (arch ? 1 : 0)),
+          gleam,
+          paper ? 1 : 0,
+          dialog ? header : (arch ? plaque : flowers),
+        ],
+      ),
+    );
+    return id;
+  }
+
+  /// A swirling Persian cloud in [r] (head at the left, or at the right when
+  /// [mirror]), drawn by the `cloud` shader; [variant] 0..3 changes its curls.
+  EntityId cloudAt(
+    UiRect r, {
+    int variant = 0,
+    bool mirror = false,
+    double opacity = 1,
+    int z = 1,
+  }) {
+    final id = world.spawn();
+    world.componentsOf<Position>().set(
+      id,
+      Position(r.centerX, r.centerY + yShift),
+    );
+    world.componentsOf<ShaderEffect>().set(
+      id,
+      ShaderEffect(
+        kind: ShaderEffect.cloud,
+        width: r.width,
+        height: r.height,
+        zIndex: z,
+        rimArgb: 0xFFE8B23A,
+        armArgb: 0xFF8FB4E8,
+        coreArgb: 0xFFFFF1D6,
+        params: [variant.toDouble(), mirror ? 1 : 0, opacity, 0],
+      ),
+    );
+    return id;
+  }
+
+  /// A flowering branch in [r] (leaning right, or left when [mirror]), drawn
+  /// by the `blossom` shader.
+  EntityId blossomAt(UiRect r, {bool mirror = false, int z = 2}) {
+    final id = world.spawn();
+    world.componentsOf<Position>().set(
+      id,
+      Position(r.centerX, r.centerY + yShift),
+    );
+    world.componentsOf<ShaderEffect>().set(
+      id,
+      ShaderEffect(
+        kind: ShaderEffect.blossom,
+        width: r.width,
+        height: r.height,
+        zIndex: z,
+        rimArgb: 0xFFF0746A,
+        armArgb: 0xFF7A4A24,
+        coreArgb: 0xFF5E7A2C,
+        params: [mirror ? 1 : 0, 1],
+      ),
+    );
+    return id;
+  }
+
+  /// The two blossoming branches on their rocks at the bottom corners of the
+  /// screen; call after [QuizScreen.spread] with 1 so they sit on the bottom.
+  void footBlossoms({double width = 96, double height = 165}) {
+    final y = QuizScreen.worldHeight - height;
+    blossomAt(UiRect(0, y, width, height));
+    blossomAt(
+      UiRect(QuizScreen.worldWidth - width, y, width, height),
+      mirror: true,
+    );
+  }
+
+  /// The look every screen shares: blue paper, [clouds] drifting across it and,
+  /// when [blossoms], the blossoming branches on rocks at the bottom corners.
+  void styledBackdrop({int clouds = 2, bool blossoms = true, int seed = 1}) {
+    lapisSky();
+    final rng = math.Random(seed);
+    // Away from the title bar at the top: a band in the middle and one low.
+    final bands = [(330.0, 380.0), (470.0, 520.0), (120.0, 160.0)];
+    for (var i = 0; i < clouds && i < bands.length; i++) {
+      spread(0.5);
+      final cloud = DriftingCloud(
+        this,
+        (i * 2 + seed) % 4,
+        bands[i].$1,
+        bands[i].$2,
+      );
+      tickers.add((dt) => cloud.step(dt, rng));
+    }
+    if (blossoms) {
+      spread(1);
+      footBlossoms(width: 84, height: 135);
+    }
+    spread(0);
+  }
+
+  /// A button over [r] drawn as a gilded banner (green velvet with blossoms, or
+  /// parchment when [paper], or [color] velvet), with [text] on it.
+  UiButton bannerButton(
+    UiRect r,
+    String text,
+    void Function() onTap, {
+    double size = 18,
+    bool paper = false,
+    int? color,
+    double flowers = 1,
+    double gleam = 0.15,
+    double fade = 0,
+    int z = 5,
+    QuizGroup? group,
+  }) {
+    final fx = cartoucheAt(
+      r,
+      flowers: flowers,
+      paper: paper,
+      gleam: gleam,
+      window: color,
+      z: z,
+    );
+    // A dimmed banner (a button that cannot be pressed yet) is partly faded.
+    if (fade > 0) world.componentsOf<ShaderEffect>().get(fx)!.blur = fade;
+    group?.addId(fx);
+    final b = button(
+      r,
+      text,
+      onTap,
+      style: QuizButtonStyle.option,
+      size: size,
+      group: group,
+    );
+    b.bg.shape!.alpha = 0;
+    b.label.text!.colorArgb = paper ? 0xFF14284B : 0xFFFFF1D6;
+    return b;
+  }
+
+  /// Mottled blue handmade paper with flecks of gold leaf behind the whole
+  /// screen, drawn by the `lapis` shader.
+  void lapisSky({int? base, int? light, int? gold}) {
+    final id = world.spawn();
+    world.componentsOf<Position>().set(
+      id,
+      Position(QuizScreen.worldWidth / 2, world.height / 2),
+    );
+    world.componentsOf<ShaderEffect>().set(
+      id,
+      ShaderEffect(
+        kind: ShaderEffect.lapis,
+        width: QuizScreen.worldWidth,
+        height: world.height,
+        zIndex: -9,
+        rimArgb: base ?? 0xFF3C74C2,
+        armArgb: light ?? 0xFF6E9FDD,
+        coreArgb: gold ?? 0xFFF3CB6B,
+      ),
+    );
   }
 
   /// An ornate Persian frame around [r], drawn by the engine's `ornate`
@@ -415,5 +635,75 @@ extension QuizOrnaments on QuizScreen {
       );
     }
     return out;
+  }
+}
+
+/// A cloud that crosses the page: it comes in from a random side, drifts to the
+/// other and, once it has left the screen, comes in again from a random side
+/// at a new height, speed and shape.
+class DriftingCloud {
+  DriftingCloud(this._screen, int variant, this._top, this._bottom)
+    : _shift = _screen.yShift {
+    final rng = math.Random(variant * 31 + 5);
+    _variant = variant;
+    _id = _screen.cloudAt(
+      UiRect(0, 0, _w, _h),
+      variant: variant,
+      opacity: 0.95,
+    );
+    _launch(rng, onScreen: true);
+  }
+
+  /// The screen it drifts on.
+  final QuizScreen _screen;
+  final double _top;
+  final double _bottom;
+  final double _shift;
+  static const _w = 190.0;
+  static const _h = 90.0;
+  late final EntityId _id;
+  double _speed = 10;
+  int _variant = 0;
+
+  /// How far past the screen edge a cloud's centre is when it is fully out of
+  /// sight, with a margin so it never pops in or out.
+  double _offscreen(double width) => width / 2 + 24;
+
+  void _launch(math.Random rng, {bool onScreen = false}) {
+    final right = rng.nextBool();
+    final world = _screen.world;
+    final fx = world.componentsOf<ShaderEffect>().get(_id)!;
+    if (!onScreen) _variant = rng.nextInt(4);
+    // A new shape, size and motion each time it comes in.
+    final scale = 0.8 + rng.nextDouble() * 0.5;
+    fx.width = _w * scale;
+    fx.height = _h * scale;
+    // The head leads, so it is mirrored when the cloud drifts to the right.
+    fx.params = [
+      _variant.toDouble(),
+      right ? 1 : 0,
+      0.95,
+      rng.nextDouble() * 6,
+    ];
+    final y = _top + rng.nextDouble() * (_bottom - _top) + fx.height / 2;
+    final x = onScreen
+        ? rng.nextDouble() * QuizScreen.worldWidth
+        : (right
+              ? -_offscreen(fx.width)
+              : QuizScreen.worldWidth + _offscreen(fx.width));
+    _speed = (right ? 1 : -1) * (6 + rng.nextDouble() * 9);
+    world.componentsOf<Position>().set(_id, Position(x, y + _shift));
+  }
+
+  void step(double dt, math.Random rng) {
+    final pos = _screen.world.componentsOf<Position>().get(_id);
+    final fx = _screen.world.componentsOf<ShaderEffect>().get(_id);
+    if (pos == null || fx == null) return;
+    pos.x += _speed * dt;
+    final out = _offscreen(fx.width);
+    final gone = _speed > 0
+        ? pos.x > QuizScreen.worldWidth + out
+        : pos.x < -out;
+    if (gone) _launch(rng);
   }
 }

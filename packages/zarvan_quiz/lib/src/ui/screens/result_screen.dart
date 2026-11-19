@@ -2,6 +2,9 @@ import 'package:zarvan_core/zarvan_core_quiz.dart';
 
 import 'package:zarvan_flutter/zarvan_flutter.dart' show ShareOutcome;
 
+import 'package:zarvan_core/zarvan_core.dart' show UiRect;
+
+import '../ornaments.dart';
 import '../quiz_screen.dart';
 import 'game_screen.dart';
 import 'home_screen.dart';
@@ -11,7 +14,16 @@ import 'home_screen.dart';
 class QuizResultScreen extends QuizScreen {
   QuizResultScreen(super.kit);
 
-  late final _note = label('', QuizScreen.worldWidth / 2, 416, size: 14);
+  late final _note = label(
+    '',
+    QuizScreen.worldWidth / 2,
+    416,
+    size: 14,
+    color: 0xFFFFF1D6,
+  );
+
+  static const _ink = 0xFF3A2312;
+  static const _brown = 0xFF6B4A2B;
 
   @override
   void build() {
@@ -19,34 +31,52 @@ class QuizResultScreen extends QuizScreen {
     final session = kit.session;
     final round = session.round!;
     final reward = session.reward;
+    styledBackdrop(seed: 1, blossoms: false);
     titleBar(s.result);
     final cx = QuizScreen.worldWidth / 2;
-    spread(0.2);
-    label('${s.number(round.run.score)} ${s.score}', cx, 130, size: 32);
-    var y = 180.0;
+    spread(0.12);
+    // The result on a parchment card with blossoms in its corners.
+    cartoucheAt(
+      UiRect(
+        QuizScreen.margin + 4,
+        88,
+        QuizScreen.worldWidth - 2 * QuizScreen.margin - 8,
+        290,
+      ),
+      card: true,
+      flowers: 1,
+    );
+    final face = theme.poemFontFamily ?? theme.fontFamily;
+    label(
+      '${s.number(round.run.score)} ${s.score}',
+      cx,
+      140,
+      size: 34,
+      color: _ink,
+      fontFamily: face,
+    );
+    var y = 196.0;
     final mode = round.mode;
     if (mode is StageMode) {
-      label(
-        List.generate(3, (i) => i < round.stars ? '★' : '☆').join(),
-        cx,
-        y,
-        size: 34,
-        color: theme.accent,
-      );
+      // The stars are little seals: a ticked one for each earned.
+      for (var i = 0; i < 3; i++) {
+        sealAt(cx + (i - 1) * 54, y, 36, i < round.stars ? 2 : 0);
+      }
       label(
         round.passed ? s.stageResultPassed : s.stageResultFailed,
         cx,
-        y + 36,
+        y + 44,
         size: 16,
+        color: _ink,
       );
-      y += 80;
+      y += 92;
     }
     if (mode is DailyMode && round.date != null) {
-      label(round.resultString, cx, y, size: 26);
+      label(round.resultString, cx, y, size: 26, color: _ink);
       y += 44;
     }
     if (reward?.newRecord == true) {
-      label(s.newRecord, cx, y, size: 18, color: theme.accent);
+      label(s.newRecord, cx, y, size: 18, color: 0xFF8A2F1E);
       y += 34;
     }
     if (reward != null) {
@@ -55,29 +85,34 @@ class QuizResultScreen extends QuizScreen {
         cx,
         y,
         size: 16,
-        color: theme.soft,
+        color: _brown,
       );
     }
 
     spread(1);
-    var by = 500.0;
+    const by = 500.0;
     if (mode is DailyMode && round.date != null && kit.share != null) {
-      button(row(by - 60), s.share, () async {
+      bannerButton(row(by - 66, height: 56), s.share, () async {
         final outcome = await kit.share!(_shareText(round));
         _note.text!.text = switch (outcome) {
           ShareOutcome.shared => '',
           ShareOutcome.copied => s.copied,
           ShareOutcome.failed => s.shareFailed,
         };
-      });
+      }, gleam: 0.5);
     } else if (mode is! DailyMode) {
-      button(row(by - 60), s.playAgain, () => _again(round));
+      bannerButton(
+        row(by - 66, height: 56),
+        s.playAgain,
+        () => _again(round),
+        gleam: 0.5,
+      );
     }
-    button(
-      row(by),
+    bannerButton(
+      row(by, height: 56),
       s.backToMenu,
       () => navigate(QuizHomeScreen(kit), returning: true),
-      style: QuizButtonStyle.outline,
+      color: 0xFF1F4E86,
     );
   }
 

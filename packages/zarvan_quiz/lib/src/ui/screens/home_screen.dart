@@ -1,5 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:zarvan_core/zarvan_core.dart' show UiRect, World;
 import 'package:zarvan_core/zarvan_core_quiz.dart';
+import 'package:zarvan_flutter/zarvan_flutter.dart' show UiButton;
 
 import '../medal_overlay.dart';
 import '../ornaments.dart';
@@ -25,18 +28,24 @@ import 'settings_screen.dart';
   return (author: bank.authors.last, tier: QuizTier.literary);
 }
 
-/// The main menu: a magical wall of shelves with one card per author (their
-/// four stages as pips), the daily challenge, Endless and Race, and a big
-/// Continue that goes on with the next stage. Drawn only with engine shapes
-/// and text; the glows pulse and sparkles twinkle in [update].
+/// The main menu, laid out like a page of a Persian miniature: blue paper
+/// with swirling clouds, a heading in calligraphy, the authors as gilded
+/// arched cards (a portrait in a window of their robe's colour over a name on
+/// a scalloped plaque), the daily challenge on a parchment banner, Endless and
+/// Race and a big Continue on green velvet ones, and blossoming branches in the
+/// corners. Everything is drawn by the engine's shaders (no image files); the
+/// glows breathe by themselves and the clouds and blossoms drift in [update].
 class QuizHomeScreen extends QuizScreen {
   QuizHomeScreen(super.kit);
 
-  final List<Twinkle> _twinkles = [];
-  double _time = 0;
   late final MedalOverlay _medal = MedalOverlay(this);
+  final List<DriftingCloud> _clouds = [];
+  final math.Random _rng = math.Random(11);
 
-  static const _gold = 0xFFE0A93B;
+  static const _cream = 0xFFFFF1D6;
+  static const _ink = 0xFF3A2312;
+  static const _navy = 0xFF1B2A55;
+  static const _plaque = 0.24;
 
   @override
   void build() {
@@ -44,11 +53,17 @@ class QuizHomeScreen extends QuizScreen {
     final theme = this.theme;
     final session = kit.session;
     final progress = session.progress;
-    nightSky();
-    _twinkles.addAll(sparkles(16));
+    lapisSky();
+
+    // Clouds that drift across the page, one band of sky each.
+    spread(0);
+    _clouds.add(DriftingCloud(this, 0, 6, 60));
+    spread(0.45);
+    _clouds.add(DriftingCloud(this, 2, 296, 340));
+    _clouds.add(DriftingCloud(this, 3, 396, 440));
 
     // Top bar: coins and settings.
-    spread(0.1);
+    spread(0.02);
     _coinPill(20, 20, '${s.number(progress.coins)} ${s.coins}');
     final gear = button(
       UiRect(QuizScreen.worldWidth - 64, 16, 44, 44),
@@ -58,32 +73,33 @@ class QuizHomeScreen extends QuizScreen {
       size: 22,
     );
     gear.bg.shape!.cornerRadius = 22;
+    gear.bg.shape!.colorArgb = _cream;
+    gear.label.text!.colorArgb = _cream;
 
-    // The wall: heading, progress, and the shelves of authors.
-    spread(0.3);
+    // The heading, with a soft shadow under it.
+    spread(0.12);
     const cx = QuizScreen.worldWidth / 2;
-    line(24, 108, 100, theme.accent);
-    line(
-      QuizScreen.worldWidth - 108,
-      QuizScreen.worldWidth - 24,
-      100,
-      theme.accent,
+    final heading = theme.poemFontFamily ?? theme.fontFamily;
+    label(
+      s.wallTitle,
+      cx + 1.5,
+      79.5,
+      size: 40,
+      color: 0x99102040,
+      fontFamily: heading,
     );
-    _twinkles.add(
-      Twinkle(
-        plaque(UiRect(126, 84, 108, 32), s.wallTitle, size: 15),
-        low: 0.06,
-        high: 0.25,
-        phase: 1,
-      ),
-    );
-    final authors = kit.bank.authors;
+    label(s.wallTitle, cx, 78, size: 40, color: _cream, fontFamily: heading);
 
+    // The authors: five to a row.
+    spread(0.3);
+    final authors = kit.bank.authors;
     final next = nextStage(kit.bank, progress);
     const perRow = 5;
-    const cardW = 58.0;
-    const cardH = 104.0;
-    const gap = 8.0;
+    const cardW = 62.0;
+    // The cards are pictures at their own proportions when the game has them.
+    final art = kit.cardArt;
+    final cardH = art?.heightFor(cardW) ?? 114.0;
+    const gap = 5.0;
     final left =
         (QuizScreen.worldWidth - (perRow * cardW + (perRow - 1) * gap)) / 2;
     for (var i = 0; i < authors.length; i++) {
@@ -92,16 +108,7 @@ class QuizHomeScreen extends QuizScreen {
       final x = rtl
           ? QuizScreen.worldWidth - left - cardW - col * (cardW + gap)
           : left + col * (cardW + gap);
-      final y = 154.0 + row * 128;
-      if (col == 0) {
-        final plank = box(
-          UiRect(14, y + cardH + 4, QuizScreen.worldWidth - 28, 10),
-          theme.accent,
-          radius: 5,
-          z: 3,
-        );
-        plank.shape!.alpha = 0.22;
-      }
+      final y = 118.0 + row * (cardH + 12);
       _card(
         authors[i],
         x,
@@ -113,128 +120,93 @@ class QuizHomeScreen extends QuizScreen {
     }
 
     // Daily challenge banner, then Endless and Race side by side.
-    spread(0.6);
+    spread(0.42);
     final today = kit.today;
     final played = progress.hasPlayedDaily(today);
-    final daily = UiRect(
-      QuizScreen.margin,
-      418,
-      QuizScreen.worldWidth - 2 * QuizScreen.margin,
-      48,
-    );
-    if (played) {
-      final glow = box(
-        UiRect(daily.x - 3, daily.y - 3, daily.width + 6, daily.height + 6),
-        theme.accent,
-        radius: 17,
-        z: 3,
-      );
-      glow.shape!.alpha = 0.1;
-      frame(daily, theme.accent, alpha: 0.7, radius: 14);
-      label(s.dailyDone, cx, daily.centerY, size: 17, color: theme.soft);
-    } else {
-      final glow = box(
-        UiRect(daily.x - 4, daily.y - 4, daily.width + 8, daily.height + 8),
-        theme.accent,
-        radius: 18,
-        z: 3,
-      );
-      glow.shape!.alpha = 0.2;
-      lightAt(daily, theme.accent, intensity: 0.4);
-      _twinkles.add(Twinkle(glow.shape!, low: 0.1, high: 0.35, speed: 1.3));
-      button(daily, '${s.dailyChallenge} · ${s.dailyTodayPlay}', () {
+    final daily = UiRect(18, 392, QuizScreen.worldWidth - 36, 64);
+    cartoucheAt(daily, paper: true, flowers: 1, gleam: played ? 0 : 0.7);
+    if (!played) lightAt(daily, theme.accent, intensity: 0.35);
+    final dailyTap = button(
+      daily,
+      played ? s.dailyDone : '${s.dailyChallenge} · ${s.dailyTodayPlay}',
+      () {
+        if (played) return;
         play(
           QuizRound.daily(kit.factory, const DailyMode(), date: today),
           () => QuizGameScreen(kit),
         );
-      }, size: 15);
-    }
-    const half = (QuizScreen.worldWidth - 2 * QuizScreen.margin - 12) / 2;
-    button(
-      UiRect(QuizScreen.margin, 478, half, 44),
-      s.endless,
-      () {
-        play(
-          QuizRound.endless(
-            kit.factory,
-            const EndlessMode(),
-            seedBase: 'endless:${kit.now().millisecondsSinceEpoch}',
-          ),
-          () => QuizGameScreen(kit),
-        );
       },
-      style: QuizButtonStyle.outline,
+      style: QuizButtonStyle.option,
       size: 16,
     );
-    button(
-      UiRect(QuizScreen.margin + half + 12, 478, half, 44),
-      s.race,
-      () {
-        play(
-          QuizRound.race(
-            kit.factory,
-            const RaceMode(),
-            seedBase: 'race:${kit.now().millisecondsSinceEpoch}',
-          ),
-          () => QuizGameScreen(kit),
-        );
-      },
-      style: QuizButtonStyle.outline,
-      size: 16,
-    );
+    dailyTap.bg.shape!.alpha = 0;
+    dailyTap.label.text
+      ?..colorArgb = played ? 0xFF7A6A4F : _navy
+      ..maxWidth = daily.width - 90;
 
     // Continue, and the quiet About link.
-    final cont = UiRect(
-      QuizScreen.margin,
-      534,
-      QuizScreen.worldWidth - 2 * QuizScreen.margin,
-      52,
+    spread(0.55);
+    final cont = UiRect(cx - 124, 466, 248, 76);
+    lightAt(cont, theme.accent, intensity: 0.4);
+    final tap = _velvet(cont, s.continueGame, 22, () {
+      final entry = progress.stages[next.author.id]?[next.tier.name];
+      play(
+        QuizRound.stage(
+          kit.factory,
+          kit.stageMode,
+          author: next.author.id,
+          tier: next.tier,
+          attempt: (entry?.attempts ?? 0) + 1,
+        ),
+        () => QuizGameScreen(kit),
+      );
+    }, gleam: 0.8);
+    tap.label.pos.y -= 9;
+    label(
+      '${next.author.name} · ${s.tierName(next.tier.level)}',
+      cx,
+      cont.centerY + 18,
+      size: 12,
+      color: 0xFFE9D7A6,
+      z: 12,
     );
-    final contGlow = box(
-      UiRect(cont.x - 3, cont.y - 3, cont.width + 6, cont.height + 6),
-      theme.accent,
-      radius: 17,
-      z: 3,
-    );
-    contGlow.shape!.alpha = 0.18;
-    lightAt(cont, theme.accent, intensity: 0.45);
-    _twinkles.add(Twinkle(contGlow.shape!, low: 0.08, high: 0.28, phase: 2));
-    button(
-      cont,
-      '${s.continueGame} · ${next.author.name} · ${s.tierName(next.tier.level)}',
-      () {
-        final entry = progress.stages[next.author.id]?[next.tier.name];
-        play(
-          QuizRound.stage(
-            kit.factory,
-            kit.stageMode,
-            author: next.author.id,
-            tier: next.tier,
-            attempt: (entry?.attempts ?? 0) + 1,
-          ),
-          () => QuizGameScreen(kit),
-        );
-      },
-      size: 17,
-    );
-    spread(0.85);
+
+    spread(1);
+    footBlossoms();
+
+    spread(0.92);
     final about = button(
-      UiRect(cx - 50, 598, 100, 28),
+      UiRect(cx - 50, 606, 100, 28),
       s.about,
       () => goTo(QuizAboutScreen(kit)),
       style: QuizButtonStyle.option,
       size: 13,
     );
     about.bg.shape!.alpha = 0;
-    about.label.text!.colorArgb = theme.soft;
+    about.label.text!.colorArgb = _cream;
     openVeil();
   }
 
+  /// A green velvet cartouche button over [r] showing [text].
+  UiButton _velvet(
+    UiRect r,
+    String text,
+    double size,
+    void Function() onTap, {
+    double gleam = 0.15,
+  }) {
+    cartoucheAt(r, flowers: 1, gleam: gleam);
+    final b = button(r, text, onTap, style: QuizButtonStyle.option, size: size);
+    b.bg.shape!.alpha = 0;
+    b.label.text!.colorArgb = _cream;
+    return b;
+  }
+
   void _coinPill(double x, double y, String text) {
-    frame(UiRect(x, y, 92, 32), theme.accent, radius: 16, alpha: 0.7);
-    dot(x + 18, y + 16, 18, _gold);
+    frame(UiRect(x, y, 92, 32), _cream, radius: 16, alpha: 0.8);
+    dot(x + 18, y + 16, 18, 0xFFE0A93B);
     diamondAt(x + 18, y + 16, 7, 0xFFFFE3A3, z: 7);
-    label(text, x + 58, y + 16, size: 13);
+    label(text, x + 58, y + 16, size: 13, color: _cream);
   }
 
   void _card(
@@ -245,79 +217,57 @@ class QuizHomeScreen extends QuizScreen {
     double h, {
     required bool current,
   }) {
-    final theme = this.theme;
     final cx = x + w / 2;
-    if (current) {
-      lightAt(UiRect(x, y, w, h), theme.accent, intensity: 0.7);
-      final glow = box(
-        UiRect(x - 5, y - 5, w + 10, h + 10),
-        theme.accent,
-        radius: 16,
-        z: 3,
+    final rect = UiRect(x, y, w, h);
+    final style = kit.portraits?.styles[a.id];
+    if (current) lightAt(rect, theme.accent, intensity: 0.75);
+    if (cardPictureAt(a.id, rect) != null) {
+      // The picture carries the portrait and the name; only a tap is left.
+      final hit = button(
+        rect,
+        a.name,
+        () => _medal.open(a, UiRect(x, y + yShift, w, h)),
+        style: QuizButtonStyle.option,
+        size: 11,
       );
-      glow.shape!.alpha = 0.3;
-      _twinkles.add(Twinkle(glow.shape!, low: 0.18, high: 0.5, speed: 1.4));
+      hit.bg.shape!.alpha = 0;
+      hit.label.text!.alpha = 0;
+      return;
     }
-    final body = box(
-      UiRect(x, y, w, h),
-      current ? theme.accent : theme.surface,
-      radius: 12,
-      z: 5,
+    cartoucheAt(
+      rect,
+      arch: true,
+      plaque: _plaque,
+      gleam: current ? 1 : 0,
+      window: style?.window ?? 0xFF1F5E58,
     );
-    body.shape!.alpha = current ? 0.28 : 1;
-    frame(
-      UiRect(x, y, w, h),
-      theme.accent,
-      radius: 12,
-      alpha: current ? 0.95 : 0.5,
-      z: 6,
-    );
-    frame(
-      UiRect(x + 4, y + 4, w - 8, h - 8),
-      theme.accent,
-      radius: 9,
-      alpha: 0.25,
-      dash: 3,
-      z: 6,
-    );
-    final portrait = portraitAt(
-      a.id,
-      cx,
-      y + 34,
-      44,
-      current ? theme.ink : (0xE0 << 24 | (theme.accent & 0xFFFFFF)),
-    );
-    if (portrait == null) {
-      diamondAt(cx, y + 36, 30, theme.accent, stroke: 1.2, alpha: 0.3);
-      diamondAt(cx, y + 36, 14, theme.accent, stroke: 1.2, alpha: 0.35);
-    }
-    // What they are known for, along the bottom of the card where the stage
-    // dots used to be.
-    emblemAt(a.id, cx, y + h - 15, 32, color: current ? theme.ink : null);
-    if (current) diamondAt(cx, y + h, 11, theme.accent, z: 8);
+    portraitAt(a.id, cx, y + 52, 38, 0xFFFFF0CF);
     final tap = button(
-      UiRect(x, y, w, h),
+      rect,
       a.name,
       () => _medal.open(a, UiRect(x, y + yShift, w, h)),
       style: QuizButtonStyle.option,
-      size: 12,
+      size: 11,
     );
     tap.bg.shape!.alpha = 0;
-    // A long name wraps to two lines: lift it so it clears the emblem below.
-    final longName = a.name.length > 9 && a.name.contains(' ');
-    tap.label.pos.y += portrait == null ? -6 : (longName ? 13 : 21);
-    tap.label.text!
-      ..maxWidth = w - 8
-      ..colorArgb = theme.ink;
+    // The name sits on the plaque at the foot of the card; a long one wraps to
+    // two lines and is set a little smaller.
+    final long = a.name.length > 9 && a.name.contains(' ');
+    final gw = 0.04 * w;
+    final plaqueY = h - _plaque * h / 2 - gw * 1.05;
+    tap.label.pos.y += plaqueY - h / 2;
+    tap.label.text
+      ?..fontSize = long ? 10 : 11.5
+      ..maxWidth = w - 12
+      ..colorArgb = _ink;
   }
 
   @override
   void update(double dt, World world) {
     super.update(dt, world);
-    _time += dt;
     _medal.update(dt);
-    for (final t in _twinkles) {
-      t.apply(_time);
+    for (final c in _clouds) {
+      c.step(dt, _rng);
     }
   }
 }

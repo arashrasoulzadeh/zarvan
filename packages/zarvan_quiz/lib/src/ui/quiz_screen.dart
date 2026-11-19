@@ -253,20 +253,50 @@ abstract class QuizScreen extends Scene {
     return btn;
   }
 
-  /// The title bar: [text] centred at the top, and (when [onBack] is given) a
-  /// back button on the reading-start side.
+  /// The title bar: [text] centred at the top in cream calligraphy with a soft
+  /// shadow, and (when [onBack] is given) a round back button, dark green
+  /// edged in gold, on the reading-start side.
   void titleBar(String text, {void Function()? onBack, bool showTitle = true}) {
-    if (showTitle) label(text, worldWidth / 2, 36, size: 22);
+    if (showTitle) {
+      final face = theme.poemFontFamily ?? theme.fontFamily;
+      label(
+        text,
+        worldWidth / 2 + 1,
+        37.5,
+        size: 26,
+        color: 0x99102040,
+        fontFamily: face,
+      );
+      label(
+        text,
+        worldWidth / 2,
+        36,
+        size: 26,
+        color: 0xFFFFF1D6,
+        fontFamily: face,
+      );
+    }
     if (onBack != null) {
       final x = rtl ? worldWidth - margin - 36 : margin;
+      final r = UiRect(x, 18, 36, 36);
+      box(
+        UiRect(r.x - 2.5, r.y - 2.5, r.width + 5, r.height + 5),
+        0xFFE8B23A,
+        radius: 20.5,
+        z: 4,
+      );
+      box(r, 0xFF1B4F47, radius: 18, z: 5);
       final b = button(
-        UiRect(x, 18, 36, 36),
+        r,
         rtl ? '→' : '←',
         onBack,
-        style: QuizButtonStyle.outline,
+        style: QuizButtonStyle.option,
         size: 20,
       );
-      b.label.text!.rtl = false;
+      b.bg.shape!.alpha = 0;
+      b.label.text!
+        ..rtl = false
+        ..colorArgb = 0xFFFFF1D6;
     }
   }
 
@@ -456,6 +486,15 @@ abstract class QuizScreen extends Scene {
     }
   }
 
+  /// Things that move by themselves (drifting clouds): each is called with the
+  /// seconds since the last frame.
+  final List<void Function(double dt)> tickers = [];
+
   @override
-  void update(double dt, World world) => _stepVeil(dt);
+  void update(double dt, World world) {
+    _stepVeil(dt);
+    for (final t in tickers) {
+      t(dt);
+    }
+  }
 }

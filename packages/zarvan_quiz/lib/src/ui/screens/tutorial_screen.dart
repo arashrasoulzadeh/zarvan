@@ -2,6 +2,7 @@ import 'package:zarvan_core/zarvan_core.dart' show UiRect;
 import 'package:zarvan_core/zarvan_core_quiz.dart';
 import 'package:zarvan_flutter/zarvan_flutter.dart' show measureText;
 
+import '../ornaments.dart';
 import '../quiz_screen.dart';
 import 'home_screen.dart';
 
@@ -17,6 +18,7 @@ class QuizTutorialScreen extends QuizScreen {
   @override
   void build() {
     final s = kit.strings;
+    styledBackdrop(seed: 2, clouds: 1);
     titleBar(s.tutorialTitle);
     label(
       s.tutorialBody,
@@ -24,7 +26,7 @@ class QuizTutorialScreen extends QuizScreen {
       110,
       size: 16,
       maxWidth: QuizScreen.worldWidth - 60,
-      color: theme.soft,
+      color: 0xFFE9D7A6,
     );
     final item = kit.bank.items(tier: QuizTier.easy).first;
     _q = kit.factory.create(item.id, QuizTier.easy, 1);
@@ -57,17 +59,18 @@ class QuizTutorialScreen extends QuizScreen {
     ];
     final inner =
         sizes.fold<double>(0, (a, z) => a + z.height) + 8 * (lines.length - 1);
-    const top = 170.0;
-    _view.addNode(
-      box(
+    const top = 184.0;
+    // The couplet on a parchment card, as in the game.
+    _view.addId(
+      cartoucheAt(
         UiRect(
           QuizScreen.margin,
-          top,
+          top - 14,
           QuizScreen.worldWidth - 2 * QuizScreen.margin,
-          inner + 32,
+          inner + 60,
         ),
-        theme.surface,
-        radius: 16,
+        card: true,
+        flowers: 1,
       ),
     );
     var y = top + 16;
@@ -79,39 +82,37 @@ class QuizTutorialScreen extends QuizScreen {
           y + sizes[i].height / 2,
           size: 20,
           maxWidth: w,
-          color: answered ? theme.correct : theme.ink,
+          color: answered ? 0xFF1F6B3A : 0xFF2A1A0E,
         ),
       );
       y += sizes[i].height + 8;
     }
-    var oy = top + inner + 46;
+    var oy = top + inner + 66;
     for (var i = 0; i < q.options.length; i++) {
-      final b = button(
+      final b = bannerButton(
         row(oy),
         q.options[i],
         () {
           _picked = i;
           _redraw();
         },
-        style: QuizButtonStyle.option,
         size: 20,
         group: _view,
       );
       b.enabled = !answered;
-      oy += 56;
+      oy += 60;
     }
     spread(1);
-    final start = button(
-      row(QuizScreen.worldHeight - 68),
+    final start = bannerButton(
+      row(QuizScreen.worldHeight - 76, height: 56),
       s.tutorialDone,
       _finish,
+      gleam: answered ? 0.6 : 0,
+      fade: answered ? 0 : 0.6,
       group: _view,
     );
     start.enabled = answered;
-    if (!answered) {
-      start.bg.shape!.alpha = 0.4;
-      start.label.text!.alpha = 0.4;
-    }
+    if (!answered) start.label.text!.alpha = 0.4;
   }
 
   Future<void> _finish() async {

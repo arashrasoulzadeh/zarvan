@@ -119,6 +119,7 @@ class QuizPortraitStyle {
     this.woman = false,
     this.emblem,
     this.epithet,
+    this.window,
   });
 
   /// How far the beard hangs below the chin (0 for none).
@@ -144,6 +145,10 @@ class QuizPortraitStyle {
   /// The title they are known by, written under their name on the medal.
   final String? epithet;
 
+  /// The colour of the window behind their portrait on the shelf card (their
+  /// robe's colour in the miniature); null uses a deep teal.
+  final int? window;
+
   /// The numbers the shader reads (beard, spread, headwear, flags).
   List<double> get params => [
     beard,
@@ -166,6 +171,35 @@ class QuizPortraits {
   final Map<String, QuizPortraitStyle> styles;
 
   bool has(String authorId) => styles.containsKey(authorId);
+}
+
+/// Finished pictures of the authors' shelf cards (name included), cut from one
+/// packed atlas the game registers: when the kit has them the home draws each
+/// card as that picture, at its true proportions, in place of the shader card.
+class QuizCardArt {
+  const QuizCardArt({
+    required this.atlasId,
+    required this.width,
+    required this.height,
+    required this.authors,
+  });
+
+  /// The atlas the pictures are in; each region is named by the author's id.
+  final String atlasId;
+
+  /// The size in pixels every picture has (they share one), which fixes the
+  /// card's shape: the card is drawn as wide as asked and as tall as this
+  /// proportion gives, never stretched.
+  final double width;
+  final double height;
+
+  /// The ids of the authors that have a picture.
+  final Set<String> authors;
+
+  bool has(String authorId) => authors.contains(authorId);
+
+  /// Height of a card [w] wide.
+  double heightFor(double w) => w * height / width;
 }
 
 /// What the quiz screens need from the app for rewarded ads, without the
@@ -206,6 +240,7 @@ class QuizKit {
     this.shareText,
     this.stageMode = const StageMode(),
     this.portraits,
+    this.cardArt,
     this.transitions = true,
     this.transitionKind = quizRippleTransition,
     this.returnTransitionKind = quizRippleTransition,
@@ -231,6 +266,9 @@ class QuizKit {
 
   /// The authors' portraits, or null for none.
   final QuizPortraits? portraits;
+
+  /// Pictures for the shelf cards, or null to draw them with shaders.
+  final QuizCardArt? cardArt;
 
   /// Whether leaving the menu for a game plays the veil transition.
   final bool transitions;

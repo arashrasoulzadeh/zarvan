@@ -265,5 +265,19 @@ void main() {
       final px = await _render(tester, world);
       expect(_isRed(px(200, 150)), isTrue);
     });
+
+    testWidgets('culling keeps an edge shape, a thick outline whose centre is '
+        'just off-screen, and skips far ones without disturbing the rest', (
+      tester,
+    ) async {
+      final world = _world();
+      // Centre at screen x=-10, radius 30: its right part shows at x<20.
+      _spawn(world, -210, 0, Shape(width: 60, colorArgb: _red));
+      _spawn(world, 90000, 0, Shape(width: 60, colorArgb: _red));
+      _spawn(world, 0, 100, Shape(width: 40, colorArgb: _red));
+      final px = await _render(tester, world);
+      expect(_isRed(px(10, 150)), isTrue);
+      expect(_isRed(px(200, 250)), isTrue);
+    });
   });
 }

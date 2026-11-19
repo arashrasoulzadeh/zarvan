@@ -3079,6 +3079,16 @@ class _EnginePainter extends CustomPainter {
         final alpha = particle.alpha.clamp(0.0, 1.0);
         final base = Color(particle.colorArgb);
         final radius = 4 * particle.scale * camera.zoom;
+        if (!spriteOnScreen(
+          screenPos,
+          8,
+          8,
+          particle.scale * camera.zoom,
+          size,
+          0,
+        )) {
+          continue;
+        }
 
         transforms.add(
           RSTransform.fromComponents(
@@ -3701,6 +3711,16 @@ class _EnginePainter extends CustomPainter {
               zIndex: shape.zIndex,
             );
       final zoom = shape.screenSpace ? 1.0 : camera.zoom;
+      if (!spriteOnScreen(
+        center,
+        shape.width,
+        shape.height,
+        zoom,
+        size,
+        cullBufferPx + shape.strokeWidth * zoom,
+      )) {
+        continue;
+      }
       items.add(
         _DrawItem(
           shape.zIndex,

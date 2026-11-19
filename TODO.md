@@ -52,15 +52,17 @@ warm-up of the lighting and normal-map shaders (`EngineWarmup`), and batching of
 ### Safe, start here
 
 Change only what is drawn or when a shader compiles, never the simulation or draw order. Done: warm-up of every
-shader (lighting, normal maps, `ShaderEffect` kinds, `ShaderPostProcessed.warmUp()`) and camera culling of sprites.
+shader (lighting, normal maps, `ShaderEffect` kinds, `ShaderPostProcessed.warmUp()`) and camera culling of sprites,
+shapes and particle dots. Text is not culled: its size is unknown until laid out.
 
 - [ ] Call `ShaderPostProcessed.warmUp()` from the loading screens of the sample games that use post-fx.
 
 ### Riskier (change draw order or existing visuals)
 
-- [ ] **Batch the remaining sprite fallbacks.** Sprites with non-uniform scale, normal-mapped sprites and
-      unregistered atlases still cost one `drawImageRect` each. Add a 5k-sprite benchmark and measure first whether it
-      matters.
+- [ ] **Batch the remaining sprite fallbacks** (non-uniform scale, normal-mapped sprites, unregistered atlases). The
+      5k-sprite benchmark (`benchmark/sprite_benchmark_test.dart`) shows the fallback costs little in the debug VM
+      (about 1.5 ms vs 0.9 ms for 5k, with a third of the sprites on it): re-measure on a phone, in profile mode,
+      before building anything.
 - [ ] **Explicit render layers and sort keys.** One ordered layer list (background, world, lights, fx, HUD) with a
       per-entity layer and z-order, so parallax, lighting, post-fx and the HUD stop depending on system
       registration order; layers become data an agent can patch.

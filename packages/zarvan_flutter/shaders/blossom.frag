@@ -190,11 +190,18 @@ float leaf(vec2 p, vec2 a, vec2 dir, float len, float wid) {
 
 // A five-petalled blossom at [c], radius [r], turned by [rot]. rgb and cover.
 vec4 blossom(vec2 p, vec2 c, float r, float rot, vec3 edge, float seed) {
+  // No two flowers alike: size, tint and sometimes a sixth petal differ, and
+  // each opens and closes a few percent at its own slow pace.
+  r *= (0.92 + 0.16 * hash(seed * 3.1 + 1.0)) *
+       (1.0 + 0.05 * sin(uTime * 0.5 + seed * 2.3));
+  edge *= 0.86 + 0.28 * hash(seed + 5.0);
+  edge.g += 0.07 * (hash(seed + 8.0) - 0.5);
+  float petals = hash(seed * 5.7 + 2.0) > 0.75 ? 6.0 : 5.0;
   vec2 q = p - c;
   float rad = length(q);
   if (rad > r * 1.15) return vec4(0.0);
   float ang = atan(q.y, q.x) + rot;
-  float sector = 6.2832 / 5.0;
+  float sector = 6.2832 / petals;
   float a5 = mod(ang + sector * 0.5, sector) - sector * 0.5;
   float t = abs(a5) / (sector * 0.5);
   // A petal: broad at the tip, narrowing to the heart, with a small notch at
@@ -292,7 +299,7 @@ void main() {
     // Veins: a midrib and side veins slanting toward the tip.
     float rib = 1.0 - smoothstep(0.001, 0.0035, abs(across2));
     float vein = 1.0 - smoothstep(0.02, 0.06,
-        abs(fract((along + abs(across2) / (len * 0.9)) * 5.0) - 0.5));
+        abs(fract((along + abs(across2) / (len * 0.9) + 0.03 * sin(uTime * 0.7 + f)) * 5.0) - 0.5));
     lc = mix(lc, lc * 1.45 + 0.08, max(rib * 0.8, vein * 0.3 * step(0.05, along)));
     // The painted outline.
     lc = mix(lc, deep * 0.45, 1.0 - smoothstep(0.0015, 0.0045, -ld));

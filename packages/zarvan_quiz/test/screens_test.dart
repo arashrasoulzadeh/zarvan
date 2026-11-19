@@ -1458,7 +1458,7 @@ void main() {
       },
     );
 
-    test('far clouds are smaller, slower and paler than near ones', () async {
+    test('clouds differ in depth and fade in and out at the page edge', () async {
       final r = await Rig.make(bank: makeMultiBank());
       await r.open(QuizHomeScreen(r.kit));
       final sizes = <double>{};
@@ -1475,9 +1475,10 @@ void main() {
       }
       expect(sizes.length, greaterThan(3), reason: 'depths differ');
       for (final o in opacities) {
-        expect(o, inInclusiveRange(0.7, 0.95));
+        expect(o, inInclusiveRange(0.0, 0.95));
       }
-      expect(opacities.reduce((a, b) => a < b ? a : b), lessThan(0.85));
+      expect(opacities.reduce((a, b) => a < b ? a : b), lessThan(0.5));
+      expect(opacities.reduce((a, b) => a > b ? a : b), greaterThan(0.7));
     });
 
     test('the home has no ad button and no title on top', () async {

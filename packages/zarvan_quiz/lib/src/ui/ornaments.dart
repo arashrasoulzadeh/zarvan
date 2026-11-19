@@ -663,6 +663,7 @@ class DriftingCloud {
   static const _h = 90.0;
   late final EntityId _id;
   double _speed = 10;
+  double _opacity = 0.95;
   int _variant = 0;
 
   /// How far past the screen edge a cloud's centre is when it is fully out of
@@ -678,6 +679,7 @@ class DriftingCloud {
     // Depth: a far cloud is small, slow and pale, a near one large, quicker
     // and stronger, so the sky reads as having distance (parallax).
     final depth = rng.nextDouble();
+    _opacity = 0.7 + 0.25 * depth;
     final scale = 0.65 + 0.7 * depth;
     fx.width = _w * scale;
     fx.height = _h * scale;
@@ -685,7 +687,7 @@ class DriftingCloud {
     fx.params = [
       _variant.toDouble(),
       right ? 1 : 0,
-      0.7 + 0.25 * depth,
+      _opacity,
       rng.nextDouble() * 6,
     ];
     final y = _top + rng.nextDouble() * (_bottom - _top) + fx.height / 2;
@@ -707,6 +709,13 @@ class DriftingCloud {
     final gone = _speed > 0
         ? pos.x > QuizScreen.worldWidth + out
         : pos.x < -out;
-    if (gone) _launch(rng);
+    if (gone) {
+      _launch(rng);
+      return;
+    }
+    // Fade in as it enters and out as it leaves, so it never pops at the edge.
+    final edge = math.min(pos.x, QuizScreen.worldWidth - pos.x) + fx.width / 2;
+    final f = ((edge + 24) / (fx.width * 0.7 + 24)).clamp(0.0, 1.0);
+    fx.params[2] = _opacity * f * f * (3 - 2 * f);
   }
 }

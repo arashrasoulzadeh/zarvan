@@ -14,7 +14,7 @@ Related (not task lists):
 The sample games' own lists (`mobarez/mobarez_todo.md`, `zahaak/zahaak_todo.md`, `adad_bazi/TODO.md`) stay with the
 games: those folders are gitignored, so the files exist only on the owner's machine.
 
-Sections: [Release](#release) · [Idle gaps](#idle-gaps) · [Studio](#studio)
+Sections: [Release](#release) · [Idle gaps](#idle-gaps) · [Rendering](#rendering) · [Studio](#studio)
 
 ## Release
 
@@ -42,6 +42,34 @@ What `zarvan_idle` and the wave-combat layer still lack for a full idle game, mo
 - [ ] **Snapshot-free shader path.** Run the same `post_fx` shader through `ImageFilter.shader` on Impeller platforms, so
       the per-frame snapshot (the whole cost on the web, about 6 ms per megapixel; on an Android phone the shader work
       shows too) disappears on iOS and Android.
+
+## Rendering
+
+Ideas for `zarvan_flutter`'s render path. Measure with the frame-timing monitor and the benchmarks before and after
+each one. Already built, so not listed: shared-atlas `drawRawAtlas` batching (per `zIndex`), tile-map culling,
+warm-up of the lighting and normal-map shaders (`EngineWarmup`), and batching of mirrored (flipped) sprites.
+
+### Safe, start here
+
+Change only what is drawn or when a shader compiles, never the simulation or draw order. Done: warm-up of every
+shader (lighting, normal maps, `ShaderEffect` kinds, `ShaderPostProcessed.warmUp()`) and camera culling of sprites.
+
+- [ ] Call `ShaderPostProcessed.warmUp()` from the loading screens of the sample games that use post-fx.
+
+### Riskier (change draw order or existing visuals)
+
+- [ ] **Batch the remaining sprite fallbacks.** Sprites with non-uniform scale, normal-mapped sprites and
+      unregistered atlases still cost one `drawImageRect` each. Add a 5k-sprite benchmark and measure first whether it
+      matters.
+- [ ] **Explicit render layers and sort keys.** One ordered layer list (background, world, lights, fx, HUD) with a
+      per-entity layer and z-order, so parallax, lighting, post-fx and the HUD stop depending on system
+      registration order; layers become data an agent can patch.
+- [ ] **Cache static layers.** Cache unchanging layers (tile maps, parallax) as a `Picture` or image redrawn only when
+      the camera moves a whole tile or the layer changes.
+- [ ] **Shader pass pipeline.** Chain post-fx, colorblind filter, ambient and GPU lighting and screen tint as an
+      ordered list of passes that share one snapshot (today each can force its own), with passes toggled by data.
+- [ ] **Plain-canvas fallback.** When a shader fails to load or the platform lacks support, fall back to a flat tint
+      with no normal maps; test both paths.
 
 ## Studio
 

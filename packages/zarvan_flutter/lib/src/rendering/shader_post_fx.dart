@@ -147,15 +147,24 @@ class ShaderPostProcessed extends StatefulWidget {
     return ratio;
   }
 
+  static const _asset = 'packages/zarvan_flutter/shaders/post_fx.frag';
+  static Future<ui.FragmentProgram?>? _loading;
+
+  /// Compiles `post_fx.frag` now, so the first frame that shows the effect
+  /// does not stall on the compile. Call it from a loading screen. Completes
+  /// with null, never throws, when the shader cannot load (the widget then
+  /// shows its child unchanged); the program is shared with every instance.
+  static Future<ui.FragmentProgram?> warmUp() =>
+      _loading ??= ui.FragmentProgram.fromAsset(
+        _asset,
+      ).then<ui.FragmentProgram?>((p) => p).catchError((Object _) => null);
+
   @override
   State<ShaderPostProcessed> createState() => _ShaderPostProcessedState();
 }
 
 class _ShaderPostProcessedState extends State<ShaderPostProcessed>
     with SingleTickerProviderStateMixin {
-  static const _asset = 'packages/zarvan_flutter/shaders/post_fx.frag';
-  static Future<ui.FragmentProgram?>? _loading;
-
   final _boundary = GlobalKey();
   ui.FragmentProgram? _program;
   ui.FragmentShader? _shader;
@@ -166,10 +175,7 @@ class _ShaderPostProcessedState extends State<ShaderPostProcessed>
   @override
   void initState() {
     super.initState();
-    _loading ??= ui.FragmentProgram.fromAsset(
-      _asset,
-    ).then<ui.FragmentProgram?>((p) => p).catchError((Object _) => null);
-    _loading!.then((p) {
+    ShaderPostProcessed.warmUp().then((p) {
       if (!mounted) return;
       setState(() {
         _program = p;

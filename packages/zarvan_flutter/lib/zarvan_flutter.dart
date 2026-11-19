@@ -58,6 +58,7 @@ export 'src/input/gamepad_bindings_storage.dart';
 export 'src/ui/gamepad_remap_menu_scene.dart';
 export 'src/ui/splash_screen.dart';
 export 'src/rendering/engine_warmup.dart';
+export 'src/rendering/sprite_culling.dart';
 export 'src/input/input.dart';
 export 'src/input/input_facade.dart';
 export 'src/logic/level_asset.dart';

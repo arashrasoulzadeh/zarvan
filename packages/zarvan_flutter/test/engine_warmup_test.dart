@@ -46,6 +46,66 @@ void main() {
     });
   });
 
+  group('shader effects', () {
+    test('each distinct effect kind in the world is warmed, once', () {
+      final world = _world();
+      final effects = world.componentsOf<ShaderEffect>();
+      effects.set(
+        world.spawn(),
+        ShaderEffect(kind: ShaderEffect.portal, width: 1, height: 1),
+      );
+      effects.set(
+        world.spawn(),
+        ShaderEffect(kind: ShaderEffect.portal, width: 1, height: 1),
+      );
+      effects.set(
+        world.spawn(),
+        ShaderEffect(kind: ShaderEffect.ink, width: 1, height: 1),
+      );
+      expect(EngineWarmup.neededShaders(world), {
+        'effect:portal',
+        'effect:ink',
+      });
+    });
+
+    test('an unknown kind draws nothing, so nothing is warmed', () {
+      final world = _world();
+      world.componentsOf<ShaderEffect>().set(
+        world.spawn(),
+        ShaderEffect(kind: 'nonsense', width: 1, height: 1),
+      );
+      expect(EngineWarmup.neededShaders(world), isEmpty);
+    });
+
+    test('forAnyKind covers every kind the renderer draws', () {
+      for (final kind in [
+        ShaderEffect.portal,
+        ShaderEffect.orb,
+        ShaderEffect.glow,
+        ShaderEffect.shine,
+        ShaderEffect.aurora,
+        ShaderEffect.ornate,
+        ShaderEffect.veil,
+        ShaderEffect.ink,
+        ShaderEffect.kashi,
+        ShaderEffect.curtain,
+        ShaderEffect.portrait,
+        ShaderEffect.seal,
+        ShaderEffect.dust,
+        ShaderEffect.mark,
+        ShaderEffect.disc,
+        ShaderEffect.emblem,
+        ShaderEffect.cartouche,
+        ShaderEffect.cloud,
+        ShaderEffect.blossom,
+        ShaderEffect.lapis,
+      ]) {
+        expect(EffectShader.forAnyKind(kind), isNotNull, reason: kind);
+      }
+      expect(EffectShader.forAnyKind('nonsense'), isNull);
+    });
+  });
+
   testWidgets('run reports only for needed shaders and never throws', (
     tester,
   ) async {

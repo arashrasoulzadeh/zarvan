@@ -82,4 +82,11 @@ void main() {
     await t.pump(const Duration(milliseconds: 50));
     expect(find.byKey(const Key('c')), findsOneWidget);
   });
+
+  test('warmUp starts one shared load, however often it is called', () {
+    expect(
+      identical(ShaderPostProcessed.warmUp(), ShaderPostProcessed.warmUp()),
+      isTrue,
+    );
+  });
 }

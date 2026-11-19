@@ -181,4 +181,24 @@ void main() {
       expect(colors[5].b, closeTo(0, 0.02));
     },
   );
+
+  testWidgets(
+    'culling keeps a big sprite whose centre is off-screen but whose body '
+    'shows, and skips ones far away without disturbing the rest',
+    (tester) async {
+      final colors = await _render(
+        tester,
+        [
+          // 4px source at scale 100 is 400px wide, centred at screen x=-150,
+          // so its right edge reaches screen x=50.
+          (Sprite('atlas', 'px', scaleX: 100, scaleY: 100), Position(-350, 0)),
+          (Sprite('atlas', 'px', scaleX: 20, scaleY: 20), Position(9000, 0)),
+          (Sprite('atlas', 'px', scaleX: 20, scaleY: 20), Position(0, 80)),
+        ],
+        const [Offset(20, 150), Offset(200, 230)],
+      );
+      expect(colors[0], const Color(0xFFFFFFFF)); // edge of the big sprite
+      expect(colors[1], const Color(0xFFFFFFFF)); // neighbour still drawn
+    },
+  );
 }

@@ -316,6 +316,23 @@ class EffectShader {
     _ => null,
   };
 
+  /// The shader that draws a [ShaderEffect] of [kind], or null for an unknown
+  /// kind (which draws nothing). Unlike [forKind] this covers every kind, so
+  /// loading can start before the first frame that paints one.
+  static EffectShader? forAnyKind(String kind) => switch (kind) {
+    ShaderEffect.portal => portal,
+    ShaderEffect.orb => orb,
+    ShaderEffect.glow => glow,
+    ShaderEffect.shine => shine,
+    ShaderEffect.aurora => aurora,
+    ShaderEffect.ornate => ornate,
+    ShaderEffect.veil => veil,
+    ShaderEffect.ink => ink,
+    ShaderEffect.kashi => kashi,
+    ShaderEffect.curtain => curtain,
+    _ => forKind(kind),
+  };
+
   /// `dust.frag`.
   static final dust = EffectShader._('dust.frag');
 

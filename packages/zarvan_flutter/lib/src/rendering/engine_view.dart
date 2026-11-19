@@ -17,6 +17,7 @@ import 'clip_shape.dart';
 import 'parallax_layer.dart';
 import 'viewport.dart';
 import 'sprite.dart';
+import 'sprite_culling.dart';
 // Aliased -- `Text` collides with Flutter's own widget of the same
 // name, which `package:flutter/widgets.dart` (imported above) already
 // brings into scope.
@@ -2446,16 +2447,6 @@ class _EnginePainter extends CustomPainter {
       for (final i in zEntry.value) {
         final entity = sprites.entityAt(i);
         final sprite = sprites.denseAt(i);
-        // `FacingSystem` flips with a negative scaleX of the same magnitude;
-        // `drawRawAtlas` cannot mirror, so those go through one
-        // `drawVertices` per image with mirrored texture coordinates.
-        final mirrored = sprite.scaleX < 0 && -sprite.scaleX == sprite.scaleY;
-        if (!mirrored &&
-            (sprite.scaleX != sprite.scaleY || sprite.scaleX <= 0)) {
-          fallbackIndices.add(i);
-          continue;
-        }
-
         final pos = positions.get(entity)!;
         final atlas = atlasRegistry.resolve(sprite.atlasId);
         final srcRect = atlas.regionFor(sprite.region);
@@ -2473,6 +2464,26 @@ class _EnginePainter extends CustomPainter {
                 zIndex: sprite.zIndex,
               );
         final zoom = sprite.screenSpace ? 1.0 : camera.zoom;
+        if (!spriteOnScreen(
+          screenPos,
+          srcRect.width,
+          srcRect.height,
+          max(sprite.scaleX.abs(), sprite.scaleY.abs()) * zoom,
+          size,
+          cullBufferPx,
+        )) {
+          continue;
+        }
+
+        // `FacingSystem` flips with a negative scaleX of the same magnitude;
+        // `drawRawAtlas` cannot mirror, so those go through one
+        // `drawVertices` per image with mirrored texture coordinates.
+        final mirrored = sprite.scaleX < 0 && -sprite.scaleX == sprite.scaleY;
+        if (!mirrored &&
+            (sprite.scaleX != sprite.scaleY || sprite.scaleX <= 0)) {
+          fallbackIndices.add(i);
+          continue;
+        }
 
         final tint = sprite.tintArgb;
         if (mirrored) {

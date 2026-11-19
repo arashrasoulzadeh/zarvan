@@ -7,6 +7,7 @@ import 'gpu_light_shader.dart';
 import 'light2d.dart';
 import 'normal_mapping_combined_shader.dart';
 import 'normal_mapping_shader.dart';
+import 'shader_effect.dart';
 import 'sprite.dart';
 
 /// Warms up the GPU-side systems a [World] will actually use, during loading.
@@ -17,7 +18,8 @@ import 'sprite.dart';
 /// touched: no lights, no lighting shaders. Never throws: a shader that cannot
 /// load degrades exactly as it already does at paint time.
 class EngineWarmup {
-  /// Shaders [world] needs, by name (`ambient`, `gpuShadow`, `normalMap`).
+  /// Shaders [world] needs, by name (`ambient`, `gpuShadow`, `normalMap`, and
+  /// `effect:<kind>` for each [ShaderEffect] kind the world holds).
   static Set<String> neededShaders(World world) {
     final needs = <String>{};
     final lights = world.componentsOf<Light2D>();
@@ -32,6 +34,11 @@ class EngineWarmup {
         needs.add('normalMap');
         break;
       }
+    }
+    final effects = world.componentsOf<ShaderEffect>();
+    for (var i = 0; i < effects.length; i++) {
+      final kind = effects.denseAt(i).kind;
+      if (EffectShader.forAnyKind(kind) != null) needs.add('effect:$kind');
     }
     return needs;
   }
@@ -66,6 +73,12 @@ class EngineWarmup {
               NormalMappingCombinedShader.shader,
             ),
           ],
+          for (final need in needs.where((n) => n.startsWith('effect:')))
+            (
+              'effects',
+              EffectShader.forAnyKind(need.substring(7))!.warmUp,
+              EffectShader.forAnyKind(need.substring(7))!.shader,
+            ),
         ];
     for (var i = 0; i < steps.length; i++) {
       final (label, load, make) = steps[i];

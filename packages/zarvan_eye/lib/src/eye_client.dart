@@ -254,7 +254,7 @@ class EyeClient {
     final merged = <String, Object?>{
       if (_anonymousUserId != null) 'anonymous_user_id': _anonymousUserId,
       ...options.metadata,
-      ...?_sanitize(dims),
+      ..._sanitize(dims),
       ..._traits,
     };
     if (_userId != null) merged['user_id'] = _userId;

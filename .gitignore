@@ -72,3 +72,6 @@ circles/
 
 # Local game built on the engine (not part of this repo)
 dishwasher/
+
+# Scratch concept images
+tmp_concepts/

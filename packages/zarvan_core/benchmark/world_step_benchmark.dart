@@ -11,7 +11,8 @@ class WorldStepBenchmark extends BenchmarkBase {
   final int entityCount;
   late World world;
 
-  WorldStepBenchmark(this.entityCount) : super('WorldStep(movement only, n=$entityCount)');
+  WorldStepBenchmark(this.entityCount)
+    : super('WorldStep(movement only, n=$entityCount)');
 
   @override
   void setup() {
@@ -21,10 +22,18 @@ class WorldStepBenchmark extends BenchmarkBase {
 
     for (var i = 0; i < entityCount; i++) {
       final id = world.spawn();
-      world.componentsOf<Position>().set(id, Position((i % 100) * 10.0, (i ~/ 100) * 10.0));
+      world.componentsOf<Position>().set(
+        id,
+        Position((i % 100) * 10.0, (i ~/ 100) * 10.0),
+      );
       world.componentsOf<Velocity>().set(id, Velocity(10, 5));
     }
   }
+
+  // One run() per measurement, so the reported RunTime is per call, not
+  // per the harness default of ten.
+  @override
+  void exercise() => run();
 
   @override
   void run() => world.step(0.016);

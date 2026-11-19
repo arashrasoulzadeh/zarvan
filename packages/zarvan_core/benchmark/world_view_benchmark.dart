@@ -15,7 +15,9 @@ class WorldViewNearestBenchmark extends BenchmarkBase {
   late WorldView view;
 
   WorldViewNearestBenchmark(this.entityCount, this.queryCount)
-      : super('nearestWithPosition(entities=$entityCount, queriesPerTick=$queryCount)');
+    : super(
+        'nearestWithPosition(entities=$entityCount, queriesPerTick=$queryCount)',
+      );
 
   @override
   void setup() {
@@ -23,10 +25,18 @@ class WorldViewNearestBenchmark extends BenchmarkBase {
     registerCoreComponents(world);
     for (var i = 0; i < entityCount; i++) {
       final id = world.spawn();
-      world.componentsOf<Position>().set(id, Position((i * 37) % 2000, (i * 53) % 2000));
+      world.componentsOf<Position>().set(
+        id,
+        Position((i * 37) % 2000, (i * 53) % 2000),
+      );
     }
     view = WorldView(world);
   }
+
+  // One run() per measurement, so the reported RunTime is per call, not
+  // per the harness default of ten.
+  @override
+  void exercise() => run();
 
   @override
   void run() {

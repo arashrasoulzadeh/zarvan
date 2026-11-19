@@ -12,13 +12,19 @@ class EntityChurnBenchmark extends BenchmarkBase {
   final int churnCount;
   late World world;
 
-  EntityChurnBenchmark(this.churnCount) : super('EntityChurn(spawn+destroy, n=$churnCount)');
+  EntityChurnBenchmark(this.churnCount)
+    : super('EntityChurn(spawn+destroy, n=$churnCount)');
 
   @override
   void setup() {
     world = World(width: 1000, height: 1000);
     registerCoreComponents(world);
   }
+
+  // One run() per measurement, so the reported RunTime is per call, not
+  // per the harness default of ten.
+  @override
+  void exercise() => run();
 
   @override
   void run() {

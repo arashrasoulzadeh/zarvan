@@ -13,7 +13,8 @@ class ParticleSystemBenchmark extends BenchmarkBase {
   final int emitterCount;
   late World world;
 
-  ParticleSystemBenchmark(this.emitterCount) : super('ParticleSystem(emitters=$emitterCount)');
+  ParticleSystemBenchmark(this.emitterCount)
+    : super('ParticleSystem(emitters=$emitterCount)');
 
   @override
   void setup() {
@@ -24,11 +25,14 @@ class ParticleSystemBenchmark extends BenchmarkBase {
 
     for (var i = 0; i < emitterCount; i++) {
       final id = world.spawn();
-      world.componentsOf<Position>().set(id, Position((i % 50) * 20.0, (i ~/ 50) * 20.0));
+      world.componentsOf<Position>().set(
+        id,
+        Position((i % 50) * 20.0, (i ~/ 50) * 20.0),
+      );
       world.componentsOf<ParticleEmitter>().set(
-            id,
-            ParticleEmitter(rate: 20, lifetimeMin: 0.3, lifetimeMax: 0.3),
-          );
+        id,
+        ParticleEmitter(rate: 20, lifetimeMin: 0.3, lifetimeMax: 0.3),
+      );
     }
 
     // Run a few ticks up front so the live particle population reaches
@@ -37,6 +41,11 @@ class ParticleSystemBenchmark extends BenchmarkBase {
       world.step(0.016);
     }
   }
+
+  // One run() per measurement, so the reported RunTime is per call, not
+  // per the harness default of ten.
+  @override
+  void exercise() => run();
 
   @override
   void run() => world.step(0.016);

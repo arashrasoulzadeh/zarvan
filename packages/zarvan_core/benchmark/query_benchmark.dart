@@ -26,6 +26,11 @@ class QueryBenchmark extends BenchmarkBase {
   @override
   void setup() => world = _build(n);
 
+  // One run() per measurement, so the reported RunTime is per call, not
+  // per the harness default of ten.
+  @override
+  void exercise() => run();
+
   @override
   void run() {
     for (final (_, p, v) in world.query2<Position, Velocity>()) {
@@ -43,6 +48,11 @@ class HandLoopBenchmark extends BenchmarkBase {
 
   @override
   void setup() => world = _build(n);
+
+  // One run() per measurement, so the reported RunTime is per call, not
+  // per the harness default of ten.
+  @override
+  void exercise() => run();
 
   @override
   void run() {

@@ -11,7 +11,7 @@ class CollisionSystemBenchmark extends BenchmarkBase {
   late World world;
 
   CollisionSystemBenchmark(this.entityCount)
-      : super('CollisionSystem(n=$entityCount, packed)');
+    : super('CollisionSystem(n=$entityCount, packed)');
 
   @override
   void setup() {
@@ -26,10 +26,18 @@ class CollisionSystemBenchmark extends BenchmarkBase {
       final x = (i % perRow) * 8.0;
       final y = (i ~/ perRow) * 8.0;
       world.componentsOf<Position>().set(id, Position(x, y));
-      world.componentsOf<Velocity>().set(id, Velocity((i.isEven ? 1 : -1) * 5.0, 0));
+      world.componentsOf<Velocity>().set(
+        id,
+        Velocity((i.isEven ? 1 : -1) * 5.0, 0),
+      );
       world.componentsOf<Collider>().set(id, Collider(4));
     }
   }
+
+  // One run() per measurement, so the reported RunTime is per call, not
+  // per the harness default of ten.
+  @override
+  void exercise() => run();
 
   @override
   void run() => world.step(0.016);

@@ -32,6 +32,11 @@ class WordIndexBuildBenchmark extends BenchmarkBase {
     );
   }
 
+  // One run() per measurement, so the reported RunTime is per call, not
+  // per the harness default of ten.
+  @override
+  void exercise() => run();
+
   @override
   void run() => WordIndex.build(bank, const {'و', 'از'});
 }

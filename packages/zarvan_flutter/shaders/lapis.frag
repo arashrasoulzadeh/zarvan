@@ -62,11 +62,11 @@ void main() {
   // blotchy light and dark patches of gouache on paper.
   vec2 w = vec2(noise(q * 3.0 + vec2(t, 0.0)), noise(q * 3.0 + vec2(5.2, 1.3 - t)));
   float wash = fbm(q * 2.4 + w * 1.6);
-  vec3 col = mix(uRim.rgb, uArm.rgb, smoothstep(0.38, 0.68, wash));
-  col = mix(col, uRim.rgb * vec3(0.78, 0.84, 0.98), smoothstep(0.62, 0.8, wash) * 0.55);
+  vec3 col = mix(uRim.rgb, uArm.rgb, smoothstep(0.25, 0.85, wash) * 0.45);
+  col = mix(col, uRim.rgb * vec3(0.78, 0.84, 0.98), smoothstep(0.55, 0.95, wash) * 0.12);
   // Where a wash dried, pigment gathered in a thin darker tide line.
   float tide = smoothstep(0.015, 0.0, abs(wash - 0.52));
-  col *= 1.0 - 0.1 * tide;
+  col *= 1.0 - 0.0 * tide;
 
   // Ground lapis: granules of pigment, the same in every direction, a coarser
   // and a finer grain, with the odd pale grain of the mineral.

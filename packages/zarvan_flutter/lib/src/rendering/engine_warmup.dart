@@ -47,6 +47,9 @@ class EngineWarmup {
   /// so the GPU pipeline is built before the first visible frame. Reports
   /// `(fraction, label)` as it goes.
   ///
+  /// [extraEffects] are effect kinds the world does not use yet but a later
+  /// screen will, so their first draw does not stall the frame it opens on.
+  ///
   /// With [warmBlur] the blur pipelines a `BackdropBlur` uses are built too:
   /// they are the engine's own, not fragment programs, so [neededShaders]
   /// cannot see them in a world that has not opened its blur yet.
@@ -54,8 +57,13 @@ class EngineWarmup {
     World world, {
     void Function(double fraction, String label)? report,
     bool warmBlur = false,
+    Set<String> extraEffects = const {},
   }) async {
-    final needs = neededShaders(world);
+    final needs = {
+      ...neededShaders(world),
+      for (final kind in extraEffects)
+        if (EffectShader.forAnyKind(kind) != null) 'effect:$kind',
+    };
     final steps =
         <(String, Future<void> Function(), ui.FragmentShader? Function())>[
           if (needs.contains('ambient'))

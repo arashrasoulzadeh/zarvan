@@ -114,6 +114,10 @@ abstract class Game {
   /// the loading screen instead.
   bool get usesBackdropBlur => false;
 
+  /// Shader effect kinds that screens opened later will draw. They are built
+  /// behind the loading screen along with the ones the first screen uses.
+  Set<String> get laterEffects => const {};
+
   /// Whether shadow-casting lights may pick the GPU shadow shader on their own
   /// when it gives the same result (see `EngineView.autoGpuShadows`). On by
   /// default; return false to keep every shadow on the CPU raycast.
@@ -579,6 +583,7 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
       world,
       report: (f, label) => progress.report(0.9 + 0.09 * f, label),
       warmBlur: widget.game.usesBackdropBlur,
+      extraEffects: widget.game.laterEffects,
     );
     await scene.warmUp(world);
     scene.onEnter(world);

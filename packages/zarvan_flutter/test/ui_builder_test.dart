@@ -70,18 +70,21 @@ void main() {
     expect(own.text!.fontFamily, 'Mine');
   });
 
-  test('style: outlined ink when enabled, soft when not, solid when filled', () {
-    final ui = _builder();
-    final b = ui.button(const UiRect(0, 0, 50, 50), 'x', () {});
-    expect(b.bg.shape!.colorArgb, 0xFF111111);
-    expect(b.bg.shape!.strokeWidth, 2.5);
-    b.style(_Colors(), filled: true);
-    expect(b.bg.shape!.strokeWidth, 0);
-    expect(b.label.text!.colorArgb, 0xFFFFFFFF);
-    b.enabled = false;
-    b.style(_Colors());
-    expect(b.bg.shape!.colorArgb, 0xFFAAAAAA);
-  });
+  test(
+    'style: outlined ink when enabled, soft when not, solid when filled',
+    () {
+      final ui = _builder();
+      final b = ui.button(const UiRect(0, 0, 50, 50), 'x', () {});
+      expect(b.bg.shape!.colorArgb, 0xFF111111);
+      expect(b.bg.shape!.strokeWidth, 2.5);
+      b.style(_Colors(), filled: true);
+      expect(b.bg.shape!.strokeWidth, 0);
+      expect(b.label.text!.colorArgb, 0xFFFFFFFF);
+      b.enabled = false;
+      b.style(_Colors());
+      expect(b.bg.shape!.colorArgb, 0xFFAAAAAA);
+    },
+  );
 
   test('a node hides off screen and shows again', () {
     final n = _builder().circle(5, 6, 10, 0xFF000000);

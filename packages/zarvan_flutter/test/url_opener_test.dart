@@ -27,7 +27,10 @@ void main() {
 
   test('a launcher that throws gives false, not a crash', () async {
     expect(
-      await openUrl('https://x.io', launcher: (_) async => throw StateError('')),
+      await openUrl(
+        'https://x.io',
+        launcher: (_) async => throw StateError(''),
+      ),
       isFalse,
     );
   });

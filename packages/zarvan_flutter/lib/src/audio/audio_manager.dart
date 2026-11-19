@@ -283,7 +283,7 @@ bool checkLineOfSightSync({
 /// keeps simulation logic decoupled from playback.
 ///
 /// One-shot sound effects reuse a pooled `AudioPlayer` (see
-/// [_maxPoolSize]) instead of constructing a fresh one per call —
+/// [maxPoolSize]) instead of constructing a fresh one per call —
 /// constructing an `AudioPlayer` sets up real platform-channel/native
 /// player state on every platform `audioplayers` supports, which is
 /// real, avoidable overhead for a rapidly-repeated short SFX (a coin
@@ -294,7 +294,7 @@ bool checkLineOfSightSync({
 /// full does an extra concurrent sound still get its own short-lived
 /// player (disposed on completion instead of pooled), so a burst of
 /// simultaneous overlapping SFX still all play correctly, just without
-/// the pooling benefit past [_maxPoolSize] of them at once. Music
+/// the pooling benefit past [maxPoolSize] of them at once. Music
 /// still uses a single persistent player since a game typically has
 /// one music track playing at a time.
 class AudioManager
@@ -303,6 +303,9 @@ class AudioManager
         AudioLifecycleOutput,
         AudioPreloadOutput,
         AudioStateOutput {
+  /// [maxPoolSize] is how many idle one-shot players are kept ready.
+  AudioManager({this.maxPoolSize = 8}) : assert(maxPoolSize > 0);
+
   final AudioPlayer _music = AudioPlayer();
   static final _musicContext = AudioContextConfig(
     focus: AudioContextConfigFocus.gain,
@@ -331,10 +334,16 @@ class AudioManager
   /// burst of overlapping sounds early on; an extra completed player
   /// past this cap is disposed instead of pooled. `8` is a generous
   /// guess at "more concurrent one-shot SFX than a typical 2D game
-  /// actually overlaps at once," not a measured/tuned value.
-  static const _maxPoolSize = 8;
+  /// actually overlaps at once," not a measured/tuned value. A game with
+  /// rapid, overlapping notes (a piano board) raises it via the constructor
+  /// so every voice it needs stays preloaded instead of being created -- and
+  /// paying the platform-channel setup cost -- mid-play.
+  final int maxPoolSize;
+
+  /// Idle players currently waiting in the pool, for tests and diagnostics.
+  int get idlePlayers => _pool.length;
   // Keep a generous concurrent ceiling so rapid UI/gameplay bursts are not
-  // silently dropped. Idle players are still bounded by [_maxPoolSize].
+  // silently dropped. Idle players are still bounded by [maxPoolSize].
   static const _maxConcurrentSounds = 32;
   int _activeSounds = 0;
   bool _disposed = false;
@@ -366,7 +375,7 @@ class AudioManager
     if (_disposed || playerCount <= 0) return;
     final paths = assetPaths.toList(growable: false);
     if (paths.isEmpty) return;
-    for (var i = 0; i < playerCount && _pool.length < _maxPoolSize; i++) {
+    for (var i = 0; i < playerCount && _pool.length < maxPoolSize; i++) {
       final player = AudioPlayer();
       try {
         await player.setReleaseMode(ReleaseMode.release);
@@ -469,7 +478,7 @@ class AudioManager
       _activeSounds = math.max(0, _activeSounds - 1);
       _activePlayers.remove(player);
       subscription.cancel();
-      if (!_disposed && _pool.length < _maxPoolSize) {
+      if (!_disposed && _pool.length < maxPoolSize) {
         _pool.add(player);
       } else {
         unawaited(player.dispose());

@@ -57,10 +57,12 @@ class HeroProgress {
     this.runs = 0,
     this.lastActiveMs,
     Map<String, Gear>? gear,
+    List<Gear>? bag,
     Set<String>? hintsSeen,
     this.onChanged,
   }) : _levels = {...?levels},
        gear = {...?gear},
+       bag = [...?bag],
        hintsSeen = {...?hintsSeen};
 
   int coins;
@@ -81,6 +83,13 @@ class HeroProgress {
 
   /// Worn gear by slot.
   final Map<String, Gear> gear;
+
+  /// Gear owned but not worn: spares, and items replaced by better ones.
+  /// Browse, equip and merge them (see [equipFromBag], [mergeBag]).
+  final List<Gear> bag;
+
+  /// Most items the [bag] holds; a drop that does not fit is lost.
+  static const bagCapacity = 40;
 
   /// Hints the player has already seen, so they show once.
   final Set<String> hintsSeen;
@@ -155,10 +164,84 @@ class HeroProgress {
 
   /// Wears [item] if it beats what is in its slot; returns whether it did.
   bool equipIfBetter(Gear item) {
-    if (!item.betterThan(gear[item.slot])) return false;
+    final worn = gear[item.slot];
+    if (!item.betterThan(worn)) return false;
     gear[item.slot] = item;
+    if (worn != null) _stash(worn);
     _changed();
     return true;
+  }
+
+  /// Puts [item] in the bag; false (and nothing changes) when it is full.
+  bool addToBag(Gear item) {
+    if (!_stash(item)) return false;
+    _changed();
+    return true;
+  }
+
+  bool _stash(Gear item) {
+    if (bag.length >= bagCapacity) return false;
+    bag.add(item);
+    return true;
+  }
+
+  /// How much [item] would change the bonus of its slot if worn now
+  /// (positive = an upgrade; a stat change between slots is not compared).
+  double compareToWorn(Gear item) => item.bonus - (gear[item.slot]?.bonus ?? 0);
+
+  /// Wears bag item [index] and puts what was worn there back in the bag.
+  /// False when [index] is out of range.
+  bool equipFromBag(int index) {
+    if (index < 0 || index >= bag.length) return false;
+    final item = bag.removeAt(index);
+    final worn = gear[item.slot];
+    gear[item.slot] = item;
+    if (worn != null) bag.add(worn);
+    _changed();
+    return true;
+  }
+
+  /// How many bag items of this kind can merge, in groups of
+  /// [mergeCount].
+  int mergeablePairs(Gear like) => _kind(like).length ~/ mergeCount;
+
+  /// Bag items that count as the same kind for merging.
+  List<Gear> _kind(Gear like) => [
+    for (final g in bag)
+      if (g.slot == like.slot && g.stat == like.stat && g.rarity == like.rarity) g,
+  ];
+
+  /// Items of one kind needed to make one of the next rarity.
+  static const mergeCount = 3;
+
+  /// Multiplier on the average bonus of the merged items, by their rarity.
+  static const mergeBoost = {GearRarity.common: 2.0, GearRarity.rare: 1.8};
+
+  /// Merges the [mergeCount] best bag items of [like]'s slot, stat and
+  /// rarity into one of the next rarity whose bonus is their average times
+  /// [mergeBoost]. Returns it, or null when there are too few or the rarity
+  /// is already the top.
+  Gear? mergeBag(Gear like) {
+    final boost = mergeBoost[like.rarity];
+    if (boost == null) return null;
+    final kind = _kind(like);
+    if (kind.length < mergeCount) return null;
+    kind.sort((a, b) => b.bonus.compareTo(a.bonus));
+    final used = kind.take(mergeCount).toList();
+    for (final g in used) {
+      bag.remove(g);
+    }
+    final average = used.fold(0.0, (sum, g) => sum + g.bonus) / mergeCount;
+    final merged = Gear(
+      slot: like.slot,
+      name: used.first.name,
+      stat: like.stat,
+      bonus: average * boost,
+      rarity: GearRarity.values[like.rarity.index + 1],
+    );
+    bag.add(merged);
+    _changed();
+    return merged;
   }
 
   /// Bonus fraction of [stat] from worn gear.
@@ -192,6 +275,7 @@ class HeroProgress {
     'runs': runs,
     if (lastActiveMs != null) 'lastActiveMs': lastActiveMs,
     'gear': {for (final e in gear.entries) e.key: e.value.toJson()},
+    if (bag.isNotEmpty) 'bag': [for (final g in bag) g.toJson()],
     'hintsSeen': hintsSeen.toList(),
   };
 
@@ -212,6 +296,10 @@ class HeroProgress {
           (e.value as Map).cast<String, dynamic>(),
         ),
     },
+    bag: [
+      for (final g in (json['bag'] as List? ?? const []))
+        Gear.fromJson((g as Map).cast<String, dynamic>()),
+    ],
     hintsSeen: {...?(json['hintsSeen'] as List?)?.cast<String>()},
   );
 }

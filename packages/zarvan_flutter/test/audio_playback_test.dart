@@ -102,6 +102,20 @@ void main() {
     },
   );
 
+  test('the idle pool size is configurable and warm-up fills it', () async {
+    final audio = AudioManager(maxPoolSize: 12);
+    expect(audio.maxPoolSize, 12);
+    expect(AudioManager().maxPoolSize, 8);
+    await audio.warmupSounds(['tone.wav'], playerCount: 12);
+    expect(audio.idlePlayers, 12);
+    await audio.warmupSounds(['tone.wav'], playerCount: 5);
+    expect(audio.idlePlayers, 12, reason: 'never grows past the pool size');
+    await audio.playSound('tone.wav');
+    expect(audio.idlePlayers, 11, reason: 'a warm player is reused');
+    audio.dispose();
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+  });
+
   test(
     'completed sounds reuse players and excess idle players are disposed',
     () async {

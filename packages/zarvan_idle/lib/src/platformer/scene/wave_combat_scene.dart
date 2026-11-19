@@ -1348,7 +1348,10 @@ class WaveCombatScene extends Scene {
     );
     final gear = table.roll(random, kind, waves.index);
     if (gear == null) return;
-    if (!progress.equipIfBetter(gear)) return;
+    if (!progress.equipIfBetter(gear)) {
+      progress.addToBag(gear);
+      return;
+    }
     _announce(
       world,
       config.strings.lootLabel(gear),

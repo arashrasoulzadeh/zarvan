@@ -48,6 +48,16 @@ vec2 wob(float t, float k) {
   return 0.03 * vec2(sin(t * 0.37 + k), cos(t * 0.29 + k * 1.7));
 }
 
+// A scroll of line work wound into one puff, as a painter curls the lobes of
+// a cloud.
+float curlAt(vec2 p, vec2 c, float r, float t) {
+  vec2 rel = p - c;
+  float len = length(rel);
+  float sp = fract(len / r * 2.6 - atan(rel.y, rel.x) / 6.2832 * 1.5 + t * 0.1);
+  float line = 1.0 - smoothstep(0.07, 0.17, abs(sp - 0.5));
+  return line * (1.0 - smoothstep(r * 0.25, r * 0.9, len));
+}
+
 float smin(float a, float b, float k) {
   float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
   return mix(b, a, h) - k * h * (1.0 - h);
@@ -83,6 +93,7 @@ void main() {
   float ph = -t * 0.8;
   float ph2 = -t * 0.95;
 
+  float curls = 0.0;
   vec2 hc;
   float hr;
   float d;
@@ -92,9 +103,13 @@ void main() {
     hr = 0.27 * b1;
     d = circ(p, hc, hr);
     d = smin(d, circ(p, hc + vec2(-0.24, 0.07) + wob(t, 1.0), hr * 0.58 * b2), 0.09);
+    curls = max(curls, curlAt(p, hc + vec2(-0.24, 0.07) + wob(t, 1.0), hr * 0.58 * b2, t));
     d = smin(d, circ(p, hc + vec2(0.2, -0.17) + wob(t, 2.0), hr * 0.62 * b3), 0.09);
+    curls = max(curls, curlAt(p, hc + vec2(0.2, -0.17) + wob(t, 2.0), hr * 0.62 * b3, t));
     d = smin(d, circ(p, hc + vec2(0.05, -0.28) + wob(t, 3.0), hr * 0.5 * b2), 0.08);
+    curls = max(curls, curlAt(p, hc + vec2(0.05, -0.28) + wob(t, 3.0), hr * 0.5 * b2, t));
     d = smin(d, circ(p, hc + vec2(-0.1, 0.21) + wob(t, 4.0), hr * 0.5 * b3), 0.08);
+    curls = max(curls, curlAt(p, hc + vec2(-0.1, 0.21) + wob(t, 4.0), hr * 0.5 * b3, t));
     float end = aspect * 0.95;
     d = smin(d, ribbon(p, hc.x, end, 0.56, 0.07, 5.2, ph, 0.17), 0.1);
     d = smin(d, ribbon(p, hc.x + 0.1, end * 0.86, 0.66, 0.06, 6.4, ph2 + 1.3, 0.09), 0.08);
@@ -104,6 +119,7 @@ void main() {
     hr = 0.15 * b1;
     d = circ(p, hc, hr);
     d = smin(d, circ(p, hc + vec2(0.13, -0.1) + wob(t, 5.0), hr * 0.65 * b2), 0.06);
+    curls = max(curls, curlAt(p, hc + vec2(0.13, -0.1) + wob(t, 5.0), hr * 0.65 * b2, t));
     float end = aspect * 0.98;
     d = smin(d, ribbon(p, hc.x, end, 0.52, 0.045, 3.4, ph, 0.11), 0.07);
     d = smin(d, ribbon(p, hc.x + 0.2, end * 0.92, 0.6, 0.04, 4.1, ph2 + 0.6, 0.06), 0.05);
@@ -114,10 +130,15 @@ void main() {
     hr = 0.24 * b1;
     d = circ(p, hc, hr);
     d = smin(d, circ(p, hc + vec2(-0.26, 0.1) + wob(t, 6.0), hr * 0.62 * b2), 0.08);
+    curls = max(curls, curlAt(p, hc + vec2(-0.26, 0.1) + wob(t, 6.0), hr * 0.62 * b2, t));
     d = smin(d, circ(p, hc + vec2(0.27, 0.08) + wob(t, 7.0), hr * 0.66 * b3), 0.08);
+    curls = max(curls, curlAt(p, hc + vec2(0.27, 0.08) + wob(t, 7.0), hr * 0.66 * b3, t));
     d = smin(d, circ(p, hc + vec2(0.12, -0.22) + wob(t, 8.0), hr * 0.55 * b2), 0.07);
+    curls = max(curls, curlAt(p, hc + vec2(0.12, -0.22) + wob(t, 8.0), hr * 0.55 * b2, t));
     d = smin(d, circ(p, hc + vec2(-0.12, -0.2) + wob(t, 9.0), hr * 0.5 * b3), 0.07);
+    curls = max(curls, curlAt(p, hc + vec2(-0.12, -0.2) + wob(t, 9.0), hr * 0.5 * b3, t));
     d = smin(d, circ(p, hc + vec2(0.0, 0.22) + wob(t, 10.0), hr * 0.7 * b1), 0.07);
+    curls = max(curls, curlAt(p, hc + vec2(0.0, 0.22) + wob(t, 10.0), hr * 0.7 * b1, t));
     d = smin(d, ribbon(p, hc.x + 0.2, aspect * 0.9, 0.62, 0.04, 6.0, ph, 0.09), 0.06);
   } else {
     // A twin-curl cloud: two heads joined by a swelling, tails both ways.
@@ -127,12 +148,17 @@ void main() {
     float r2 = 0.17 * b3;
     d = circ(p, hc, hr);
     d = smin(d, circ(p, hc + vec2(-0.16, -0.12) + wob(t, 11.0), hr * 0.55 * b2), 0.07);
+    curls = max(curls, curlAt(p, hc + vec2(-0.16, -0.12) + wob(t, 11.0), hr * 0.55 * b2, t));
     d = smin(d, circ(p, h2, r2), 0.08);
+    curls = max(curls, curlAt(p, h2, r2, t));
     d = smin(d, circ(p, h2 + vec2(0.14, 0.1) + wob(t, 12.0), r2 * 0.6 * b2), 0.07);
+    curls = max(curls, curlAt(p, h2 + vec2(0.14, 0.1) + wob(t, 12.0), r2 * 0.6 * b2, t));
     d = smin(d, ribbon(p, hc.x, h2.x, 0.56, 0.05, 6.0, ph, 0.09), 0.08);
     d = smin(d, ribbon(p, h2.x, aspect * 0.97, 0.64, 0.06, 5.0, ph2, 0.1), 0.08);
   }
 
+  // Scalloped edge, as the curling lobes of a miniature painter's cloud.
+  d += 0.011 * (abs(sin(p.x * 31.0 + p.y * 17.0)) - 0.5);
   float depth = -d;
   float aa = 1.2 / uSize.y;
   float body = smoothstep(-aa, aa, depth);
@@ -148,7 +174,7 @@ void main() {
   float spiral = fract(length(rel) * 11.0 - atan(rel.y, rel.x) / 6.2832 * 2.0 + t * 0.12);
   float inHead = 1.0 - smoothstep(hr * 0.35, hr * 1.05, length(rel));
   float curl = (1.0 - smoothstep(0.06, 0.16, abs(spiral - 0.5))) * inHead;
-  float rings = max(lines * (1.0 - inHead * 0.7), curl);
+  float rings = max(lines * (1.0 - inHead * 0.7), max(curl, curls));
 
   vec3 blue = uArm.rgb;
   vec3 cream = uCore.rgb;
@@ -161,6 +187,9 @@ void main() {
   col = mix(col, cream, rings * 0.55);
   float rim = 1.0 - smoothstep(0.012, 0.03, depth);
   col = mix(col, cream, rim * 0.85);
+  // A fine gold line drawn just inside the rim, following the scallops.
+  float inner = 1.0 - smoothstep(0.0, 0.0035, abs(depth - 0.045));
+  col = mix(col, uRim.rgb * 0.95, inner * 0.55);
   float outline = 1.0 - smoothstep(0.004, 0.009, depth);
   float glint = 0.6 + 0.4 * sin(p.x * 9.0 - t * 1.4 + p.y * 3.0);
   col = mix(col, uRim.rgb * (0.85 + 0.3 * glint), outline);

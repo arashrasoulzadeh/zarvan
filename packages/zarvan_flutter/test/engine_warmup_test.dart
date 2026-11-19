@@ -46,6 +46,22 @@ void main() {
     });
   });
 
+  group('blur', () {
+    test('warmBlur adds a blur step; without it there is none', () async {
+      final labels = <String>[];
+      await EngineWarmup.run(_world(), report: (f, l) => labels.add(l));
+      expect(labels, isNot(contains('Warming up blur')));
+      labels.clear();
+      await EngineWarmup.run(
+        _world(),
+        report: (f, l) => labels.add(l),
+        warmBlur: true,
+      );
+      expect(labels, contains('Warming up blur'));
+      expect(labels.last, 'Warming up');
+    });
+  });
+
   group('shader effects', () {
     test('each distinct effect kind in the world is warmed, once', () {
       final world = _world();

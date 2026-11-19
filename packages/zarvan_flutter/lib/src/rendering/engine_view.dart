@@ -1192,8 +1192,9 @@ class _EnginePainter extends CustomPainter {
       }
     }
     var index = 0;
-    if (blur != null) {
-      final sigma = blur.sigma * camera.zoom;
+    final blurSigma = blur == null ? 0.0 : blur.sigma * camera.zoom;
+    if (blur != null && blurSigma > 0.05) {
+      final sigma = blurSigma;
       canvas.saveLayer(
         Offset.zero & size,
         Paint()

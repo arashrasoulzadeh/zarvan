@@ -108,6 +108,12 @@ abstract class Game {
   /// `PlayerOptions.screenShakeIntensity` the same way as [colorblindMode].
   double get screenShakeIntensity => 1.0;
 
+  /// Whether the game ever draws a `BackdropBlur`. Blurring the screen builds
+  /// GPU pipelines on first use, which on some drivers stalls a frame for
+  /// seconds, so a game that blurs says so and the engine builds them behind
+  /// the loading screen instead.
+  bool get usesBackdropBlur => false;
+
   /// Whether shadow-casting lights may pick the GPU shadow shader on their own
   /// when it gives the same result (see `EngineView.autoGpuShadows`). On by
   /// default; return false to keep every shadow on the CPU raycast.
@@ -572,6 +578,7 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
     await EngineWarmup.run(
       world,
       report: (f, label) => progress.report(0.9 + 0.09 * f, label),
+      warmBlur: widget.game.usesBackdropBlur,
     );
     await scene.warmUp(world);
     scene.onEnter(world);

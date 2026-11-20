@@ -1363,7 +1363,7 @@ void main() {
     );
 
     test(
-      'the panel fades in quietly: no spin, it only grows a few percent',
+      'the panel unfurls from the card: wide first, then taller, with no spin',
       () async {
         final r = await Rig.make(bank: makeMultiBank());
         await r.open(QuizHomeScreen(r.kit));
@@ -1376,12 +1376,23 @@ void main() {
         }
 
         expect(panel().blur, 1, reason: 'invisible at the start');
-        expect(panel().width, closeTo(MedalOverlay.medalW * 0.92, 0.01));
+        final startW = panel().width;
+        expect(startW, closeTo(MedalOverlay.medalW * 0.3, 0.01));
+        expect(
+          panel().height,
+          lessThan(MedalOverlay.medalH * 0.15),
+          reason: 'a thin strip before it unrolls',
+        );
         r.run(0.1);
         final mid = panel();
         expect(mid.blur, inExclusiveRange(0, 1));
-        expect(mid.width, greaterThan(MedalOverlay.medalW * 0.92));
+        expect(mid.width, greaterThan(startW));
         expect(mid.width, lessThan(MedalOverlay.medalW));
+        expect(
+          mid.height / MedalOverlay.medalH,
+          lessThan(mid.width / MedalOverlay.medalW),
+          reason: 'the height follows the width',
+        );
         r.run(0.3);
         expect(panel().blur, 0);
         expect(panel().width, closeTo(MedalOverlay.medalW, 0.01));

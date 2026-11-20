@@ -39,10 +39,14 @@ class MedalOverlay {
   static const _z = 50;
 
   /// Seconds to fade in (or out).
-  static const seconds = 0.22;
+  static const seconds = 0.28;
 
   /// How small the panel starts, as a share of its full size.
-  static const _startScale = 0.92;
+  static const _startScale = 0.3;
+
+  /// Where the tapped card is: the panel unfurls out of it.
+  double _fromX = centerX;
+  double _fromY = 0;
 
   static const _cream = 0xFFFFF1D6;
   static const _navy = 0xFF14284B;
@@ -77,11 +81,14 @@ class MedalOverlay {
   /// The author on the panel, if any.
   QuizAuthor? get author => _author;
 
-  /// Opens the panel for [author]. [card] is where their card is on the shelf;
-  /// the panel does not fly from it, it only fades in in the middle.
+  /// Opens the panel for [author]. [card] is where their card is on the shelf:
+  /// the panel unfurls out of it, spreading sideways first and then unrolling
+  /// downward, while gold and petal-pink motes drift over it.
   void open(QuizAuthor author, UiRect card) {
     if (isOpen) return;
     _author = author;
+    _fromX = card.centerX;
+    _fromY = card.centerY + screen.yShift;
     final theme = screen.theme;
     _content = screen.group();
 
@@ -170,14 +177,17 @@ class MedalOverlay {
 
   void _apply() {
     final e = _ease(_t);
-    final scale = _startScale + (1 - _startScale) * e;
-    final cx = centerX;
-    final cy = centerY;
+    // Wide first, then it unrolls: the height follows the width.
+    final sx = _startScale + (1 - _startScale) * e;
+    final sy = 0.1 + 0.9 * _ease(((_t - 0.15) / 0.85).clamp(0.0, 1.0));
+    final cx = _fromX + (centerX - _fromX) * e;
+    final cy = _fromY + (centerY - _fromY) * e;
+    final fade = e * e;
     for (final it in _items) {
-      it.place(cx, cy, scale, e);
+      it.place(cx, cy, sx, sy, fade);
     }
     for (final fx in _effects) {
-      fx.place(cx, cy, scale, e);
+      fx.place(cx, cy, sx, sy, e);
     }
     _veil?.alpha = 0.55 * e;
     _blur?.sigma = 4 * e;
@@ -202,6 +212,24 @@ class MedalOverlay {
       z: _z + 1,
     );
     _addEffect(panel, centerX, centerY);
+    final rect = UiRect(centerX - medalW / 2, top, medalW, medalH);
+    _addEffect(
+      screen.dustAround(rect, margin: 24, density: 1.3, z: _z + 8),
+      centerX,
+      centerY,
+    );
+    _addEffect(
+      screen.dustAround(
+        rect,
+        margin: 14,
+        density: 0.7,
+        color: 0xFFF7B6C6,
+        accent: 0xFFFFE0E8,
+        z: _z + 8,
+      ),
+      centerX,
+      centerY,
+    );
 
     final title = screen.label(
       author.name,
@@ -382,13 +410,13 @@ class _Fx {
   final double w;
   final double h;
 
-  void place(double cx, double cy, double scale, double shown) {
+  void place(double cx, double cy, double sx, double sy, double shown) {
     pos
-      ..x = cx + dx * scale
-      ..y = cy + dy * scale;
+      ..x = cx + dx * sx
+      ..y = cy + dy * sy;
     fx
-      ..width = w * scale
-      ..height = h * scale
+      ..width = w * sx
+      ..height = h * sy
       ..blur = 1 - shown;
   }
 }
@@ -426,19 +454,19 @@ class _Item {
   final double alpha;
   final double size;
 
-  void place(double cx, double cy, double scale, double shown) {
+  void place(double cx, double cy, double sx, double sy, double shown) {
     node.pos
-      ..x = cx + dx * scale
-      ..y = cy + dy * scale;
+      ..x = cx + dx * sx
+      ..y = cy + dy * sy;
     final shape = node.shape;
     if (shape != null) {
       shape
-        ..width = w * scale
-        ..height = h * scale;
+        ..width = w * sx
+        ..height = h * sy;
       return;
     }
     node.text!
-      ..textScale = scale
+      ..textScale = sx
       ..alpha = alpha * shown;
   }
 }

@@ -6,6 +6,12 @@ import 'package:zarvan_core/zarvan_core.dart';
 /// into a fixed-size world so density goes up with `entityCount`,
 /// exercising the pair-finding broad-phase under real crowding instead
 /// of the sparse case `WorldStepBenchmark` implicitly tests.
+///
+/// The world is sized to the layout on purpose: `MovementSystem` clamps
+/// entities into the world, so a world narrower than the grid piled thousands
+/// of them onto one edge column and measured a pathological stack (5,000
+/// entities took ~270x longer than 1,000) instead of a dense but spread-out
+/// crowd.
 class CollisionSystemBenchmark extends BenchmarkBase {
   final int entityCount;
   late World world;
@@ -15,12 +21,12 @@ class CollisionSystemBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    world = World(width: 1000, height: 1000);
+    final perRow = (entityCount > 0) ? (entityCount / 10).ceil() : 1;
+    world = World(width: perRow * 8.0 + 8, height: 1000);
     registerCoreComponents(world);
     world.addSystem(MovementSystem());
     world.addSystem(CollisionSystem());
 
-    final perRow = (entityCount > 0) ? (entityCount / 10).ceil() : 1;
     for (var i = 0; i < entityCount; i++) {
       final id = world.spawn();
       final x = (i % perRow) * 8.0;

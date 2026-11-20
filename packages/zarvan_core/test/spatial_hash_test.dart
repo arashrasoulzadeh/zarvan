@@ -77,4 +77,45 @@ void main() {
       expect(thirdCycleCount, 0);
     },
   );
+
+  test(
+    'entities outside [0, worldWidth) never share a cell with unrelated ones '
+    '-- regression: the flat row-major key aliased any x past the world width '
+    'into the next row, so a level wider than World.width made one bucket '
+    'swallow whole rows and broad-phase cost exploded (55x at 5k entities)',
+    tags: ['regression'],
+    () {
+      // worldWidth 100 / cell 10 -> 11 columns. (cx=11, cy=0) used to share a
+      // key with (cx=0, cy=1), and (cx=-1, cy=1) with (cx=10, cy=0).
+      final hash = SpatialHash(cellSize: 10, worldWidth: 100);
+      hash.insert(1, 115, 5); // cell (11, 0)
+      hash.insert(2, 5, 15); // cell (0, 1): five cells away in x
+      hash.insert(3, -5, 15); // cell (-1, 1)
+      hash.insert(4, 105, 5); // cell (10, 0)
+
+      final pairs = <Set<int>>[];
+      hash.forEachNearbyPair((a, b) => pairs.add({a, b}));
+
+      bool paired(int a, int b) => pairs.any((p) => p.containsAll({a, b}));
+      expect(paired(1, 2), isFalse);
+      expect(paired(3, 4), isFalse);
+      expect(paired(1, 4), isTrue); // genuinely adjacent cells
+      expect(paired(2, 3), isTrue); // genuinely adjacent cells
+    },
+  );
+
+  test('negative coordinates and a wide scene still find every real pair', () {
+    final hash = SpatialHash(cellSize: 10, worldWidth: 100);
+    hash.insert(1, -1, -1); // cell (-1, -1)
+    hash.insert(2, 1, 1); // cell (0, 0): diagonal neighbour
+    hash.insert(3, 5000, 5000);
+    hash.insert(4, 5003, 5003);
+
+    final pairs = <Set<int>>[];
+    hash.forEachNearbyPair((a, b) => pairs.add({a, b}));
+
+    expect(pairs.any((p) => p.containsAll({1, 2})), isTrue);
+    expect(pairs.any((p) => p.containsAll({3, 4})), isTrue);
+    expect(pairs.length, 2);
+  });
 }

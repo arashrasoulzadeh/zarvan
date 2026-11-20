@@ -6,7 +6,12 @@ import '../ecs/entity.dart';
 class SpatialHash {
   final double cellSize;
   final Map<int, List<EntityId>> _cells = {};
-  final int _cols;
+
+  /// Offset added to a cell coordinate so negative cells pack into a
+  /// non-negative key, and the stride one row of cells is spread over. Keys
+  /// stay below 2^42, inside the 53 bits an `int` keeps exactly on the web.
+  static const _bias = 1 << 20;
+  static const _stride = 1 << 21;
 
   /// Keys actually touched since the last [clear] — [forEachNearbyPair]
   /// only ever needs to look at these, and [clear] only ever needs to
@@ -29,14 +34,24 @@ class SpatialHash {
   /// touched across its lifetime.
   final List<List<EntityId>> _bucketPool = [];
 
-  SpatialHash({required this.cellSize, required double worldWidth})
-    : _cols = (worldWidth / cellSize).ceil() + 1;
+  /// [worldWidth] is kept for source compatibility and no longer matters:
+  /// cells are keyed by their own (column, row), so positions outside
+  /// `[0, worldWidth)` (a level wider than the world, an entity knocked past
+  /// the edge) are hashed like any other instead of aliasing into a
+  /// neighbouring row, which used to pile unrelated entities into one bucket
+  /// and make the broad-phase quadratic.
+  SpatialHash({required this.cellSize, required double worldWidth});
 
-  int _keyFor(double x, double y) {
-    final cx = (x / cellSize).floor();
-    final cy = (y / cellSize).floor();
-    return cy * _cols + cx;
-  }
+  static int _clamp(int cell) => cell < 2 - _bias
+      ? 2 - _bias
+      : cell > _bias - 2
+      ? _bias - 2
+      : cell;
+
+  static int _pack(int cx, int cy) => (cy + _bias) * _stride + (cx + _bias);
+
+  int _keyFor(double x, double y) =>
+      _pack(_clamp((x / cellSize).floor()), _clamp((y / cellSize).floor()));
 
   /// Resets this hash to empty, ready for the next `insert`/
   /// `forEachNearbyPair` cycle — recycles each active cell's bucket
@@ -75,12 +90,12 @@ class SpatialHash {
   /// neighboring cell). Caller does the actual distance check.
   void forEachNearbyPair(void Function(EntityId a, EntityId b) onPair) {
     for (final entry in _cells.entries) {
-      final cx = entry.key % _cols;
-      final cy = entry.key ~/ _cols;
+      final cx = entry.key % _stride - _bias;
+      final cy = entry.key ~/ _stride - _bias;
       for (var dx = 0; dx <= 1; dx++) {
         for (var dy = -1; dy <= 1; dy++) {
           if (dx == 0 && dy < 0) continue; // avoid double-visiting pairs
-          final neighborKey = (cy + dy) * _cols + (cx + dx);
+          final neighborKey = _pack(cx + dx, cy + dy);
           final neighbors = _cells[neighborKey];
           if (neighbors == null) continue;
           final sameCell = neighborKey == entry.key;

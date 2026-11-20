@@ -50,12 +50,12 @@ class QuizResultScreen extends QuizScreen {
     label(
       '${s.number(round.run.score)} ${s.score}',
       cx,
-      140,
+      160,
       size: 34,
       color: _ink,
       fontFamily: face,
     );
-    var y = 196.0;
+    var y = 220.0;
     final mode = round.mode;
     if (mode is StageMode) {
       // The stars are little seals: a ticked one for each earned.
@@ -72,8 +72,22 @@ class QuizResultScreen extends QuizScreen {
       y += 92;
     }
     if (mode is DailyMode && round.date != null) {
-      label(round.resultString, cx, y, size: 26, color: _ink);
-      y += 44;
+      // One seal per question, a tick or a cross, in place of the emoji of
+      // [QuizRound.resultString] (kept for sharing): the app's fonts carry no
+      // emoji, so on some platforms the row was simply missing.
+      final results = round.results;
+      final step = 48.0;
+      for (var i = 0; i < results.length; i++) {
+        final x = cx + (i - (results.length - 1) / 2) * step;
+        markAt(
+          x,
+          y,
+          44,
+          results[i] ? theme.correct : theme.wrong,
+          cross: !results[i],
+        );
+      }
+      y += 52;
     }
     if (reward?.newRecord == true) {
       label(s.newRecord, cx, y, size: 18, color: 0xFF8A2F1E);

@@ -1797,7 +1797,14 @@ void main() {
             date: '2026-11-17',
           ),
         );
-        expect(r.has('✅✅✅✅✅'), isTrue);
+        final fx = r.world.componentsOf<ShaderEffect>();
+        final marks = [
+          for (var i = 0; i < fx.length; i++)
+            if (fx.denseAt(i).kind == ShaderEffect.mark) fx.denseAt(i),
+        ];
+        expect(marks, hasLength(5), reason: 'one seal per question');
+        expect(marks.every((m) => m.params[0] == 0), isTrue, reason: 'ticks');
+        expect(r.has('✅✅✅✅✅'), isFalse, reason: 'no emoji row any more');
         expect(r.has('Again'), isFalse);
         r.tap('Share');
         await Future<void>.delayed(Duration.zero);

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:zarvan_core/zarvan_core.dart' show RingBuffer;
 
 /// Real, on-device wall-clock timing for the most recently rendered
@@ -101,6 +103,12 @@ class FrameStats {
   /// 120Hz target, where even one missed vsync is only ~8ms); raise it
   /// to only catch more severe stalls.
   double spikeThresholdMs = 20;
+
+  /// The spike threshold for a game capped at [maxFps]: one and a half frame
+  /// intervals, never below the 20 ms default. Under a 30 fps cap every
+  /// healthy frame takes 33 ms, so the default would call each one a spike.
+  static double spikeThresholdFor(int? maxFps) =>
+      maxFps == null || maxFps <= 0 ? 20 : math.max(20, 1500 / maxFps);
 
   @override
   String toString() =>

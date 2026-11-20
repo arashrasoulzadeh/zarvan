@@ -329,10 +329,11 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
   bool _inputLocked = false;
   final FrameTimingLogger _timings = FrameTimingLogger();
 
-  /// Prints what a frame was doing whenever one takes over 20 ms (only with
+  /// Prints what a frame was doing whenever one takes over 20 ms, or 1.5 frame intervals under a `maxFps` cap (only with
   /// `GameConfig.logFrameTimings`), so a spike can be traced to the step, the
   /// paint or the lighting rather than just counted.
   late final FrameStats _spikeStats = FrameStats()
+    ..spikeThresholdMs = FrameStats.spikeThresholdFor(widget.game.config.maxFps)
     ..onSpike = (s) => debugPrint(
       '[zarvan:spike] frame=${s.frameMs.toStringAsFixed(1)}ms '
       'step=${s.stepMs.toStringAsFixed(1)} paint=${s.paintMs.toStringAsFixed(1)} '

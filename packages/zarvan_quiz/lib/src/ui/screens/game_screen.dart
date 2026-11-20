@@ -75,6 +75,11 @@ class QuizGameScreen extends QuizScreen {
   static const _parchmentCorrect = 0xFF1F6B3A;
   static const _optionInk = 0xFFF5E9C8;
 
+  /// Vertical room the card adds around the poem: the text starts 28 below the
+  /// top and leaves 44 at the bottom, where the corner blossoms reach up and
+  /// would otherwise sit on the last line.
+  static const _cardPad = 72.0;
+
   @override
   void build() {
     // The same blue paper as the menu, with clouds drifting across it and
@@ -269,12 +274,12 @@ class QuizGameScreen extends QuizScreen {
       inner =
           lineHeights.fold<double>(0, (a, h) => a + h) +
           gap * (lines.length - 1);
-      if (inner + 56 <= room || poemSize <= 14) break;
+      if (inner + _cardPad <= room || poemSize <= 14) break;
       poemSize = math.max(14, poemSize * 0.9);
     }
     _stepper();
     spread(0.2);
-    final cardHeight = inner + 56;
+    final cardHeight = inner + _cardPad;
     final cardRect = UiRect(
       QuizScreen.margin,
       cardTop,

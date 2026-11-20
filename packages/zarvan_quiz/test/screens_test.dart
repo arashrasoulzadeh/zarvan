@@ -638,6 +638,29 @@ void main() {
       expect(poem().every((a) => a == 1), isTrue);
     });
 
+    test('the card leaves room under the last line for the corner blossoms',
+        () async {
+      final r = await stage();
+      r.run(4);
+      final fx = r.world.componentsOf<ShaderEffect>();
+      final pos = r.world.componentsOf<Position>();
+      late double bottom;
+      for (var i = 0; i < fx.length; i++) {
+        final e = fx.denseAt(i);
+        if (e.kind == ShaderEffect.cartouche && e.params[0] == 2) {
+          bottom = pos.get(fx.entityAt(i))!.y + e.height / 2 - 14;
+        }
+      }
+      final texts = r.world.componentsOf<eng.Text>();
+      var lowest = -1e9;
+      for (var i = 0; i < texts.length; i++) {
+        final t = texts.denseAt(i);
+        final y = pos.get(texts.entityAt(i))!.y;
+        if (t.fontSize >= 18 && y < bottom && y > lowest) lowest = y;
+      }
+      expect(bottom - lowest, greaterThanOrEqualTo(50));
+    });
+
     test('a used hint leaves no pale box round the removed options or itself',
         () async {
       final r = await stage();

@@ -549,30 +549,13 @@ class QuizGameScreen extends QuizScreen {
   }
 
   void _color(UiButton b, int i, Question q, theme, UiRect rect) {
+    // The options are pointed velvet cartouches, so no rounded box is drawn
+    // over them (it showed as a pale rectangle round the banner): the verdict
+    // is a glow and a seal, the lettering stays cream for contrast on green.
     if (i == q.answerIndex) {
-      b.bg.shape!
-        ..colorArgb = theme.correct
-        ..alpha = 0.42;
-      b.label.text!.colorArgb = theme.ink;
-      _view.addNode(frame(rect, theme.correct, stroke: 2.5, radius: 14, z: 7));
       _view.addId(lightAt(rect, theme.correct, intensity: 0.65));
       _badge(rect, '✓', theme.correct);
     } else if (i == session.picked) {
-      b.bg.shape!
-        ..colorArgb = theme.wrong
-        ..alpha = 0.38;
-      b.label.text!.colorArgb = theme.ink;
-      _view.addNode(
-        frame(
-          rect,
-          theme.wrong,
-          stroke: 2,
-          radius: 14,
-          alpha: 0.9,
-          z: 7,
-          dash: 4,
-        ),
-      );
       _view.addId(lightAt(rect, theme.wrong, intensity: 0.4));
       _badge(rect, '✕', theme.wrong);
       _shaking = b;
@@ -580,7 +563,7 @@ class QuizGameScreen extends QuizScreen {
       _shakeBgX = b.bg.pos.x;
       _shakeLabelX = b.label.pos.x;
     } else {
-      _fade(b, 0.45);
+      b.label.text!.alpha = 0.45;
     }
   }
 

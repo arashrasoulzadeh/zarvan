@@ -280,6 +280,34 @@ void main() {
       return r;
     }
 
+    test('an answered option stays cream on its cartouche, with no box over it',
+        () async {
+      final r = await stage();
+      r.tap(r.optionRight);
+      r.run(0.1);
+      final texts = r.world.componentsOf<eng.Text>();
+      final alphaOf = <String, double>{};
+      var cream = false;
+      for (var i = 0; i < texts.length; i++) {
+        final t = texts.denseAt(i);
+        if (t.text == r.optionRight && t.colorArgb == 0xFFF5E9C8) cream = true;
+        if (t.text == r.optionWrong(0) && t.colorArgb == 0xFFF5E9C8) {
+          alphaOf[t.text] = t.alpha;
+        }
+      }
+      expect(cream, isTrue, reason: 'readable on green velvet');
+      expect(alphaOf[r.optionWrong(0)], 0.45, reason: 'others only dim');
+      final shapes = r.world.componentsOf<Shape>();
+      for (var i = 0; i < shapes.length; i++) {
+        final sh = shapes.denseAt(i);
+        expect(
+          sh.kind == ShapeKind.roundedRect && sh.alpha > 0 && sh.zIndex == 7,
+          isFalse,
+          reason: 'the old rounded verdict frame is gone',
+        );
+      }
+    });
+
     test(
       'the answer mark is a shader tick or cross that is drawn in by a pen',
       () async {

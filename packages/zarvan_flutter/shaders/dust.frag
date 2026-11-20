@@ -58,5 +58,8 @@ void main() {
     col += c * m;
     a = max(a, clamp(m, 0.0, 1.0));
   }
-  fragColor = vec4(min(col, vec3(1.0)), a);
+  // Fade out toward the rectangle's edge so a mote's halo is never cut off.
+  vec2 e = min(uv, 1.0 - uv);
+  float edge = smoothstep(0.0, 0.08, e.x) * smoothstep(0.0, 0.08, e.y);
+  fragColor = vec4(min(col, vec3(1.0)) * edge, a * edge);
 }

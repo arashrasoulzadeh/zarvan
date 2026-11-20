@@ -260,8 +260,8 @@ void main() {
       su = hs.y * 0.8;
       stint = uParams.z > 0.5 ? vec3(0.96, 0.42, 0.34) : vec3(0.98, 0.62, 0.62);
     } else {
-      float inset = dialog ? 0.04 : 0.03;
-      vec2 cp = vec2(sx * (hs.x - inset * uSize.x), sy * (hs.y - pk - (dialog ? 0.03 : 0.02) * uSize.x));
+      float inset = dialog ? 0.075 : 0.06;
+      vec2 cp = vec2(sx * (hs.x - inset * uSize.x), sy * (hs.y - pk * 0.7 - (dialog ? 0.05 : 0.04) * uSize.x));
       vec2 inward = normalize(vec2(-sx, -sy * (dialog ? 1.0 : 0.55)));
       vec2 rv = c - cp;
       sp = vec2(dot(rv, inward), dot(rv, vec2(-inward.y, inward.x)));
@@ -420,7 +420,11 @@ void main() {
     vec4 mdl = medallion(c - vec2(0.0, ms * (h0 - mr)), mr, gold * (0.9 + 0.2 * lit), blue);
     col = mix(col, mdl.rgb, mdl.a);
     alpha = max(alpha, mdl.a);
-    col = mix(col, sprayFl.rgb, sprayFl.a * smoothstep(0.0, 2.0, d) * (1.0 - hm));
+    // Drawn over the frame, not masked to the panel, so no blossom is sliced
+    // flat by the panel's edge.
+    float sprayCov = sprayFl.a * (1.0 - hm);
+    col = mix(col, sprayFl.rgb, sprayCov);
+    alpha = max(alpha, sprayCov);
   } else if (card) {
     // ---- Medallions on the peaks, and sprays of blossom in the corners. ----
     float mr = 0.07 * uSize.x;
@@ -431,7 +435,8 @@ void main() {
     alpha = max(alpha, mdl.a);
     float sprayAmt = uParams.w;
     if (sprayAmt > 0.0) {
-      col = mix(col, sprayFl.rgb, sprayFl.a * smoothstep(0.0, 2.0, d) * sprayAmt);
+      col = mix(col, sprayFl.rgb, sprayFl.a * sprayAmt);
+      alpha = max(alpha, sprayFl.a * sprayAmt);
     }
   } else {
     // ---- Medallions on the top and bottom edges. ----

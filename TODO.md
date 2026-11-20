@@ -1491,3 +1491,5 @@ This closes out every item added under "New engine features" above.
 - Tile-based platformer physics: gravity, ground detection, jump,
   one-way platforms; `TileMap` + `TileCollisionSystem`.
 - `GameConfig` + the `Game`/`runGame` app framework.
+
+- Shader audit (from `dart run tool/shader_cost.dart`; profile on a device before changing any look): `portal.frag` `picture()` does 24 texture taps per pixel (48 with two pictures) for a result that is constant per chunky cell; `glow.frag` `pictureTint()` does 9-18 taps per pixel for one colour for the whole rect (compute it on the CPU once and pass it as a uniform); `post_fx.frag` bloom does 16 taps with `cos`/`sin` per tap; `blossom.frag` has 10 loops.

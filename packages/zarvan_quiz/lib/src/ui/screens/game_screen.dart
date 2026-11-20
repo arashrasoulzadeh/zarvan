@@ -140,7 +140,7 @@ class QuizGameScreen extends QuizScreen {
       return;
     }
     _hintArmed = hintConfirmSeconds;
-    kit.buzz(QuizHaptic.tap);
+    kit.feedback(QuizHaptic.tap);
     _redraw();
   }
 
@@ -567,7 +567,9 @@ class QuizGameScreen extends QuizScreen {
       _burst(right.centerX, right.centerY, theme.accent, 10);
       _ring(right.centerX, right.centerY, theme.correct);
       final picked = session.picked;
-      kit.buzz(picked == q.answerIndex ? QuizHaptic.correct : QuizHaptic.wrong);
+      kit.feedback(
+        picked == q.answerIndex ? QuizHaptic.correct : QuizHaptic.wrong,
+      );
       if (picked != null && picked != q.answerIndex) {
         final r = _optionRects[picked];
         _burst(r.centerX, r.centerY, theme.wrong, 8);

@@ -165,6 +165,7 @@ class Rig {
       ),
       ads: ads ? gate : null,
       haptic: buzzes.add,
+      sound: cues.add,
       share: (t) async {
         sharedTexts.add(t);
         return outcome;
@@ -181,6 +182,7 @@ class Rig {
   }
 
   static final buzzes = <QuizHaptic>[];
+  static final cues = <QuizHaptic>[];
   static final sharedTexts = <String>[];
   static ShareOutcome outcome = ShareOutcome.shared;
   static final gates = <QuizKit, FakeAds>{};
@@ -300,8 +302,9 @@ void main() {
         var cream = false;
         for (var i = 0; i < texts.length; i++) {
           final t = texts.denseAt(i);
-          if (t.text == r.optionRight && t.colorArgb == 0xFFF5E9C8)
+          if (t.text == r.optionRight && t.colorArgb == 0xFFF5E9C8) {
             cream = true;
+          }
           if (t.text == r.optionWrong(0) && t.colorArgb == 0xFFF5E9C8) {
             alphaOf[t.text] = t.alpha;
           }
@@ -713,11 +716,13 @@ void main() {
       'answers and the armed hint give haptic feedback, unless turned off',
       () async {
         Rig.buzzes.clear();
+        Rig.cues.clear();
         final r = await stage();
         r.run(4);
         r.tap(r.optionRight);
         r.run(0.2);
         expect(Rig.buzzes, [QuizHaptic.correct]);
+        expect(Rig.cues, [QuizHaptic.correct]);
         r.run(0.2);
 
         Rig.buzzes.clear();
@@ -735,11 +740,14 @@ void main() {
 
         Rig.buzzes.clear();
         final off = await stage();
+        Rig.cues.clear();
         off.kit.settings.setHaptics(false);
+        off.kit.settings.setSound(false);
         off.run(4);
         off.tap(off.optionRight);
         off.run(0.2);
         expect(Rig.buzzes, isEmpty);
+        expect(Rig.cues, isEmpty);
       },
     );
 

@@ -227,7 +227,8 @@ class QuizAbout {
 /// Everything a quiz screen needs, gathered once by the game and passed to
 /// every screen: the session and content, the language, the look, the
 /// settings and the app's own hooks (ads, share, the clock).
-/// A touch of feedback the game asks the device for through [QuizKit.haptic].
+/// A kind of feedback the game asks the device for, as a buzz
+/// ([QuizKit.haptic]) and a sound cue ([QuizKit.sound]).
 enum QuizHaptic {
   /// A choice was made that can still be undone (the hint is armed).
   tap,
@@ -251,6 +252,7 @@ class QuizKit {
     this.share,
     this.shareText,
     this.haptic,
+    this.sound,
     this.stageMode = const StageMode(),
     this.portraits,
     this.cardArt,
@@ -282,9 +284,14 @@ class QuizKit {
   /// by [buzz], so a hook never has to check it.
   final void Function(QuizHaptic kind)? haptic;
 
-  /// Asks for [kind] unless the player turned haptics off.
-  void buzz(QuizHaptic kind) {
+  /// Plays the sound cue of that kind; wired by the game, null means none.
+  final void Function(QuizHaptic kind)? sound;
+
+  /// Gives the player [kind] of feedback: a buzz unless haptics are off and a
+  /// cue unless sound is off, so a hook never has to check the settings.
+  void feedback(QuizHaptic kind) {
     if (settings.haptics) haptic?.call(kind);
+    if (settings.sound) sound?.call(kind);
   }
 
   /// The authors' portraits, or null for none.

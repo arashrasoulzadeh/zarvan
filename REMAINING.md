@@ -1,0 +1,23 @@
+# Remaining UI/UX work (Shaer game on ZARVAN)
+
+## 1. Home screen
+- [x] Endless and Race entries on the home (velvet buttons under Continue; they had been removed from the home earlier).
+- [ ] Review Endless/Race game screens, lives and the continue-with-ad offer visually.
+
+## 2. Result screen
+- [ ] Wide empty gap between the card and the buttons: move buttons up or add a best-streak / poet-stats line.
+
+## 3. Feel and feedback
+- [ ] Haptics on correct/wrong answers; a soft sound cue if audio is wired.
+- [ ] Coin-count animation when coins are earned or spent (hint cost ticks down).
+- [ ] Hold 60 fps: the 120 Hz phone ignores `maxFps: 60` and runs 115-120 fps (battery).
+
+## 4. Polish
+- [ ] Long four-line poems can touch the bottom-left blossom.
+- [ ] Re-measure first-open/back lag of the poet dialog on a device.
+- [ ] See the armed-hint gold glow and the author-label guard on a device.
+
+## 5. Longer term
+- [ ] Onboarding hint about the 20-coin hint cost.
+- [ ] Accessibility: larger poem text option; contrast of cream-on-lapis labels.
+- [ ] Persian digits everywhere; RTL check on every screen.

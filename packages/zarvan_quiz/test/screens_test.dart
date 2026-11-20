@@ -947,8 +947,8 @@ void main() {
         expect(r.hasPart('Daily'), isTrue);
         expect(r.has('Continue'), isTrue);
         expect(r.has('Poet a · Easy'), isTrue);
-        expect(r.has('Endless'), isFalse, reason: 'taken off the home for now');
-        expect(r.has('Race'), isFalse, reason: 'taken off the home for now');
+        expect(r.has('Endless'), isTrue);
+        expect(r.has('Race'), isTrue);
         final played = await Rig.make(
           setup: (p) =>
               p.daily.results['2026-11-17'] = [true, true, false, true, true],
@@ -1034,6 +1034,16 @@ void main() {
         go.tap('Continue');
         expect(go.loaded, isA<QuizGameScreen>());
         expect(go.kit.session.round!.author, 'a');
+        for (final (label, mode) in [
+          ('Endless', EndlessMode),
+          ('Race', RaceMode),
+        ]) {
+          final m = await Rig.make();
+          await m.open(QuizHomeScreen(m.kit));
+          m.tap(label);
+          expect(m.loaded, isA<QuizGameScreen>(), reason: label);
+          expect(m.kit.session.round!.mode.runtimeType, mode, reason: label);
+        }
       },
     );
 

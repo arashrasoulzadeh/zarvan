@@ -171,6 +171,32 @@ class QuizHomeScreen extends QuizScreen {
       z: 12,
     );
 
+    // Endless and Race, side by side under Continue.
+    const modeW = 118.0;
+    const modeY = 550.0;
+    final endlessRect = UiRect(cx - modeW - 6, modeY, modeW, 46);
+    final raceRect = UiRect(cx + 6, modeY, modeW, 46);
+    _velvet(endlessRect, s.endless, 15, () {
+      play(
+        QuizRound.endless(
+          kit.factory,
+          const EndlessMode(),
+          seedBase: 'endless:${kit.now().millisecondsSinceEpoch}',
+        ),
+        () => QuizGameScreen(kit),
+      );
+    });
+    _velvet(raceRect, s.race, 15, () {
+      play(
+        QuizRound.race(
+          kit.factory,
+          const RaceMode(),
+          seedBase: 'race:${kit.now().millisecondsSinceEpoch}',
+        ),
+        () => QuizGameScreen(kit),
+      );
+    });
+
     spread(1);
     footBlossoms();
 

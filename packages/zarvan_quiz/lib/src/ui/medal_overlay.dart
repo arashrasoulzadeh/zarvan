@@ -31,8 +31,8 @@ class MedalOverlay {
 
   /// The panel is in the middle of the screen, whatever its height.
   double get centerY => screen.world.height / 2;
-  static const medalW = 300.0;
-  static const medalH = 428.0;
+  static const medalW = 320.0;
+  static const medalH = 456.0;
 
   /// Draw order: the blur covers everything below [_z]; the veil and the panel
   /// stay sharp above it.
@@ -190,13 +190,13 @@ class MedalOverlay {
     final s = screen.kit.strings;
     final p = screen.kit.session.progress;
     final top = centerY - medalH / 2;
-    const rowW = medalW - 48;
+    const rowW = medalW - 92;
     const left = centerX - rowW / 2;
 
     final panel = screen.cartoucheAt(
       UiRect(centerX - medalW / 2, top, medalW, medalH),
       dialog: true,
-      header: 0.295,
+      header: 0.28,
       gleam: 0.4,
       window: 0xFF1B4C9A,
       z: _z + 1,
@@ -206,7 +206,7 @@ class MedalOverlay {
     final title = screen.label(
       author.name,
       centerX,
-      top + 82,
+      top + 80,
       size: 26,
       color: _navy,
       z: _z + 6,
@@ -218,7 +218,7 @@ class MedalOverlay {
       final sub = screen.label(
         epithet,
         centerX,
-        top + 106,
+        top + 104,
         size: 13,
         color: _ink,
         z: _z + 6,
@@ -227,11 +227,11 @@ class MedalOverlay {
       _items.add(_Item.text(sub, centerX, centerY));
     }
 
-    var y = top + 140;
+    var y = top + 142;
     for (final tier in QuizTier.values) {
       final unlocked = p.isUnlocked(author.id, tier);
       final entry = p.stages[author.id]?[tier.name];
-      final rect = UiRect(left, y, rowW, 60);
+      final rect = UiRect(left, y, rowW, 62);
       final row = screen.cartoucheAt(
         rect,
         flowers: unlocked ? 1 : -1,
@@ -271,20 +271,20 @@ class MedalOverlay {
         ..add(_Item.text(b.label, centerX, centerY));
       if (unlocked) {
         // Its stars are small seals, drawn once the panel has settled.
-        _starRows.add((y + 43, entry?.stars ?? 0));
+        _starRows.add((y + 46, entry?.stars ?? 0));
       } else {
         final info = screen.label(
           s.stageLockedHint,
           centerX,
-          y + 44,
-          size: 12,
+          y + 46,
+          size: 11,
           color: _ink,
           z: _z + 6,
         );
         _content.addNode(info);
         _items.add(_Item.text(info, centerX, centerY));
       }
-      y += 68;
+      y += 70;
     }
   }
 
@@ -303,7 +303,7 @@ class MedalOverlay {
     final emblem = screen.emblemAt(
       _author!.id,
       centerX,
-      centerY - medalH / 2 + 42,
+      centerY - medalH / 2 + 40,
       44,
       color: 0xFF14284B,
       z: _z + 7,

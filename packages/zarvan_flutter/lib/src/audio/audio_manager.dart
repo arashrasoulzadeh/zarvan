@@ -274,6 +274,13 @@ bool checkLineOfSightSync({
   return true;
 }
 
+/// An [AudioPlayer] without the position updater `audioplayers` installs by
+/// default. That updater ticks on every frame while a sound plays so it can
+/// emit `onPositionChanged`, which the engine never listens to; on a 120 Hz
+/// phone it kept the whole app rendering ~120 frames/s for as long as music
+/// played, whatever `maxFps` said.
+AudioPlayer createEnginePlayer() => AudioPlayer()..positionUpdater = null;
+
 /// Sound effect + music playback. Kept out of zarvan_core the same way
 /// rendering/input are — it's a platform capability, not simulation
 /// state. The recommended pattern is to listen on `world.events`
@@ -306,7 +313,7 @@ class AudioManager
   /// [maxPoolSize] is how many idle one-shot players are kept ready.
   AudioManager({this.maxPoolSize = 8}) : assert(maxPoolSize > 0);
 
-  final AudioPlayer _music = AudioPlayer();
+  final AudioPlayer _music = createEnginePlayer();
   static final _musicContext = AudioContextConfig(
     focus: AudioContextConfigFocus.gain,
   ).build();
@@ -376,7 +383,7 @@ class AudioManager
     final paths = assetPaths.toList(growable: false);
     if (paths.isEmpty) return;
     for (var i = 0; i < playerCount && _pool.length < maxPoolSize; i++) {
-      final player = AudioPlayer();
+      final player = createEnginePlayer();
       try {
         await player.setReleaseMode(ReleaseMode.release);
         await player.setAudioContext(_sfxContext);
@@ -467,7 +474,7 @@ class AudioManager
     if (_disposed || _soundsPaused || _activeSounds >= _maxConcurrentSounds) {
       return;
     }
-    final player = _pool.isNotEmpty ? _pool.removeLast() : AudioPlayer();
+    final player = _pool.isNotEmpty ? _pool.removeLast() : createEnginePlayer();
     _activeSounds++;
     _activePlayers.add(player);
     var returned = false;

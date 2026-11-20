@@ -3,6 +3,22 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test(
+    'engine players have no per-frame position updater (it kept a 30 fps game '
+    'rendering ~120 frames/s on a 120 Hz phone while music played)',
+    () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      final player = createEnginePlayer();
+      expect(
+        await player.onPositionChanged.isEmpty.timeout(
+          const Duration(seconds: 2),
+        ),
+        isTrue,
+      );
+      await player.dispose();
+    },
+  );
+
   TestWidgetsFlutterBinding.ensureInitialized();
 
   // Fully simulating audioplayers' platform channels (including the

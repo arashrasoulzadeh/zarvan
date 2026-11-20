@@ -9,6 +9,7 @@ pubspec.yaml.
 ## [Unreleased]
 
 ### Changed (engine)
+- Audio players no longer run `audioplayers`' per-frame position updater (`createEnginePlayer`). It woke the app on every display frame while music played, so on a 120 Hz phone Shaer rendered ~120 frames/s under a 30 fps cap. `ShaderPostProcessed` likewise stops its ticker while post-processing is off.
 - `maxFps` now lets the ticker sleep between frames when the cap leaves room (30 fps on a 60/120 Hz display) instead of waking at the display rate to skip them; measured on a 120 Hz phone, a 30 fps game was still rendering ~120 frames/s. The frame-spike threshold also scales with the cap.
 - With `GameConfig.logFrameTimings`: a `[zarvan:startup]` line breaks the first load into phases (`StartupTimeline`), and the timing line reports `fps=`, the frames actually rendered per second.
 - The loading screen now also loads the post-processing shader when `Game.postFx` is on at load time (`EngineWarmup.run(warmPostFx: true)`), so it no longer compiles on the frame it first appears on.

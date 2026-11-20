@@ -185,7 +185,28 @@ class _ShaderPostProcessedState extends State<ShaderPostProcessed>
     _ticker = createTicker((d) {
       _t = d;
       _capture();
-    })..start();
+    });
+    _syncTicker();
+  }
+
+  @override
+  void didUpdateWidget(ShaderPostProcessed oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncTicker();
+  }
+
+  /// Runs the capture ticker only while an effect is on. `runGame` wraps every
+  /// game in this widget, and a ticker that returns early still wakes the app
+  /// at the display rate: on a 120 Hz phone it made a 30 fps game render ~120
+  /// frames/s with post-processing off.
+  void _syncTicker() {
+    final ticker = _ticker;
+    if (ticker == null) return;
+    if (widget.fx.isIdentity) {
+      if (ticker.isActive) ticker.stop();
+    } else if (!ticker.isActive) {
+      ticker.start();
+    }
   }
 
   void _capture() {

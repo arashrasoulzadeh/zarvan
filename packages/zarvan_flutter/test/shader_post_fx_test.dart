@@ -89,4 +89,30 @@ void main() {
       isTrue,
     );
   });
+
+  group('ticker', () {
+    testWidgets(
+      'is stopped while post-processing is off, so the app is not woken every '
+      'vsync (a 30 fps game rendered ~120 frames/s on a 120 Hz phone), and '
+      'runs while an effect is on',
+      (tester) async {
+        Widget app(ShaderPostFx fx) => Directionality(
+          textDirection: TextDirection.ltr,
+          child: ShaderPostProcessed(fx: fx, child: const SizedBox()),
+        );
+
+        await tester.pumpWidget(app(const ShaderPostFx()));
+        await tester.pump();
+        expect(tester.binding.hasScheduledFrame, isFalse);
+
+        await tester.pumpWidget(app(const ShaderPostFx(bloom: 0.5)));
+        await tester.pump();
+        expect(tester.binding.hasScheduledFrame, isTrue);
+
+        await tester.pumpWidget(app(const ShaderPostFx()));
+        await tester.pump();
+        expect(tester.binding.hasScheduledFrame, isFalse);
+      },
+    );
+  });
 }

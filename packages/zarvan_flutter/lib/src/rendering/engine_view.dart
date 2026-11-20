@@ -315,9 +315,15 @@ class _EngineViewState extends State<EngineView>
 
   /// How long before the next capped frame is due the ticker is woken, so a
   /// vsync lands just ahead of it. Sleeping only pays off when the cap leaves
-  /// more than this plus a few milliseconds between frames (a 30 fps cap).
-  static const _wakeLead = Duration(milliseconds: 10);
-  static const _minSleep = Duration(milliseconds: 8);
+  /// more than this plus about 12 ms between frames (a 30 fps cap).
+  static const _wakeLead = Duration(milliseconds: 6);
+
+  /// The first frame after the ticker wakes is stepped even if it lands a few
+  /// milliseconds before the virtual clock's due time: the timer already did
+  /// the waiting, and skipping it would cost a second wake (two frames per
+  /// capped frame, seen as 60 fps under a 30 fps cap on a 120 Hz phone).
+  bool _wakeFrame = false;
+  static const _minSleep = Duration(milliseconds: 12);
   final FocusNode _focusNode = FocusNode();
   double _fps = 0;
   int? _memoryBytes;
@@ -424,7 +430,10 @@ class _EngineViewState extends State<EngineView>
     final maxFps = widget.maxFps;
     if (maxFps != null && maxFps > 0) {
       final minInterval = Duration(microseconds: (1e6 / maxFps).round());
-      if (_nextTickDue != null && elapsed < _nextTickDue!) return;
+      if (_nextTickDue != null && elapsed < _nextTickDue! && !_wakeFrame) {
+        return;
+      }
+      _wakeFrame = false;
       final due = (_nextTickDue ?? elapsed) + minInterval;
       _nextTickDue = due < elapsed ? elapsed + minInterval : due;
     } else {
@@ -579,6 +588,7 @@ class _EngineViewState extends State<EngineView>
     _wakeTimer?.cancel();
     _wakeTimer = Timer(delay, () {
       _wakeTimer = null;
+      _wakeFrame = true;
       if (mounted && !_ticker.isActive) _ticker.start();
     });
   }

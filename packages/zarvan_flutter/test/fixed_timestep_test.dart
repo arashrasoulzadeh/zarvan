@@ -230,6 +230,34 @@ void main() {
     );
 
     testWidgets(
+      'the first frame after a wake steps even a little before the due time, '
+      'so a capped frame costs one wake, not two',
+      (tester) async {
+        final world = World(width: 400, height: 300);
+        registerCoreComponents(world);
+        registerFlutterComponents(world);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: EngineView(
+              world: world,
+              atlasRegistry: AtlasRegistry(),
+              camera: Camera(),
+              maxFps: 30,
+            ),
+          ),
+        );
+
+        await tester.pump(const Duration(milliseconds: 16)); // due at ~49 ms
+        await tester.pump(const Duration(milliseconds: 40)); // steps at 56 ms
+        expect(world.tick, 1);
+        // The timer fires ~6 ms before the next frame is due (~83 ms).
+        await tester.pump(const Duration(milliseconds: 21));
+        expect(world.tick, 2);
+      },
+    );
+
+    testWidgets(
       'a cap close to the display rate (60 on 60 Hz) keeps the vsync ticker '
       'running: sleeping would save nothing',
       (tester) async {

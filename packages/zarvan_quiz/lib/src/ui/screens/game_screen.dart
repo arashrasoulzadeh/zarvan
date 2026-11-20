@@ -169,6 +169,7 @@ class QuizGameScreen extends QuizScreen {
       goTo(QuizResultScreen(kit));
       return;
     }
+    _stepCoins(dt);
     _refreshHud();
     final stamp = (
       session.question,
@@ -220,6 +221,25 @@ class QuizGameScreen extends QuizScreen {
     );
   }
 
+  /// The coin count as drawn: it runs to the real one over about half a
+  /// second, so a reward or a hint's price is seen being paid, not swapped in.
+  double? _coinsShown;
+  double get _shownCoins => _coinsShown ?? session.progress.coins.toDouble();
+
+  /// Moves the drawn coin count toward the real one: a share of the gap each
+  /// second, and at least [coinStepPerSecond], so a small gap still closes.
+  void _stepCoins(double dt) {
+    final target = session.progress.coins.toDouble();
+    final shown = _coinsShown ??= target;
+    if (shown == target) return;
+    final gap = target - shown;
+    final step = math.max(gap.abs() * 6, coinStepPerSecond) * dt;
+    _coinsShown = gap.abs() <= step ? target : shown + gap.sign * step;
+  }
+
+  /// The slowest the coin count runs, in coins a second.
+  static const coinStepPerSecond = 40.0;
+
   void _refreshHud() {
     final round = session.round;
     if (round == null) return;
@@ -236,7 +256,7 @@ class QuizGameScreen extends QuizScreen {
         '${s.clock} ${s.number(clock ~/ 1000 + (clock % 1000 > 0 ? 1 : 0))}'
       else
         '',
-      '${s.coins} ${s.number(session.progress.coins)}',
+      '${s.coins} ${s.number(_shownCoins.round())}',
     ];
     for (var i = 0; i < 4; i++) {
       _hud[i].text!.text = items[i];

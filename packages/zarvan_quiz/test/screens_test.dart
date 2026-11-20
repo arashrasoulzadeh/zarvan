@@ -743,6 +743,20 @@ void main() {
       },
     );
 
+    test('the coin count runs to its new value instead of jumping', () async {
+      final r = await stage();
+      r.run(4);
+      String coins() => r.texts.firstWhere((t) => t.startsWith('coins'));
+      expect(coins(), 'coins 60');
+      r.buyHint();
+      r.run(0.05);
+      final mid = int.parse(coins().split(' ').last);
+      expect(mid, lessThan(60));
+      expect(mid, greaterThan(40), reason: 'still on its way down');
+      r.run(1.5);
+      expect(coins(), 'coins 40');
+    });
+
     test('the right option is lit up, not just filled', () async {
       final r = await stage();
       int glows() {
@@ -837,7 +851,7 @@ void main() {
     test('the hint costs coins, removes two options and disappears', () async {
       final r = await stage();
       r.buyHint();
-      r.run(0.1);
+      r.run(1.5);
       expect(r.kit.session.progress.coins, 40);
       expect(r.kit.session.question!.removedByHint.length, 2);
       expect(r.has('coins 40'), isTrue);

@@ -261,11 +261,11 @@ void main() {
       stint = uParams.z > 0.5 ? vec3(0.96, 0.42, 0.34) : vec3(0.98, 0.62, 0.62);
     } else {
       float inset = dialog ? 0.075 : 0.06;
-      vec2 cp = vec2(sx * (hs.x - inset * uSize.x), sy * (hs.y - pk * 0.7 - (dialog ? 0.05 : 0.04) * uSize.x));
+      vec2 cp = vec2(sx * (hs.x - inset * uSize.x), sy * (hs.y - pk * 0.7 - (dialog ? 0.05 : (sy < 0.0 ? 0.04 : 0.075)) * uSize.x));
       vec2 inward = normalize(vec2(-sx, -sy * (dialog ? 1.0 : 0.55)));
       vec2 rv = c - cp;
       sp = vec2(dot(rv, inward), dot(rv, vec2(-inward.y, inward.x)));
-      su = (dialog ? 0.15 : 0.2 * (sy < 0.0 ? 0.55 : 1.0)) * uSize.x;
+      su = (dialog ? 0.15 : (sy < 0.0 ? 0.11 : 0.135)) * uSize.x;
     }
     if (banner || card || dialog) sprayFl = spray(sp, su, uTime, banner ? (sx < 0.0 ? 0.0 : 2.0) : seed, stint);
   }

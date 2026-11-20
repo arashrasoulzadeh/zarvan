@@ -5,7 +5,7 @@
 - [ ] Review Endless/Race game screens, lives and the continue-with-ad offer visually.
 
 ## 2. Result screen
-- [ ] Wide empty gap between the card and the buttons: move buttons up or add a best-streak / poet-stats line.
+- [x] Result screen: the card ends under its last line and the buttons follow it (no empty band).
 
 ## 3. Feel and feedback
 - [ ] Haptics on correct/wrong answers; a soft sound cue if audio is wired.

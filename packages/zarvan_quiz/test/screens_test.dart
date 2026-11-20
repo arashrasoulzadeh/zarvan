@@ -1796,6 +1796,31 @@ void main() {
     }
 
     test(
+      'the buttons follow the card closely, with no wide empty band',
+      () async {
+        final r = await finished(
+          (r) => QuizRound.stage(
+            r.kit.factory,
+            const StageMode(),
+            author: 'a',
+            tier: QuizTier.easy,
+          ),
+        );
+        final texts = r.world.componentsOf<eng.Text>();
+        final pos = r.world.componentsOf<Position>();
+        double yOf(bool Function(String) f) {
+          for (var i = 0; i < texts.length; i++) {
+            if (f(texts.denseAt(i).text)) return pos.get(texts.entityAt(i))!.y;
+          }
+          throw StateError('missing');
+        }
+
+        final coins = yOf((t) => t.contains('Coins') || t.contains('coins'));
+        expect(yOf((t) => t == 'Menu') - coins, lessThan(180));
+      },
+    );
+
+    test(
       'a stage shows its score, stars and coins, and Again starts a new attempt',
       () async {
         final r = await finished(

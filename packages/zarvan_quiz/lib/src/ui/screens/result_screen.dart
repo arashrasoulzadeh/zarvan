@@ -17,10 +17,13 @@ class QuizResultScreen extends QuizScreen {
   late final _note = label(
     '',
     QuizScreen.worldWidth / 2,
-    416,
+    _noteY,
     size: 14,
     color: 0xFFFFF1D6,
   );
+
+  double _noteY = 416;
+  double _cardBottom = 0;
 
   static const _ink = 0xFF3A2312;
   static const _brown = 0xFF6B4A2B;
@@ -35,13 +38,21 @@ class QuizResultScreen extends QuizScreen {
     titleBar(s.result);
     final cx = QuizScreen.worldWidth / 2;
     spread(0.12);
+    // The card ends a little under its last line and the buttons follow it,
+    // so a short result (a daily) leaves no empty band inside or below it.
+    var end = 220.0;
+    if (round.mode is StageMode) end += 92;
+    if (round.mode is DailyMode && round.date != null) end += 52;
+    if (reward?.newRecord == true) end += 34;
+    final cardH = end + 36 - 88;
+    _cardBottom = 88 + cardH;
     // The result on a parchment card with blossoms in its corners.
     cartoucheAt(
       UiRect(
         QuizScreen.margin + 4,
         88,
         QuizScreen.worldWidth - 2 * QuizScreen.margin - 8,
-        290,
+        cardH,
       ),
       card: true,
       flowers: 1,
@@ -104,7 +115,8 @@ class QuizResultScreen extends QuizScreen {
     }
 
     spread(1);
-    const by = 500.0;
+    final by = _cardBottom + 24 + 66;
+    _noteY = by - 66 - 18;
     if (mode is DailyMode && round.date != null && kit.share != null) {
       bannerButton(row(by - 66, height: 56), s.share, () async {
         final outcome = await kit.share!(_shareText(round));

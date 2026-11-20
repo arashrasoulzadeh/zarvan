@@ -994,6 +994,16 @@ void main() {
           for (var i = 0; i < fx.length; i++) fx.denseAt(i),
         ].firstWhere((e) => e.kind == ShaderEffect.lapis);
         expect(sky.zIndex, greaterThan(-10));
+        expect(
+          sky.width,
+          greaterThan(QuizScreen.worldWidth * 2),
+          reason: 'a wide window shows sky at its sides, not bare bars',
+        );
+        expect(
+          sky.params[0],
+          QuizScreen.worldWidth,
+          reason: 'the grain stays the size it has on a phone',
+        );
       },
     );
 

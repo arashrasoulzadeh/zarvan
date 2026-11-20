@@ -12,7 +12,9 @@
 //   uRim    - the base blue
 //   uArm    - the lighter blue the paper mottles toward
 //   uCore   - the gold of the flecks
-//   uParams - unused
+//   uParams - x: the width, in pixels, one "screen" of paper is measured by (0 =
+//             the rect's own width), so a rect drawn wider than the screen, to
+//             fill the bars of a wide window, keeps the same grain and flecks
 
 uniform vec2 uOrigin;
 uniform vec2 uSize;
@@ -52,10 +54,12 @@ float fbm(vec2 p) {
 
 void main() {
   vec2 frag = FlutterFragCoord().xy - uOrigin;
-  vec2 uv = frag / uSize;
+  float unit = uParams.x > 0.0 ? uParams.x : uSize.x;
+  // The vignette belongs to the central screen, not to the (wider) rect.
+  vec2 uv = (frag - vec2((uSize.x - unit) * 0.5, 0.0)) / vec2(unit, uSize.y);
   // Square units, so nothing is stretched on a tall screen: one unit is the
   // screen's width.
-  vec2 q = frag / uSize.x;
+  vec2 q = frag / unit;
 
   float t = uTime * 0.01;
   // Washes of pigment: a warped field read through soft thresholds gives the
@@ -93,7 +97,7 @@ void main() {
   col *= 1.0 - 0.25 * smoothstep(0.35, 0.85, edge);
 
   // Gold leaf: sparse flecks that glint at different times.
-  vec2 g = frag / (uSize.x * 0.045);
+  vec2 g = frag / (unit * 0.045);
   vec2 gid = floor(g);
   vec2 gf = fract(g) - 0.5;
   float gh = hash(gid + 7.0);

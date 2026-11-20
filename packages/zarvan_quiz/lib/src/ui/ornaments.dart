@@ -354,6 +354,9 @@ extension QuizOrnaments on QuizScreen {
     return b;
   }
 
+  /// How many screens wide the sky is drawn.
+  static const lapisWidthFactor = 5.0;
+
   /// Mottled blue handmade paper with flecks of gold leaf behind the whole
   /// screen, drawn by the `lapis` shader.
   void lapisSky({int? base, int? light, int? gold}) {
@@ -366,7 +369,11 @@ extension QuizOrnaments on QuizScreen {
       id,
       ShaderEffect(
         kind: ShaderEffect.lapis,
-        width: QuizScreen.worldWidth,
+        // Several screens wide, so a tablet or desktop window shows more sky
+        // at its sides instead of the bare bar colour; params[0] keeps the
+        // grain the size it has on a phone.
+        width: QuizScreen.worldWidth * lapisWidthFactor,
+        params: [QuizScreen.worldWidth],
         height: world.height,
         zIndex: -9,
         rimArgb: base ?? 0xFF3C74C2,

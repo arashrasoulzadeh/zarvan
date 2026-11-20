@@ -1589,6 +1589,17 @@ void main() {
       expect(r.has('Version: 1.0'), isTrue);
     });
 
+    test('the about link is sienna, not web-blue, on the parchment', () async {
+      final r = await Rig.make();
+      await r.open(QuizAboutScreen(r.kit));
+      final store = r.world.componentsOf<eng.Text>();
+      final link = [
+        for (var i = 0; i < store.length; i++)
+          if (store.denseAt(i).text == 'https://ganjoor.net') store.denseAt(i),
+      ].single;
+      expect(link.colorArgb, 0xFF8A3F12);
+    });
+
     test(
       'tutorial: Start waits for an answer, then sets the flag and opens the menu',
       () async {

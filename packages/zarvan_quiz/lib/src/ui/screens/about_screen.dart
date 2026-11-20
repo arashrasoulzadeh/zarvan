@@ -13,6 +13,10 @@ class QuizAboutScreen extends QuizScreen {
 
   static const _ink = 0xFF3A2312;
 
+  /// Burnt sienna, a pigment of the same miniature palette as the ink: a link
+  /// reads as one without the web-blue that clashes with the parchment.
+  static const _link = 0xFF8A3F12;
+
   @override
   void build() {
     final s = kit.strings;
@@ -72,7 +76,7 @@ class QuizAboutScreen extends QuizScreen {
     }
     y += 10;
     if (about.link != null) {
-      final l = label(about.link!, cx, y, size: 16, color: 0xFF1F4E86);
+      final l = label(about.link!, cx, y, size: 16, color: _link);
       l.text!.rtl = false;
       y += 36;
     }

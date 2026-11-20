@@ -1322,6 +1322,35 @@ void main() {
     );
 
     test(
+      'the medal header carries the poet\'s own card as a stamp, not the emblem',
+      () async {
+        const art = QuizCardArt(
+          atlasId: 'cards',
+          width: 240,
+          height: 405,
+          authors: {'a'},
+        );
+        final r = await Rig.make(
+          bank: makeMultiBank(),
+          cardArt: art,
+          portraits: const QuizPortraits({
+            'a': QuizPortraitStyle(emblem: QuizEmblem.cup, epithet: 'E'),
+          }),
+        );
+        await r.open(QuizHomeScreen(r.kit));
+        final before = r.world.componentsOf<eng.Sprite>().length;
+        r.tap('Poet a');
+        r.run(2);
+        final sprites = r.world.componentsOf<eng.Sprite>();
+        expect(sprites.length, before + 1, reason: 'a stamp joins the card');
+        final fx = r.world.componentsOf<ShaderEffect>();
+        for (var i = 0; i < fx.length; i++) {
+          expect(fx.denseAt(i).kind, isNot(ShaderEffect.emblem));
+        }
+      },
+    );
+
+    test(
       'tapping a poet blurs the screen and opens a medal with the levels',
       () async {
         final r = await Rig.make(bank: makeMultiBank());

@@ -328,14 +328,30 @@ class MedalOverlay {
     _contentShown = true;
     // The author's emblem appears once the panel has settled (a shader icon
     // does not fade with the text).
-    final emblem = screen.emblemAt(
-      _author!.id,
-      centerX,
-      centerY - medalH / 2 + 40,
-      44,
-      color: 0xFF14284B,
-      z: _z + 7,
-    );
+    // The poet's own painted card, as a small stamp, when the game has one;
+    // otherwise the generic shader emblem.
+    final top = centerY - medalH / 2;
+    final art = screen.kit.cardArt;
+    final stampW = 36.0;
+    final emblem = art != null && art.has(_author!.id)
+        ? screen.cardPictureAt(
+            _author!.id,
+            UiRect(
+              centerX - stampW / 2,
+              top + 8,
+              stampW,
+              art.heightFor(stampW),
+            ),
+            z: _z + 7,
+          )
+        : screen.emblemAt(
+            _author!.id,
+            centerX,
+            top + 40,
+            44,
+            color: 0xFF14284B,
+            z: _z + 7,
+          );
     if (emblem != null) {
       _emblem = emblem;
       _ids.add(emblem);

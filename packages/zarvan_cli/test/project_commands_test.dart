@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
@@ -248,6 +249,19 @@ void main() {
         '${tmp.path}/war_game/lib/main.dart',
       ).readAsStringSync();
       expect(warMain, contains('installStrategySystems'));
+      final warConfig =
+          jsonDecode(
+                File(
+                  '${tmp.path}/war_game/assets/game_config.json',
+                ).readAsStringSync(),
+              )
+              as Map<String, dynamic>;
+      expect(
+        warConfig['maxFps'],
+        30,
+        reason:
+            'turn-based games look the same at 30 fps and use half the power',
+      );
       expect(warMain, contains('skirmish.level.json'));
       expect(
         File(

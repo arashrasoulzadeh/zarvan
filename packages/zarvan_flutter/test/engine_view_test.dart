@@ -288,4 +288,59 @@ void main() {
       expect(events.last.$1.dx, closeTo(-80, 1));
     });
   });
+
+  testWidgets(
+    'a paused view schedules no frames at all, and resuming steps again '
+    'without a catch-up burst',
+    (tester) async {
+      final world = World(width: 100, height: 100);
+      registerCoreComponents(world);
+      registerFlutterComponents(world);
+      var steps = 0;
+      world.addSystem(_CountingSystem(() => steps++));
+
+      Future<void> show({required bool paused}) => tester.pumpWidget(
+        MaterialApp(
+          home: EngineView(
+            world: world,
+            atlasRegistry: AtlasRegistry(),
+            camera: Camera(),
+            paused: paused,
+          ),
+        ),
+      );
+
+      await show(paused: true);
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(steps, 0);
+      expect(
+        tester.binding.hasScheduledFrame,
+        isFalse,
+        reason: 'a muted ticker must not keep waking the CPU every vsync',
+      );
+
+      // A long pause (an open dialog) then resume: the first tick after it
+      // only re-syncs the clock, then stepping continues normally.
+      await tester.pump(const Duration(seconds: 5));
+      await show(paused: false);
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(steps, greaterThan(3));
+      expect(steps, lessThan(12), reason: 'no burst of catch-up steps');
+      expect(tester.binding.hasScheduledFrame, isTrue);
+    },
+  );
+}
+
+class _CountingSystem implements System {
+  _CountingSystem(this.onStep);
+  final void Function() onStep;
+
+  @override
+  String get name => 'counting';
+
+  @override
+  void update(World world, double dt) => onStep();
 }

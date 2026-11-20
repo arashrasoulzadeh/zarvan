@@ -8,6 +8,10 @@ pubspec.yaml.
 
 ## [Unreleased]
 
+### Changed (engine)
+- Battery: a paused `EngineView` (an open dialog or menu) now mutes its ticker, so it schedules no frames instead of waking the CPU every vsync to return early. New `strategy_game` projects start at `maxFps: 30` (a turn-based game looks the same and does about half the work); existing games are unchanged.
+- Rendering: shader effects, the post-fx shader and `EngineWarmup` compile ahead of first paint; sprites, shapes and particle dots wholly outside the view are no longer drawn; `SpatialHash` cells no longer alias outside the world width.
+
 ### Changed (documentation)
 - Rebuilt the MkDocs home as a focused ZARVAN landing page with direct paths to the generated docs, agent hub, tutorials, architecture, and Persian documentation. The full navigation and sidebar remain available on inner documentation pages.
 

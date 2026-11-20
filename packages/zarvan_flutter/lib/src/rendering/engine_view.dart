@@ -363,7 +363,12 @@ class _EngineViewState extends State<EngineView>
   void initState() {
     super.initState();
     _frameStats = widget.frameStats ?? FrameStats();
-    _ticker = createTicker(_onTick)..start();
+    // A paused view steps and paints nothing, so there is no reason to wake
+    // the CPU every vsync just to return early: a muted ticker schedules no
+    // frames at all.
+    _ticker = createTicker(_onTick)
+      ..muted = widget.paused
+      ..start();
 
     if (widget.viewportConfig != null) {
       _viewportManager = ViewportManager(widget.viewportConfig!);
@@ -373,6 +378,7 @@ class _EngineViewState extends State<EngineView>
   @override
   void didUpdateWidget(EngineView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.paused != oldWidget.paused) _ticker.muted = widget.paused;
     if (widget.frameStats != oldWidget.frameStats) {
       _frameStats = widget.frameStats ?? FrameStats();
     }

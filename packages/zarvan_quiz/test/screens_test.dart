@@ -1401,7 +1401,7 @@ void main() {
           for (var i = 0; i < fx.length; i++)
             if (fx.denseAt(i).kind == ShaderEffect.cartouche &&
                 fx.denseAt(i).params[0] == 0 &&
-                fx.denseAt(i).height == 60)
+                fx.denseAt(i).height == 62)
               fx.denseAt(i),
         ];
         expect(banners, hasLength(4));

@@ -263,7 +263,7 @@ class MedalOverlay {
       b.label.text!
         ..zIndex = _z + 6
         ..colorArgb = unlocked ? _cream : _navy;
-      b.label.pos.y -= unlocked ? 8 : 9;
+      b.label.pos.y -= unlocked ? 9 : 7;
       b.enabled = false;
       _buttons.add((b, unlocked));
       _items
@@ -276,7 +276,7 @@ class MedalOverlay {
         final info = screen.label(
           s.stageLockedHint,
           centerX,
-          y + 46,
+          y + 44,
           size: 11,
           color: _ink,
           z: _z + 6,

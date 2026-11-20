@@ -127,9 +127,32 @@ class QuizGameScreen extends QuizScreen {
     openVeil();
   }
 
+  /// Seconds left in which a second tap on the hint buys it. The hint banner
+  /// sits where Next appears after an answer and costs coins, so a stray or
+  /// hurried tap must not spend them: the first tap only arms it.
+  static const hintConfirmSeconds = 2.5;
+  double _hintArmed = 0;
+
+  void _pressHint() {
+    if (_hintArmed > 0) {
+      _hintArmed = 0;
+      session.useHint();
+      return;
+    }
+    _hintArmed = hintConfirmSeconds;
+    _redraw();
+  }
+
   @override
   void update(double dt, World world) {
     super.update(dt, world);
+    if (_hintArmed > 0) {
+      _hintArmed -= dt;
+      if (_hintArmed <= 0) {
+        _hintArmed = 0;
+        _redraw();
+      }
+    }
     _time += dt;
     for (final c in _clouds) {
       c.step(dt, _rng);
@@ -494,8 +517,8 @@ class QuizGameScreen extends QuizScreen {
       _view.addId(cartoucheAt(hr, flowers: 1, window: 0xFF1F4E86, z: 5));
       final hint = button(
         hr,
-        '${s.hint} · ${s.number(QuizProgress.hintCost)}',
-        session.useHint,
+        '${_hintArmed > 0 ? '✓ ' : ''}${s.hint} · ${s.number(QuizProgress.hintCost)}',
+        _pressHint,
         style: QuizButtonStyle.option,
         size: 16,
         group: _view,

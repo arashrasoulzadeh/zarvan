@@ -233,6 +233,13 @@ class Rig {
     scene.handleTap(world, controller, Offset(p.x, p.y));
   }
 
+  /// Buys a hint: the banner needs a second tap to confirm.
+  void buyHint() {
+    tap(texts.firstWhere((t) => t.contains('Hint')));
+    run(0.1);
+    tap(texts.firstWhere((t) => t.contains('Hint')));
+  }
+
   void tapAt(double x, double y) =>
       scene.handleTap(world, controller, Offset(x, y));
 
@@ -678,7 +685,7 @@ void main() {
       () async {
         final r = await stage();
         r.run(4);
-        r.tap(r.texts.firstWhere((t) => t.contains('Hint')));
+        r.buyHint();
         r.run(0.1);
         final shapes = r.world.componentsOf<Shape>();
         for (var i = 0; i < shapes.length; i++) {
@@ -695,9 +702,7 @@ void main() {
     test('a hint redraw does not restart the writing', () async {
       final r = await stage();
       r.run(4);
-      r.tap(
-        r.hasPart('Hint') ? r.texts.firstWhere((t) => t.contains('Hint')) : '',
-      );
+      r.buyHint();
       r.run(0.1);
       final t = r.world.componentsOf<eng.Text>();
       for (var i = 0; i < t.length; i++) {
@@ -767,9 +772,28 @@ void main() {
       },
     );
 
+    test('one tap on the hint only arms it; a second tap buys', () async {
+      final r = await stage();
+      r.tap(r.texts.firstWhere((t) => t.contains('Hint')));
+      r.run(0.1);
+      expect(r.kit.session.progress.coins, 60, reason: 'nothing spent yet');
+      expect(r.hasPart('✓ Hint'), isTrue, reason: 'it shows it is armed');
+      r.tap(r.texts.firstWhere((t) => t.contains('Hint')));
+      expect(r.kit.session.progress.coins, 40);
+    });
+
+    test('an armed hint disarms itself after a moment', () async {
+      final r = await stage();
+      r.tap(r.texts.firstWhere((t) => t.contains('Hint')));
+      r.run(QuizGameScreen.hintConfirmSeconds + 0.5);
+      expect(r.hasPart('✓ Hint'), isFalse);
+      r.tap(r.texts.firstWhere((t) => t.contains('Hint')));
+      expect(r.kit.session.progress.coins, 60, reason: 'first tap again');
+    });
+
     test('the hint costs coins, removes two options and disappears', () async {
       final r = await stage();
-      r.tap('Hint · 20');
+      r.buyHint();
       r.run(0.1);
       expect(r.kit.session.progress.coins, 40);
       expect(r.kit.session.question!.removedByHint.length, 2);

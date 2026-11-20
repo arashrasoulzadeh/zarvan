@@ -42,6 +42,7 @@ class QuizStrings {
     required this.tutorialTitle,
     required this.tutorialBody,
     required this.tutorialDone,
+    this.tutorialTip,
     required this.theme,
     required this.themeSystem,
     required this.themeLight,
@@ -175,6 +176,9 @@ class QuizStrings {
 
   /// Tutorial explanation.
   final String tutorialBody;
+
+  /// One line under the tutorial text, e.g. what a hint costs; null for none.
+  final String? tutorialTip;
 
   /// Tutorial start button.
   final String tutorialDone;

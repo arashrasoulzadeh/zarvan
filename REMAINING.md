@@ -9,8 +9,8 @@
 
 ## 3. Feel and feedback
 - [x] Haptics on correct/wrong answers and the armed hint (`QuizKit.haptic`, honours the Settings toggle; the game wires it to the device).
-- [ ] A soft sound cue if audio is wired.
-- [ ] Coin-count animation when coins are earned or spent (hint cost ticks down).
+- [x] Sound cues (tap, right, wrong) bundled in the app and played when Sound is on.
+- [x] Coin count runs to its new value instead of jumping.
 - [ ] Hold 60 fps: the 120 Hz phone ignores `maxFps: 60` and runs 115-120 fps (battery).
 
 ## 4. Polish
@@ -19,6 +19,6 @@
 - [ ] See the armed-hint gold glow and the author-label guard on a device.
 
 ## 5. Longer term
-- [ ] Onboarding hint about the 20-coin hint cost.
+- [x] Tutorial line about the 20-coin hint (`QuizStrings.tutorialTip`).
 - [ ] Accessibility: larger poem text option; contrast of cream-on-lapis labels.
 - [ ] Persian digits everywhere; RTL check on every screen.

@@ -28,6 +28,16 @@ class QuizTutorialScreen extends QuizScreen {
       maxWidth: QuizScreen.worldWidth - 60,
       color: 0xFFE9D7A6,
     );
+    if (s.tutorialTip != null) {
+      label(
+        s.tutorialTip!,
+        QuizScreen.worldWidth / 2,
+        138,
+        size: 13,
+        maxWidth: QuizScreen.worldWidth - 40,
+        color: 0xFFFFD98A,
+      );
+    }
     final item = kit.bank.items(tier: QuizTier.easy).first;
     _q = kit.factory.create(item.id, QuizTier.easy, 1);
     _redraw();
@@ -59,7 +69,7 @@ class QuizTutorialScreen extends QuizScreen {
     ];
     final inner =
         sizes.fold<double>(0, (a, z) => a + z.height) + 8 * (lines.length - 1);
-    const top = 150.0;
+    final top = s.tutorialTip != null ? 164.0 : 150.0;
     // The couplet on a parchment card, as in the game.
     _view.addId(
       cartoucheAt(

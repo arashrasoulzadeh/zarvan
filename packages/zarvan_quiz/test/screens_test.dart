@@ -65,6 +65,7 @@ const strings = QuizStrings(
   tutorialTitle: 'Find the word',
   tutorialBody: 'One word is missing',
   tutorialDone: 'Start',
+  tutorialTip: 'A hint costs 20 coins: tap it twice',
   theme: 'Theme',
   themeSystem: 'System',
   themeLight: 'Light',
@@ -1815,6 +1816,12 @@ void main() {
 
       final lastOption = q.options.map(yOf).reduce((a, b) => a > b ? a : b);
       expect(yOf('Start') - lastOption, greaterThan(56));
+    });
+
+    test('tutorial: tells what a hint costs', () async {
+      final r = await Rig.make(tutorialDone: false);
+      await r.open(QuizTutorialScreen(r.kit));
+      expect(r.has('A hint costs 20 coins: tap it twice'), isTrue);
     });
 
     test(

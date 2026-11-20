@@ -54,6 +54,7 @@ export 'src/logic/game.dart';
 export 'src/logic/game_flow.dart';
 export 'src/logic/game_flow_logic.dart';
 export 'src/logic/game_config.dart';
+export 'src/logic/startup_timeline.dart';
 export 'src/input/gamepad_bindings_storage.dart';
 export 'src/ui/gamepad_remap_menu_scene.dart';
 export 'src/ui/splash_screen.dart';

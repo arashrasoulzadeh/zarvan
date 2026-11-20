@@ -12,6 +12,7 @@ class FrameTimingSummary {
     required this.rasterP90,
     required this.rasterP99,
     required this.jankyShare,
+    this.fps = 0,
   });
 
   /// How many frames were measured.
@@ -31,13 +32,19 @@ class FrameTimingSummary {
   /// thread.
   final double jankyShare;
 
+  /// Frames the engine actually rendered per second over the window (0 when
+  /// the window length is unknown). A game capped at 30 fps that reports 120
+  /// here is still waking the display every frame.
+  final double fps;
+
   @override
   String toString() =>
       'frames=$frames build p50/p90/p99='
       '${buildP50.toStringAsFixed(1)}/${buildP90.toStringAsFixed(1)}/${buildP99.toStringAsFixed(1)}ms '
       'raster p50/p90/p99='
       '${rasterP50.toStringAsFixed(1)}/${rasterP90.toStringAsFixed(1)}/${rasterP99.toStringAsFixed(1)}ms '
-      'janky=${(jankyShare * 100).toStringAsFixed(0)}%';
+      'janky=${(jankyShare * 100).toStringAsFixed(0)}%'
+      '${fps > 0 ? ' fps=${fps.toStringAsFixed(0)}' : ''}';
 }
 
 /// The value at fraction [p] (0..1) of [sorted] (nearest rank).
@@ -53,6 +60,7 @@ FrameTimingSummary summarizeFrameTimings(
   List<double> builds,
   List<double> rasters, {
   double budgetMs = 16.7,
+  double windowSeconds = 0,
 }) {
   final b = [...builds]..sort();
   final r = [...rasters]..sort();
@@ -70,6 +78,7 @@ FrameTimingSummary summarizeFrameTimings(
     rasterP90: percentile(r, 0.9),
     rasterP99: percentile(r, 0.99),
     jankyShare: n == 0 ? 0 : janky / n,
+    fps: windowSeconds > 0 ? n / windowSeconds : 0,
   );
 }
 
@@ -121,7 +130,10 @@ class FrameTimingLogger {
   /// Logs the frames gathered so far and starts a new window.
   void flush() {
     if (_builds.isEmpty) return;
-    _sink('[$label] ${summarizeFrameTimings(_builds, _rasters)}');
+    final seconds = _window.elapsedMicroseconds / 1e6;
+    _sink(
+      '[$label] ${summarizeFrameTimings(_builds, _rasters, windowSeconds: seconds)}',
+    );
     _builds.clear();
     _rasters.clear();
     _window

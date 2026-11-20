@@ -9,6 +9,8 @@ pubspec.yaml.
 ## [Unreleased]
 
 ### Changed (engine)
+- `maxFps` now lets the ticker sleep between frames when the cap leaves room (30 fps on a 60/120 Hz display) instead of waking at the display rate to skip them; measured on a 120 Hz phone, a 30 fps game was still rendering ~120 frames/s. The frame-spike threshold also scales with the cap.
+- With `GameConfig.logFrameTimings`: a `[zarvan:startup]` line breaks the first load into phases (`StartupTimeline`), and the timing line reports `fps=`, the frames actually rendered per second.
 - The loading screen now also loads the post-processing shader when `Game.postFx` is on at load time (`EngineWarmup.run(warmPostFx: true)`), so it no longer compiles on the frame it first appears on.
 - Battery: a paused `EngineView` (an open dialog or menu) now mutes its ticker, so it schedules no frames instead of waking the CPU every vsync to return early. New `strategy_game` projects start at `maxFps: 30` (a turn-based game looks the same and does about half the work); existing games are unchanged.
 - Rendering: shader effects, the post-fx shader and `EngineWarmup` compile ahead of first paint; sprites, shapes and particle dots wholly outside the view are no longer drawn; `SpatialHash` cells no longer alias outside the world width.

@@ -41,6 +41,18 @@ void main() {
     expect(s.jankyShare, 0);
   });
 
+  test('the window length gives the rendered frames per second', () {
+    final builds = List.filled(60, 1.0);
+    final rasters = List.filled(60, 1.0);
+    final s = summarizeFrameTimings(builds, rasters, windowSeconds: 2);
+    expect(s.fps, 30);
+    expect(s.toString(), contains('fps=30'));
+    expect(
+      summarizeFrameTimings(builds, rasters).toString(),
+      isNot(contains('fps=')),
+    );
+  });
+
   test('the logger flushes a line with what it has gathered', () {
     final lines = <String>[];
     final logger = FrameTimingLogger(sink: lines.add);

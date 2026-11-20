@@ -1,3 +1,4 @@
+import 'dart:async' show Timer;
 import 'dart:math' show cos, exp, sin, pi, sqrt, max;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -308,6 +309,15 @@ class _EngineViewState extends State<EngineView>
   late final Ticker _ticker;
   Duration _lastTick = Duration.zero;
   Duration? _nextTickDue;
+
+  /// Wakes the ticker again after it slept between two capped frames.
+  Timer? _wakeTimer;
+
+  /// How long before the next capped frame is due the ticker is woken, so a
+  /// vsync lands just ahead of it. Sleeping only pays off when the cap leaves
+  /// more than this plus a few milliseconds between frames (a 30 fps cap).
+  static const _wakeLead = Duration(milliseconds: 10);
+  static const _minSleep = Duration(milliseconds: 8);
   final FocusNode _focusNode = FocusNode();
   double _fps = 0;
   int? _memoryBytes;
@@ -392,7 +402,10 @@ class _EngineViewState extends State<EngineView>
     }
   }
 
-  void _onTick(Duration elapsed) {
+  void _onTick(Duration ticker) {
+    // The frame's own timestamp, not the ticker's elapsed: a ticker that slept
+    // between capped frames restarts at zero, the timestamp keeps counting.
+    final elapsed = SchedulerBinding.instance.currentFrameTimeStamp;
     // maxFps caps how often a raw display callback is actually turned
     // into a world step + repaint. This is scheduled against a virtual
     // clock (_nextTickDue) that advances by exactly minInterval every
@@ -549,6 +562,25 @@ class _EngineViewState extends State<EngineView>
     }
 
     setState(() {});
+    _sleepUntilNextFrame(elapsed);
+  }
+
+  /// Under a `maxFps` cap that leaves room between frames, stops the ticker
+  /// until the next frame is due. A vsync ticker would otherwise wake the app
+  /// at the display's rate (120 Hz) just to skip most of them, and each wake
+  /// still presents a frame; seen on a 120 Hz phone as ~120 frames/s under a
+  /// 30 fps cap.
+  void _sleepUntilNextFrame(Duration now) {
+    final due = _nextTickDue;
+    if (due == null) return;
+    final delay = due - now - _wakeLead;
+    if (delay < _minSleep) return;
+    _ticker.stop();
+    _wakeTimer?.cancel();
+    _wakeTimer = Timer(delay, () {
+      _wakeTimer = null;
+      if (mounted && !_ticker.isActive) _ticker.start();
+    });
   }
 
   /// A plain copy of every entity's current `Position` (value fields,
@@ -569,6 +601,7 @@ class _EngineViewState extends State<EngineView>
 
   @override
   void dispose() {
+    _wakeTimer?.cancel();
     _ticker.dispose();
     _focusNode.dispose();
     _effectShaders.dispose();

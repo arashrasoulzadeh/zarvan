@@ -194,6 +194,67 @@ void main() {
       },
     );
 
+    testWidgets(
+      'a 30 fps cap lets the ticker sleep between frames instead of waking '
+      'at the display rate to skip them (seen as ~120 frames/s on a 120 Hz '
+      'phone), and wakes it again in time for the next one',
+      (tester) async {
+        final world = World(width: 400, height: 300);
+        registerCoreComponents(world);
+        registerFlutterComponents(world);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: EngineView(
+              world: world,
+              atlasRegistry: AtlasRegistry(),
+              camera: Camera(),
+              maxFps: 30,
+            ),
+          ),
+        );
+
+        await tester.pump(const Duration(milliseconds: 16)); // baseline only
+        await tester.pump(const Duration(milliseconds: 40)); // steps, sleeps
+        expect(world.tick, 1);
+        await tester.pump(); // the frame setState asked for
+        expect(
+          tester.binding.hasScheduledFrame,
+          isFalse,
+          reason: 'nothing may ask for a frame until the next one is due',
+        );
+
+        await tester.pump(const Duration(milliseconds: 40));
+        expect(world.tick, 2, reason: 'the timer woke the ticker again');
+      },
+    );
+
+    testWidgets(
+      'a cap close to the display rate (60 on 60 Hz) keeps the vsync ticker '
+      'running: sleeping would save nothing',
+      (tester) async {
+        final world = World(width: 400, height: 300);
+        registerCoreComponents(world);
+        registerFlutterComponents(world);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: EngineView(
+              world: world,
+              atlasRegistry: AtlasRegistry(),
+              camera: Camera(),
+              maxFps: 60,
+            ),
+          ),
+        );
+
+        await tester.pump(const Duration(milliseconds: 16));
+        await tester.pump(const Duration(milliseconds: 17));
+        await tester.pump();
+        expect(tester.binding.hasScheduledFrame, isTrue);
+      },
+    );
+
     testWidgets('does not throttle frames already slower than the cap', (
       tester,
     ) async {

@@ -6,6 +6,7 @@ import 'package:zarvan_core/zarvan_core.dart';
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kReleaseMode;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart' show SchedulerBinding;
 import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter/services.dart' show FontLoader, rootBundle;
 
@@ -22,6 +23,7 @@ import '../ui/splash_screen.dart';
 import '../input/on_screen_controls.dart';
 import '../register_components.dart';
 import 'scene.dart';
+import 'startup_timeline.dart';
 import 'scene_transition.dart';
 import 'snapshot_transition.dart';
 import '../rendering/shader_post_fx.dart';
@@ -229,12 +231,23 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
       popScene: _popScene,
       captureScreenshot: _captureScreenshot,
     );
-    if (widget.game.config.logFrameTimings) _timings.start();
+    if (widget.game.config.logFrameTimings) {
+      _timings.start();
+      _startup.mark('init');
+    }
     EffectShader.pageTurn.warmUp();
     EffectShader.lanterns.warmUp();
     EffectShader.ripple.warmUp();
     _gameState = widget.game.createInitialState();
     _future = _loadInitial(widget.game.createInitialScene());
+    if (widget.game.config.logFrameTimings) {
+      _future.then((_) async {
+        await SchedulerBinding.instance.endOfFrame;
+        _mark('first-frame');
+        _startup.flush();
+        _startupDone = true;
+      }, onError: (Object _) {});
+    }
   }
 
   /// The first load, held on the splash for `SplashConfig.minDuration`.
@@ -244,6 +257,7 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
     final minimum = Future<void>.delayed(hold);
     final loaded = await _load(scene);
     await minimum;
+    _mark('splash-held');
     return loaded;
   }
 
@@ -328,6 +342,17 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
   /// the scene on screen takes no taps, drags or key presses meanwhile.
   bool _inputLocked = false;
   final FrameTimingLogger _timings = FrameTimingLogger();
+
+  /// Phases of the first load, logged once the first frame is up (only with
+  /// `GameConfig.logFrameTimings`).
+  final StartupTimeline _startup = StartupTimeline();
+  bool _startupDone = false;
+
+  void _mark(String label) {
+    if (widget.game.config.logFrameTimings && !_startupDone) {
+      _startup.mark(label);
+    }
+  }
 
   /// Prints what a frame was doing whenever one takes over 20 ms, or 1.5 frame intervals under a `maxFps` cap (only with
   /// `GameConfig.logFrameTimings`), so a spike can be traced to the step, the
@@ -559,6 +584,7 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
     final progress = widget.game.loadingProgress;
     progress.report(0.05, 'Preparing');
     await _ensureDefaultFontLoaded();
+    _mark('font');
     progress.report(0.15, 'Loading world');
     final world = World(
       width: widget.game.config.worldWidth,
@@ -568,11 +594,13 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
     registerFlutterComponents(world);
     world.addSystem(SceneTransitionSystem());
     await scene.populate(world, _sceneController, _gameState);
+    _mark('populate');
 
     progress.report(0.5, 'Loading assets');
     scene.assetProgressSink = (fraction, label) =>
         progress.report(0.5 + 0.35 * fraction.clamp(0.0, 1.0), label);
     final atlasRegistry = await scene.loadAssets();
+    _mark('assets');
     scene.assetProgressSink = null;
     progress.report(0.85, 'Loading assets');
     await _registerPackedAtlas(atlasRegistry);
@@ -587,8 +615,10 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
       warmPostFx: !widget.game.postFx.value.isIdentity,
       extraEffects: widget.game.laterEffects,
     );
+    _mark('warm-up');
     await scene.warmUp(world);
     scene.onEnter(world);
+    _mark('scene-ready');
     progress.report(1, 'Ready');
     return _LoadedGame(world, atlasRegistry, camera, inputController, scene);
   }

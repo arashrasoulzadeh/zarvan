@@ -77,8 +77,16 @@ large counts pile into one row and look quadratic), so read its growth as the sy
   every fragment shader by the transcendental calls and texture reads a pixel pays, weighted by loops. It is a
   static estimate (a GPU cannot be timed from Dart), so use it to pick what to profile on a device, and
   profile there before changing how a shader looks.
+- **A `maxFps` cap really sleeps.** When the cap leaves room between frames (30 fps on a 60 or 120 Hz
+  display), `EngineView` stops its ticker until the next frame is due instead of waking at the display rate
+  to skip frames. A cap close to the display rate (60 on 60 Hz) keeps the vsync ticker, since sleeping would
+  save nothing.
+- **Trace a slow start.** With `logFrameTimings` on, one `[zarvan:startup]` line lists each phase of the first
+  load (`init`, `font`, `populate`, `assets`, `warm-up`, `scene-ready`, `splash-held`, `first-frame`) as
+  `label=total(+own)ms`.
 - **Measure frames on a device** with `GameConfig.logFrameTimings` (a game can wire it to a
-  `--dart-define`), which logs `FrameTimingMonitor` percentiles.
+  `--dart-define`), which logs `FrameTimingMonitor` percentiles every 3 s, including `fps=`, the frames actually rendered per second. A
+  game capped at 30 that reports 120 is still waking the display every frame.
 
 ## Keep the step cost predictable
 

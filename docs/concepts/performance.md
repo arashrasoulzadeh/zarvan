@@ -52,6 +52,33 @@ n=1000)`), so you can see whether a change is linear or worse. Numbers depend on
 before and after on the *same* one, and run twice. The CLAUDE.md rule for this repo is to re-run the
 relevant benchmark for any change to a hot path.
 
+Benchmark classes report per run of `run()`, not per batch: the harness's `exercise()` calls `run()` ten
+times, so every benchmark here overrides `exercise()` to call it once. Do not compare numbers taken before
+that fix. `collision_system_benchmark.dart` sizes the world to its entity count (a fixed-width world made
+large counts pile into one row and look quadratic), so read its growth as the system's real scaling.
+`zarvan_flutter/benchmark/sprite_benchmark_test.dart` covers the sprite draw path
+(`flutter test benchmark --reporter expanded`).
+
+## Rendering cost and battery
+
+- **Cap the frame rate** a game does not need. `GameConfig.maxFps` (also `"maxFps"` in `game_config.json`)
+  throttles the ticker; a quiz or turn-based strategy game looks the same at 30 fps and does about half the
+  work. New strategy projects from `zarvan create` start at 30.
+- **A paused `EngineView` costs nothing.** `paused: true` mutes its ticker, so the app is not woken per
+  frame while a menu or dialog covers the game.
+- **Off-screen things are not drawn.** Sprites, shapes and particle dots wholly outside the view (plus
+  `EngineView.cullBufferPx`, 96 by default, so a sprite is never popped at the edge) are skipped. The check is
+  `spriteOnScreen` and is conservative: it uses the sprite's bounding circle, so it never hides a visible one.
+- **Shaders compile before the first frame.** `EngineWarmup` primes lighting, GPU-shadow, normal-map and the
+  shader effects a world uses (`effect:<kind>`), so the first use does not hitch. Call
+  `ShaderPostProcessed.warmUp()` from a loading screen when a game uses post-processing.
+- **Rank shaders before tuning them.** `dart run tool/shader_cost.dart` (in `packages/zarvan_flutter`) lists
+  every fragment shader by the transcendental calls and texture reads a pixel pays, weighted by loops. It is a
+  static estimate (a GPU cannot be timed from Dart), so use it to pick what to profile on a device, and
+  profile there before changing how a shader looks.
+- **Measure frames on a device** with `GameConfig.logFrameTimings` (a game can wire it to a
+  `--dart-define`), which logs `FrameTimingMonitor` percentiles.
+
 ## Keep the step cost predictable
 
 - **Fixed timestep.** Set `GameConfig.fixedTimestepSeconds` (for example `1 / 60`, or `1 / 20` for

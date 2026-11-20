@@ -117,7 +117,8 @@ Future<AtlasRegistry> loadAssets() async {
 Sprites batch through `Canvas.drawRawAtlas` per z-index, written straight into typed buffers (no per-sprite
 objects). Tinted sprites (hit flashes) batch with a per-sprite colour. Mirrored sprites (a negative `scaleX`, which
 is how `FacingSystem` faces left) batch through one `drawVertices` per image with flipped texture coordinates, so no
-flipped copy of the texture is kept in memory. Only non-uniformly scaled sprites draw individually — see
+flipped copy of the texture is kept in memory. Sprites whose bounding circle is wholly off-screen (past
+`EngineView.cullBufferPx`) are skipped before batching, as are off-screen shapes and particle dots. Only non-uniformly scaled sprites draw individually — see
 `packages/zarvan_flutter/README.md` for the packing tool
 (`zarvan pack-assets`) that produces the manifest.
 

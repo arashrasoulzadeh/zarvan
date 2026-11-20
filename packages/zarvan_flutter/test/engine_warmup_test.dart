@@ -62,6 +62,22 @@ void main() {
     });
   });
 
+  group('post-processing', () {
+    test('warmPostFx adds a post-fx step; without it there is none', () async {
+      final labels = <String>[];
+      await EngineWarmup.run(_world(), report: (f, l) => labels.add(l));
+      expect(labels, isNot(contains('Warming up effects')));
+      labels.clear();
+      await EngineWarmup.run(
+        _world(),
+        report: (f, l) => labels.add(l),
+        warmPostFx: true,
+      ).timeout(const Duration(seconds: 10));
+      expect(labels, contains('Warming up effects'));
+      expect(labels.last, 'Warming up');
+    });
+  });
+
   group('shader effects', () {
     test('each distinct effect kind in the world is warmed, once', () {
       final world = _world();

@@ -9,6 +9,7 @@ pubspec.yaml.
 ## [Unreleased]
 
 ### Changed (engine)
+- The loading screen now also loads the post-processing shader when `Game.postFx` is on at load time (`EngineWarmup.run(warmPostFx: true)`), so it no longer compiles on the frame it first appears on.
 - Battery: a paused `EngineView` (an open dialog or menu) now mutes its ticker, so it schedules no frames instead of waking the CPU every vsync to return early. New `strategy_game` projects start at `maxFps: 30` (a turn-based game looks the same and does about half the work); existing games are unchanged.
 - Rendering: shader effects, the post-fx shader and `EngineWarmup` compile ahead of first paint; sprites, shapes and particle dots wholly outside the view are no longer drawn; `SpatialHash` cells no longer alias outside the world width.
 

@@ -70,8 +70,9 @@ large counts pile into one row and look quadratic), so read its growth as the sy
   `EngineView.cullBufferPx`, 96 by default, so a sprite is never popped at the edge) are skipped. The check is
   `spriteOnScreen` and is conservative: it uses the sprite's bounding circle, so it never hides a visible one.
 - **Shaders compile before the first frame.** `EngineWarmup` primes lighting, GPU-shadow, normal-map and the
-  shader effects a world uses (`effect:<kind>`), so the first use does not hitch. Call
-  `ShaderPostProcessed.warmUp()` from a loading screen when a game uses post-processing.
+  shader effects a world uses (`effect:<kind>`), so the first use does not hitch. The loading screen
+  also loads the post-processing shader when `Game.postFx` is already on; if you switch it on later, call
+  `ShaderPostProcessed.warmUp()` first.
 - **Rank shaders before tuning them.** `dart run tool/shader_cost.dart` (in `packages/zarvan_flutter`) lists
   every fragment shader by the transcendental calls and texture reads a pixel pays, weighted by loops. It is a
   static estimate (a GPU cannot be timed from Dart), so use it to pick what to profile on a device, and

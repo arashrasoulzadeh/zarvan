@@ -583,6 +583,7 @@ class _GameRunnerState extends State<GameRunner> with WidgetsBindingObserver {
       world,
       report: (f, label) => progress.report(0.9 + 0.09 * f, label),
       warmBlur: widget.game.usesBackdropBlur,
+      warmPostFx: !widget.game.postFx.value.isIdentity,
       extraEffects: widget.game.laterEffects,
     );
     await scene.warmUp(world);

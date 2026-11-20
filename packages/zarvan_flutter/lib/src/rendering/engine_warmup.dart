@@ -8,6 +8,7 @@ import 'light2d.dart';
 import 'normal_mapping_combined_shader.dart';
 import 'normal_mapping_shader.dart';
 import 'shader_effect.dart';
+import 'shader_post_fx.dart';
 import 'sprite.dart';
 
 /// Warms up the GPU-side systems a [World] will actually use, during loading.
@@ -53,10 +54,15 @@ class EngineWarmup {
   /// With [warmBlur] the blur pipelines a `BackdropBlur` uses are built too:
   /// they are the engine's own, not fragment programs, so [neededShaders]
   /// cannot see them in a world that has not opened its blur yet.
+  ///
+  /// With [warmPostFx] the post-processing shader is loaded too, so turning
+  /// `Game.postFx` on does not stall the frame it first appears on. It is not
+  /// in [neededShaders] because post-processing is a setting, not an entity.
   static Future<void> run(
     World world, {
     void Function(double fraction, String label)? report,
     bool warmBlur = false,
+    bool warmPostFx = false,
     Set<String> extraEffects = const {},
   }) async {
     final needs = {
@@ -103,6 +109,10 @@ class EngineWarmup {
       } on Object {
         // Same fallback as paint time: the feature is skipped, not fatal.
       }
+    }
+    if (warmPostFx) {
+      report?.call(steps.length / (steps.length + 1), 'Warming up effects');
+      await ShaderPostProcessed.warmUp();
     }
     if (warmBlur) {
       report?.call(steps.length / (steps.length + 1), 'Warming up blur');

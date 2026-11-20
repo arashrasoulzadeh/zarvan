@@ -673,13 +673,6 @@ void main() {
       },
     );
 
-    test('only the first and last verse stop short of the corner blossoms', () {
-      expect(QuizGameScreen.lineLimit(0, 4, 300), 270);
-      expect(QuizGameScreen.lineLimit(3, 4, 300), 270);
-      expect(QuizGameScreen.lineLimit(1, 4, 300), 300);
-      expect(QuizGameScreen.lineLimit(0, 1, 300), 270);
-    });
-
     test(
       'a used hint leaves no pale box round the removed options or itself',
       () async {
@@ -777,7 +770,16 @@ void main() {
       r.tap(r.texts.firstWhere((t) => t.contains('Hint')));
       r.run(0.1);
       expect(r.kit.session.progress.coins, 60, reason: 'nothing spent yet');
-      expect(r.hasPart('✓ Hint'), isTrue, reason: 'it shows it is armed');
+      final armed = r.world.componentsOf<eng.Text>();
+      expect(
+        [
+          for (var i = 0; i < armed.length; i++)
+            if (armed.denseAt(i).text.contains('Hint'))
+              armed.denseAt(i).colorArgb,
+        ],
+        contains(QuizGameScreen.hintArmedInk),
+        reason: 'the banner shows it is armed',
+      );
       r.tap(r.texts.firstWhere((t) => t.contains('Hint')));
       expect(r.kit.session.progress.coins, 40);
     });
@@ -786,7 +788,12 @@ void main() {
       final r = await stage();
       r.tap(r.texts.firstWhere((t) => t.contains('Hint')));
       r.run(QuizGameScreen.hintConfirmSeconds + 0.5);
-      expect(r.hasPart('✓ Hint'), isFalse);
+      final after = r.world.componentsOf<eng.Text>();
+      expect([
+        for (var i = 0; i < after.length; i++)
+          if (after.denseAt(i).text.contains('Hint'))
+            after.denseAt(i).colorArgb,
+      ], isNot(contains(QuizGameScreen.hintArmedInk)));
       r.tap(r.texts.firstWhere((t) => t.contains('Hint')));
       expect(r.kit.session.progress.coins, 60, reason: 'first tap again');
     });
@@ -1717,6 +1724,29 @@ void main() {
           if (store.denseAt(i).text == 'https://ganjoor.net') store.denseAt(i),
       ].single;
       expect(link.colorArgb, 0xFF8A3F12);
+    });
+
+    test('tutorial: the options end above the Start banner', () async {
+      final r = await Rig.make(tutorialDone: false);
+      await r.open(QuizTutorialScreen(r.kit));
+      final q = r.kit.factory.create(
+        r.kit.bank.items(tier: QuizTier.easy).first.id,
+        QuizTier.easy,
+        1,
+      )!;
+      final texts = r.world.componentsOf<eng.Text>();
+      final pos = r.world.componentsOf<Position>();
+      double yOf(String t) {
+        for (var i = 0; i < texts.length; i++) {
+          if (texts.denseAt(i).text == t) {
+            return pos.get(texts.entityAt(i))!.y;
+          }
+        }
+        throw StateError(t);
+      }
+
+      final lastOption = q.options.map(yOf).reduce((a, b) => a > b ? a : b);
+      expect(yOf('Start') - lastOption, greaterThan(56));
     });
 
     test(

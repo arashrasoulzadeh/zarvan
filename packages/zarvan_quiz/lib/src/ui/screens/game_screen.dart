@@ -75,11 +75,6 @@ class QuizGameScreen extends QuizScreen {
   static const _parchmentCorrect = 0xFF1F6B3A;
   static const _optionInk = 0xFFF5E9C8;
 
-  /// The first and last verse stop a little short of the card's corners, where
-  /// the sprays of blossom sit, so the flowers do not lie on the lettering.
-  static double lineLimit(int i, int count, double width) =>
-      i == 0 || i == count - 1 ? width - 30 : width;
-
   /// Where the first verse starts below the card's top edge: the sprays of
   /// blossom in the top corners reach down this far.
   static const _cardTopPad = 34.0;
@@ -131,6 +126,10 @@ class QuizGameScreen extends QuizScreen {
   /// sits where Next appears after an answer and costs coins, so a stray or
   /// hurried tap must not spend them: the first tap only arms it.
   static const hintConfirmSeconds = 2.5;
+
+  /// The lettering of an armed hint: bright gold (no glyph is needed, the
+  /// poem fonts carry no tick mark).
+  static const hintArmedInk = 0xFFFFE08A;
   double _hintArmed = 0;
 
   void _pressHint() {
@@ -295,7 +294,7 @@ class QuizGameScreen extends QuizScreen {
             fontSize: poemSize,
             fontFamily: _poemFont,
             rtl: rtl,
-            maxWidth: lineLimit(i, lines.length, textWidth),
+            maxWidth: textWidth,
           ),
       ];
       // Rows are as tall as the face measures them, times the theme's factor
@@ -380,8 +379,7 @@ class QuizGameScreen extends QuizScreen {
       final rows = <List<String>>[[]];
       for (final w in words) {
         final next = [...rows.last, w];
-        if (rows.last.isNotEmpty &&
-            wordsWidth(next) > lineLimit(i, lines.length, textWidth)) {
+        if (rows.last.isNotEmpty && wordsWidth(next) > textWidth) {
           rows.add([w]);
         } else {
           rows.last.add(w);
@@ -514,17 +512,28 @@ class QuizGameScreen extends QuizScreen {
       }
     } else if (session.round?.mode is! RaceMode) {
       final hr = _narrow(row(bottom));
-      _view.addId(cartoucheAt(hr, flowers: 1, window: 0xFF1F4E86, z: 5));
+      _view.addId(
+        cartoucheAt(
+          hr,
+          flowers: 1,
+          window: 0xFF1F4E86,
+          gleam: _hintArmed > 0 ? 1.0 : 0,
+          z: 5,
+        ),
+      );
+      if (_hintArmed > 0) {
+        _view.addId(lightAt(hr, 0xFFFFE08A, intensity: 0.8));
+      }
       final hint = button(
         hr,
-        '${_hintArmed > 0 ? '✓ ' : ''}${s.hint} · ${s.number(QuizProgress.hintCost)}',
+        '${s.hint} · ${s.number(QuizProgress.hintCost)}',
         _pressHint,
         style: QuizButtonStyle.option,
         size: 16,
         group: _view,
       );
       hint.bg.shape!.alpha = 0;
-      hint.label.text!.colorArgb = _optionInk;
+      hint.label.text!.colorArgb = _hintArmed > 0 ? hintArmedInk : _optionInk;
       hint.enabled = session.canHint && !session.offeringContinue;
       if (!hint.enabled) hint.label.text!.alpha = 0.4;
     }

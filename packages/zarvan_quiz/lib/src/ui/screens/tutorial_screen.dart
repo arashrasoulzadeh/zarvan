@@ -59,7 +59,7 @@ class QuizTutorialScreen extends QuizScreen {
     ];
     final inner =
         sizes.fold<double>(0, (a, z) => a + z.height) + 8 * (lines.length - 1);
-    const top = 184.0;
+    const top = 150.0;
     // The couplet on a parchment card, as in the game.
     _view.addId(
       cartoucheAt(
@@ -67,13 +67,13 @@ class QuizTutorialScreen extends QuizScreen {
           QuizScreen.margin,
           top - 14,
           QuizScreen.worldWidth - 2 * QuizScreen.margin,
-          inner + 60,
+          inner + 84 + 28,
         ),
         card: true,
         flowers: 1,
       ),
     );
-    var y = top + 16;
+    var y = top + 34;
     for (var i = 0; i < lines.length; i++) {
       _view.addNode(
         label(
@@ -87,7 +87,7 @@ class QuizTutorialScreen extends QuizScreen {
       );
       y += sizes[i].height + 8;
     }
-    var oy = top + inner + 66;
+    var oy = top + inner + 84 + 14 + 18;
     for (var i = 0; i < q.options.length; i++) {
       final b = bannerButton(
         row(oy),
@@ -100,7 +100,7 @@ class QuizTutorialScreen extends QuizScreen {
         group: _view,
       );
       b.enabled = !answered;
-      oy += 60;
+      oy += 54;
     }
     spread(1);
     final start = bannerButton(

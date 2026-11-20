@@ -75,10 +75,19 @@ class QuizGameScreen extends QuizScreen {
   static const _parchmentCorrect = 0xFF1F6B3A;
   static const _optionInk = 0xFFF5E9C8;
 
-  /// Vertical room the card adds around the poem: the text starts 28 below the
-  /// top and leaves 44 at the bottom, where the corner blossoms reach up and
-  /// would otherwise sit on the last line.
-  static const _cardPad = 72.0;
+  /// The first and last verse stop a little short of the card's corners, where
+  /// the sprays of blossom sit, so the flowers do not lie on the lettering.
+  static double lineLimit(int i, int count, double width) =>
+      i == 0 || i == count - 1 ? width - 30 : width;
+
+  /// Where the first verse starts below the card's top edge: the sprays of
+  /// blossom in the top corners reach down this far.
+  static const _cardTopPad = 34.0;
+
+  /// Vertical room the card adds around the poem: [_cardTopPad] above the
+  /// first verse and the rest below the last, where the corner blossoms reach
+  /// up and would otherwise sit on the lettering.
+  static const _cardPad = 84.0;
 
   @override
   void build() {
@@ -257,13 +266,13 @@ class QuizGameScreen extends QuizScreen {
     late double inner;
     for (var attempt = 0; attempt < 8; attempt++) {
       sizes = [
-        for (final l in lines)
+        for (var i = 0; i < lines.length; i++)
           measureText(
-            l,
+            lines[i],
             fontSize: poemSize,
             fontFamily: _poemFont,
             rtl: rtl,
-            maxWidth: textWidth,
+            maxWidth: lineLimit(i, lines.length, textWidth),
           ),
       ];
       // Rows are as tall as the face measures them, times the theme's factor
@@ -335,7 +344,7 @@ class QuizGameScreen extends QuizScreen {
       rtl: rtl,
     ).width;
     final finalColor = answered ? _parchmentCorrect : _parchmentInk;
-    var y = cardTop + 28;
+    var y = cardTop + _cardTopPad;
     var wordNo = 0;
     for (var i = 0; i < lines.length; i++) {
       final words = lines[i].split(' ').where((w) => w.isNotEmpty).toList();
@@ -348,7 +357,8 @@ class QuizGameScreen extends QuizScreen {
       final rows = <List<String>>[[]];
       for (final w in words) {
         final next = [...rows.last, w];
-        if (rows.last.isNotEmpty && wordsWidth(next) > textWidth) {
+        if (rows.last.isNotEmpty &&
+            wordsWidth(next) > lineLimit(i, lines.length, textWidth)) {
           rows.add([w]);
         } else {
           rows.last.add(w);
@@ -450,7 +460,10 @@ class QuizGameScreen extends QuizScreen {
               for (final a in kit.bank.authors)
                 if (a.id == item!.author) a.name,
             ].firstOrNull;
-      if (author != null) {
+      // Only when it fits above the Next banner: a tall poem leaves no room
+      // and the name would be written across the button.
+      if (author != null &&
+          oy + 12 + 8 <= bottom - QuizScreen.buttonHeight / 2) {
         _view.addNode(
           label(
             author,

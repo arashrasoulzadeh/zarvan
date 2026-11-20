@@ -280,33 +280,36 @@ void main() {
       return r;
     }
 
-    test('an answered option stays cream on its cartouche, with no box over it',
-        () async {
-      final r = await stage();
-      r.tap(r.optionRight);
-      r.run(0.1);
-      final texts = r.world.componentsOf<eng.Text>();
-      final alphaOf = <String, double>{};
-      var cream = false;
-      for (var i = 0; i < texts.length; i++) {
-        final t = texts.denseAt(i);
-        if (t.text == r.optionRight && t.colorArgb == 0xFFF5E9C8) cream = true;
-        if (t.text == r.optionWrong(0) && t.colorArgb == 0xFFF5E9C8) {
-          alphaOf[t.text] = t.alpha;
+    test(
+      'an answered option stays cream on its cartouche, with no box over it',
+      () async {
+        final r = await stage();
+        r.tap(r.optionRight);
+        r.run(0.1);
+        final texts = r.world.componentsOf<eng.Text>();
+        final alphaOf = <String, double>{};
+        var cream = false;
+        for (var i = 0; i < texts.length; i++) {
+          final t = texts.denseAt(i);
+          if (t.text == r.optionRight && t.colorArgb == 0xFFF5E9C8)
+            cream = true;
+          if (t.text == r.optionWrong(0) && t.colorArgb == 0xFFF5E9C8) {
+            alphaOf[t.text] = t.alpha;
+          }
         }
-      }
-      expect(cream, isTrue, reason: 'readable on green velvet');
-      expect(alphaOf[r.optionWrong(0)], 0.45, reason: 'others only dim');
-      final shapes = r.world.componentsOf<Shape>();
-      for (var i = 0; i < shapes.length; i++) {
-        final sh = shapes.denseAt(i);
-        expect(
-          sh.kind == ShapeKind.roundedRect && sh.alpha > 0 && sh.zIndex == 7,
-          isFalse,
-          reason: 'the old rounded verdict frame is gone',
-        );
-      }
-    });
+        expect(cream, isTrue, reason: 'readable on green velvet');
+        expect(alphaOf[r.optionWrong(0)], 0.45, reason: 'others only dim');
+        final shapes = r.world.componentsOf<Shape>();
+        for (var i = 0; i < shapes.length; i++) {
+          final sh = shapes.denseAt(i);
+          expect(
+            sh.kind == ShapeKind.roundedRect && sh.alpha > 0 && sh.zIndex == 7,
+            isFalse,
+            reason: 'the old rounded verdict frame is gone',
+          );
+        }
+      },
+    );
 
     test(
       'the answer mark is a shader tick or cross that is drawn in by a pen',
@@ -638,45 +641,56 @@ void main() {
       expect(poem().every((a) => a == 1), isTrue);
     });
 
-    test('the card leaves room under the last line for the corner blossoms',
-        () async {
-      final r = await stage();
-      r.run(4);
-      final fx = r.world.componentsOf<ShaderEffect>();
-      final pos = r.world.componentsOf<Position>();
-      late double bottom;
-      for (var i = 0; i < fx.length; i++) {
-        final e = fx.denseAt(i);
-        if (e.kind == ShaderEffect.cartouche && e.params[0] == 2) {
-          bottom = pos.get(fx.entityAt(i))!.y + e.height / 2 - 14;
+    test(
+      'the card leaves room under the last line for the corner blossoms',
+      () async {
+        final r = await stage();
+        r.run(4);
+        final fx = r.world.componentsOf<ShaderEffect>();
+        final pos = r.world.componentsOf<Position>();
+        late double bottom;
+        for (var i = 0; i < fx.length; i++) {
+          final e = fx.denseAt(i);
+          if (e.kind == ShaderEffect.cartouche && e.params[0] == 2) {
+            bottom = pos.get(fx.entityAt(i))!.y + e.height / 2 - 14;
+          }
         }
-      }
-      final texts = r.world.componentsOf<eng.Text>();
-      var lowest = -1e9;
-      for (var i = 0; i < texts.length; i++) {
-        final t = texts.denseAt(i);
-        final y = pos.get(texts.entityAt(i))!.y;
-        if (t.fontSize >= 18 && y < bottom && y > lowest) lowest = y;
-      }
-      expect(bottom - lowest, greaterThanOrEqualTo(50));
+        final texts = r.world.componentsOf<eng.Text>();
+        var lowest = -1e9;
+        for (var i = 0; i < texts.length; i++) {
+          final t = texts.denseAt(i);
+          final y = pos.get(texts.entityAt(i))!.y;
+          if (t.fontSize >= 18 && y < bottom && y > lowest) lowest = y;
+        }
+        expect(bottom - lowest, greaterThanOrEqualTo(60));
+      },
+    );
+
+    test('only the first and last verse stop short of the corner blossoms', () {
+      expect(QuizGameScreen.lineLimit(0, 4, 300), 270);
+      expect(QuizGameScreen.lineLimit(3, 4, 300), 270);
+      expect(QuizGameScreen.lineLimit(1, 4, 300), 300);
+      expect(QuizGameScreen.lineLimit(0, 1, 300), 270);
     });
 
-    test('a used hint leaves no pale box round the removed options or itself',
-        () async {
-      final r = await stage();
-      r.run(4);
-      r.tap(r.texts.firstWhere((t) => t.contains('Hint')));
-      r.run(0.1);
-      final shapes = r.world.componentsOf<Shape>();
-      for (var i = 0; i < shapes.length; i++) {
-        final sh = shapes.denseAt(i);
-        if (sh.kind == ShapeKind.roundedRect &&
-            sh.width > 150 &&
-            sh.height < 80) {
-          expect(sh.alpha, 0, reason: 'button plates stay invisible');
+    test(
+      'a used hint leaves no pale box round the removed options or itself',
+      () async {
+        final r = await stage();
+        r.run(4);
+        r.tap(r.texts.firstWhere((t) => t.contains('Hint')));
+        r.run(0.1);
+        final shapes = r.world.componentsOf<Shape>();
+        for (var i = 0; i < shapes.length; i++) {
+          final sh = shapes.denseAt(i);
+          if (sh.kind == ShapeKind.roundedRect &&
+              sh.width > 150 &&
+              sh.height < 80) {
+            expect(sh.alpha, 0, reason: 'button plates stay invisible');
+          }
         }
-      }
-    });
+      },
+    );
 
     test('a hint redraw does not restart the writing', () async {
       final r = await stage();
@@ -1576,28 +1590,31 @@ void main() {
       },
     );
 
-    test('clouds differ in depth and fade in and out at the page edge', () async {
-      final r = await Rig.make(bank: makeMultiBank());
-      await r.open(QuizHomeScreen(r.kit));
-      final sizes = <double>{};
-      final opacities = <double>{};
-      for (var i = 0; i < 60; i++) {
-        r.run(10);
-        final fx = r.world.componentsOf<ShaderEffect>();
-        for (var k = 0; k < fx.length; k++) {
-          final e = fx.denseAt(k);
-          if (e.kind != ShaderEffect.cloud) continue;
-          sizes.add(e.width);
-          opacities.add(e.params[2]);
+    test(
+      'clouds differ in depth and fade in and out at the page edge',
+      () async {
+        final r = await Rig.make(bank: makeMultiBank());
+        await r.open(QuizHomeScreen(r.kit));
+        final sizes = <double>{};
+        final opacities = <double>{};
+        for (var i = 0; i < 60; i++) {
+          r.run(10);
+          final fx = r.world.componentsOf<ShaderEffect>();
+          for (var k = 0; k < fx.length; k++) {
+            final e = fx.denseAt(k);
+            if (e.kind != ShaderEffect.cloud) continue;
+            sizes.add(e.width);
+            opacities.add(e.params[2]);
+          }
         }
-      }
-      expect(sizes.length, greaterThan(3), reason: 'depths differ');
-      for (final o in opacities) {
-        expect(o, inInclusiveRange(0.0, 0.95));
-      }
-      expect(opacities.reduce((a, b) => a < b ? a : b), lessThan(0.5));
-      expect(opacities.reduce((a, b) => a > b ? a : b), greaterThan(0.7));
-    });
+        expect(sizes.length, greaterThan(3), reason: 'depths differ');
+        for (final o in opacities) {
+          expect(o, inInclusiveRange(0.0, 0.95));
+        }
+        expect(opacities.reduce((a, b) => a < b ? a : b), lessThan(0.5));
+        expect(opacities.reduce((a, b) => a > b ? a : b), greaterThan(0.7));
+      },
+    );
 
     test('the home has no ad button and no title on top', () async {
       final r = await Rig.make(ads: true);

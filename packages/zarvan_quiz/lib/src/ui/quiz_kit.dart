@@ -227,6 +227,18 @@ class QuizAbout {
 /// Everything a quiz screen needs, gathered once by the game and passed to
 /// every screen: the session and content, the language, the look, the
 /// settings and the app's own hooks (ads, share, the clock).
+/// A touch of feedback the game asks the device for through [QuizKit.haptic].
+enum QuizHaptic {
+  /// A choice was made that can still be undone (the hint is armed).
+  tap,
+
+  /// The answer was right.
+  correct,
+
+  /// The answer was wrong.
+  wrong,
+}
+
 class QuizKit {
   QuizKit({
     required this.session,
@@ -238,6 +250,7 @@ class QuizKit {
     this.ads,
     this.share,
     this.shareText,
+    this.haptic,
     this.stageMode = const StageMode(),
     this.portraits,
     this.cardArt,
@@ -263,6 +276,16 @@ class QuizKit {
   /// shares a plain default.
   final String Function(String date, List<bool> results)? shareText;
   final StageMode stageMode;
+
+  /// Gives the device's haptic feedback of that kind; the game (Flutter) wires
+  /// it. Null means none. Whether to buzz at all is the player's setting, kept
+  /// by [buzz], so a hook never has to check it.
+  final void Function(QuizHaptic kind)? haptic;
+
+  /// Asks for [kind] unless the player turned haptics off.
+  void buzz(QuizHaptic kind) {
+    if (settings.haptics) haptic?.call(kind);
+  }
 
   /// The authors' portraits, or null for none.
   final QuizPortraits? portraits;

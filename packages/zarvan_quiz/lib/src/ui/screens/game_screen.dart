@@ -7,6 +7,7 @@ import 'package:zarvan_flutter/zarvan_flutter.dart'
 
 import '../../quiz_session.dart';
 import '../ornaments.dart';
+import '../quiz_kit.dart' show QuizHaptic;
 import '../quiz_screen.dart';
 import 'home_screen.dart';
 import 'result_screen.dart';
@@ -139,6 +140,7 @@ class QuizGameScreen extends QuizScreen {
       return;
     }
     _hintArmed = hintConfirmSeconds;
+    kit.buzz(QuizHaptic.tap);
     _redraw();
   }
 
@@ -545,6 +547,7 @@ class QuizGameScreen extends QuizScreen {
       _burst(right.centerX, right.centerY, theme.accent, 10);
       _ring(right.centerX, right.centerY, theme.correct);
       final picked = session.picked;
+      kit.buzz(picked == q.answerIndex ? QuizHaptic.correct : QuizHaptic.wrong);
       if (picked != null && picked != q.answerIndex) {
         final r = _optionRects[picked];
         _burst(r.centerX, r.centerY, theme.wrong, 8);

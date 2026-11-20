@@ -164,6 +164,7 @@ class Rig {
         version: '1.0',
       ),
       ads: ads ? gate : null,
+      haptic: buzzes.add,
       share: (t) async {
         sharedTexts.add(t);
         return outcome;
@@ -179,6 +180,7 @@ class Rig {
     return Rig(kit);
   }
 
+  static final buzzes = <QuizHaptic>[];
   static final sharedTexts = <String>[];
   static ShareOutcome outcome = ShareOutcome.shared;
   static final gates = <QuizKit, FakeAds>{};
@@ -706,6 +708,40 @@ void main() {
         }
       }
     });
+
+    test(
+      'answers and the armed hint give haptic feedback, unless turned off',
+      () async {
+        Rig.buzzes.clear();
+        final r = await stage();
+        r.run(4);
+        r.tap(r.optionRight);
+        r.run(0.2);
+        expect(Rig.buzzes, [QuizHaptic.correct]);
+        r.run(0.2);
+
+        Rig.buzzes.clear();
+        final w = await stage();
+        w.run(4);
+        w.tap(w.optionWrong(0));
+        w.run(0.2);
+        expect(Rig.buzzes, [QuizHaptic.wrong]);
+
+        Rig.buzzes.clear();
+        final h = await stage();
+        h.run(4);
+        h.tap(h.texts.firstWhere((t) => t.contains('Hint')));
+        expect(Rig.buzzes, [QuizHaptic.tap]);
+
+        Rig.buzzes.clear();
+        final off = await stage();
+        off.kit.settings.setHaptics(false);
+        off.run(4);
+        off.tap(off.optionRight);
+        off.run(0.2);
+        expect(Rig.buzzes, isEmpty);
+      },
+    );
 
     test('the right option is lit up, not just filled', () async {
       final r = await stage();

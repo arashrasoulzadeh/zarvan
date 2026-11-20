@@ -8,7 +8,8 @@
 - [x] Result screen: the card ends under its last line and the buttons follow it (no empty band).
 
 ## 3. Feel and feedback
-- [ ] Haptics on correct/wrong answers; a soft sound cue if audio is wired.
+- [x] Haptics on correct/wrong answers and the armed hint (`QuizKit.haptic`, honours the Settings toggle; the game wires it to the device).
+- [ ] A soft sound cue if audio is wired.
 - [ ] Coin-count animation when coins are earned or spent (hint cost ticks down).
 - [ ] Hold 60 fps: the 120 Hz phone ignores `maxFps: 60` and runs 115-120 fps (battery).
 

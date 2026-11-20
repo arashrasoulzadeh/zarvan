@@ -424,7 +424,12 @@ class QuizGameScreen extends QuizScreen {
         b.label.text!.colorArgb = _optionInk;
       }
       b.enabled = !answered && !removed && !session.offeringContinue;
-      if (removed) _fade(b, 0.3);
+      if (removed) {
+        // No cartouche is drawn for it, and the button's own plate would show
+        // as a pale rounded box, so only the lettering is left, faint.
+        b.bg.shape!.alpha = 0;
+        b.label.text!.alpha = 0.3;
+      }
       if (answered) _color(b, i, q, theme, optRect);
       oy += optH + optGap;
     }
@@ -480,7 +485,7 @@ class QuizGameScreen extends QuizScreen {
       hint.bg.shape!.alpha = 0;
       hint.label.text!.colorArgb = _optionInk;
       hint.enabled = session.canHint && !session.offeringContinue;
-      if (!hint.enabled) _fade(hint, 0.4);
+      if (!hint.enabled) hint.label.text!.alpha = 0.4;
     }
 
     yShift = optionShift;
@@ -541,11 +546,6 @@ class QuizGameScreen extends QuizScreen {
       p.vx *= 0.985;
       p.node.shape!.alpha = 1 - p.age / p.life;
     }
-  }
-
-  void _fade(UiButton b, double alpha) {
-    b.bg.shape!.alpha = alpha;
-    b.label.text!.alpha = alpha;
   }
 
   void _color(UiButton b, int i, Question q, theme, UiRect rect) {

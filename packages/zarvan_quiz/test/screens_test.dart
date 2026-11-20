@@ -638,6 +638,23 @@ void main() {
       expect(poem().every((a) => a == 1), isTrue);
     });
 
+    test('a used hint leaves no pale box round the removed options or itself',
+        () async {
+      final r = await stage();
+      r.run(4);
+      r.tap(r.texts.firstWhere((t) => t.contains('Hint')));
+      r.run(0.1);
+      final shapes = r.world.componentsOf<Shape>();
+      for (var i = 0; i < shapes.length; i++) {
+        final sh = shapes.denseAt(i);
+        if (sh.kind == ShapeKind.roundedRect &&
+            sh.width > 150 &&
+            sh.height < 80) {
+          expect(sh.alpha, 0, reason: 'button plates stay invisible');
+        }
+      }
+    });
+
     test('a hint redraw does not restart the writing', () async {
       final r = await stage();
       r.run(4);

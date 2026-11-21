@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:zarvan_core/zarvan_core.dart' show Position;
 import 'package:zarvan_flutter/zarvan_flutter.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -101,6 +102,77 @@ void main() {
       expect(calls.where((c) => c.method == 'dispose'), hasLength(1));
     },
   );
+
+  test('crossfades music on a second player and can fade it out', () async {
+    final audio = AudioManager();
+    await audio.crossfadeMusic(
+      'tone.wav',
+      duration: Duration.zero,
+      volume: 0.6,
+    );
+    expect(players, hasLength(2));
+    expect(
+      calls
+          .where((c) => c.method == 'setVolume')
+          .map((c) => (c.arguments as Map)['volume']),
+      contains(0.6),
+    );
+    await audio.fadeMusicOut(duration: Duration.zero);
+    expect(calls.where((c) => c.method == 'stop'), hasLength(4));
+    audio.dispose();
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+  });
+
+  test(
+    'sound buses set mix volume and higher priority replaces a sound',
+    () async {
+      final audio = AudioManager();
+      await audio.setBusVolume(AudioBus.ui, 0.25);
+      await audio.playSound('tone.wav', volume: 0.8, bus: AudioBus.ui);
+      expect(
+        (calls.lastWhere((c) => c.method == 'setVolume').arguments
+            as Map)['volume'],
+        0.2,
+      );
+
+      for (var i = 1; i < 32; i++) {
+        await audio.playSound('tone.wav', priority: 0);
+      }
+      final countAtLimit = players.length;
+      await audio.playSound('tone.wav', priority: -1);
+      expect(
+        players,
+        hasLength(countAtLimit),
+        reason: 'lower priority is dropped',
+      );
+      await audio.playSound('tone.wav', priority: 1);
+      expect(players, hasLength(countAtLimit + 1));
+      audio.dispose();
+    },
+  );
+
+  test('following positional sound updates pan as source moves', () async {
+    final audio = AudioManager();
+    final source = Position(50, 0);
+    final listener = Position(0, 0);
+    await audio.playFollowingSound(
+      'tone.wav',
+      sourceAt: () => source,
+      listenerAt: () => listener,
+      maxDistance: 100,
+      updateInterval: const Duration(milliseconds: 10),
+    );
+    final id = players.last;
+    source.x = -50;
+    await Future<void>.delayed(const Duration(milliseconds: 25));
+    expect(
+      (calls.lastWhere((c) => c.method == 'setBalance').arguments
+          as Map)['balance'],
+      -0.5,
+    );
+    await event(id, 'audio.onComplete');
+    audio.dispose();
+  });
 
   test('the idle pool size is configurable and warm-up fills it', () async {
     final audio = AudioManager(maxPoolSize: 12);

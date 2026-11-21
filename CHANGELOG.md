@@ -11,6 +11,10 @@ pubspec.yaml.
 ### Added (zarvan_quiz)
 - `QuizAnalyticsObserver` maps quiz session events to provider-neutral analytics callbacks. `QuizContentRepository` loads a quiz bank and game-supplied stop words from assets.
 
+### Changed (audio)
+- `AudioManager` pauses music and active effects while the app is unfocused, resumes them on focus, and defers new music requests until then.
+- Added music fade/crossfade helpers, separate UI/effects/voice buses, priority-based sound replacement at the concurrency limit, and position-following one-shot audio.
+
 ### Changed (engine)
 - Audio players no longer run `audioplayers`' per-frame position updater (`createEnginePlayer`). It woke the app on every display frame while music played, so on a 120 Hz phone Shaer rendered ~120 frames/s under a 30 fps cap. `ShaderPostProcessed` likewise stops its ticker while post-processing is off.
 - `maxFps` now lets the ticker sleep between frames when the cap leaves room (30 fps on a 60/120 Hz display) instead of waking at the display rate to skip them; measured on a 120 Hz phone, a 30 fps game was still rendering ~120 frames/s. The frame-spike threshold also scales with the cap.

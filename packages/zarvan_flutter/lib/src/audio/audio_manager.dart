@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/widgets.dart'
+    show AppLifecycleState, WidgetsBinding, WidgetsBindingObserver;
 
 import 'package:zarvan_core/zarvan_core.dart';
 
@@ -11,6 +13,27 @@ import 'game_audio.dart'
         AudioOutput,
         AudioPreloadOutput,
         AudioStateOutput;
+
+/// Independent sound-effect groups with their own mix level.
+enum AudioBus {
+  /// General gameplay effects.
+  effects,
+
+  /// Interface feedback such as button and menu sounds.
+  ui,
+
+  /// Spoken dialogue and voice-over.
+  voice,
+}
+
+class _ActiveSound {
+  const _ActiveSound(this.priority, this.bus, this.volume, this.onFinished);
+
+  final int priority;
+  final AudioBus bus;
+  final double volume;
+  final void Function()? onFinished;
+}
 
 /// Volume/stereo-balance for a sound at [sourceX]/[sourceY] as heard from
 /// [listenerX]/[listenerY] (typically the camera's world position) —
@@ -303,17 +326,27 @@ AudioPlayer createEnginePlayer() => AudioPlayer()..positionUpdater = null;
 /// simultaneous overlapping SFX still all play correctly, just without
 /// the pooling benefit past [maxPoolSize] of them at once. Music
 /// still uses a single persistent player since a game typically has
-/// one music track playing at a time.
+/// one music track playing at a time. Playback pauses while the app is
+/// unfocused and resumes when it returns.
 class AudioManager
+    with WidgetsBindingObserver
     implements
         AudioOutput,
         AudioLifecycleOutput,
         AudioPreloadOutput,
         AudioStateOutput {
   /// [maxPoolSize] is how many idle one-shot players are kept ready.
-  AudioManager({this.maxPoolSize = 8}) : assert(maxPoolSize > 0);
+  AudioManager({this.maxPoolSize = 8}) : assert(maxPoolSize > 0) {
+    _attachMusicStateListener();
+    final binding = WidgetsBinding.instance;
+    _appFocused =
+        binding.lifecycleState == null ||
+        binding.lifecycleState == AppLifecycleState.resumed;
+    binding.addObserver(this);
+  }
 
-  final AudioPlayer _music = createEnginePlayer();
+  AudioPlayer _music = createEnginePlayer();
+  AudioPlayer? _musicNext;
   static final _musicContext = AudioContextConfig(
     focus: AudioContextConfigFocus.gain,
   ).build();
@@ -323,12 +356,22 @@ class AudioManager
   late final StreamSubscription<PlayerState> _musicStateSubscription = _music
       .onPlayerStateChanged
       .listen((state) {
-        _musicPlaying = state == PlayerState.playing;
+        _primaryMusicPlaying = state == PlayerState.playing;
       });
-  bool _musicPlaying = false;
+  StreamSubscription<PlayerState>? _musicNextStateSubscription;
+  bool _primaryMusicPlaying = false;
+  bool _nextMusicPlaying = false;
+  Timer? _musicTransitionTimer;
+  Completer<void>? _musicTransitionCompleter;
+  int _musicRequest = 0;
+  double _currentMusicVolume = 1.0;
 
   @override
-  bool get musicPlaying => _musicPlaying;
+  bool get musicPlaying => _primaryMusicPlaying || _nextMusicPlaying;
+
+  void _attachMusicStateListener() {
+    _musicStateSubscription;
+  }
 
   /// Idle, ready-to-reuse `AudioPlayer`s — populated as sounds finish
   /// playing (see [playSound]), drained (LIFO, so the most recently
@@ -355,11 +398,85 @@ class AudioManager
   int _activeSounds = 0;
   bool _disposed = false;
   bool _soundsPaused = false;
+  bool _appFocused = true;
+  Future<void> _lifecycleQueue = Future<void>.value();
+  ({String path, double volume, bool loop})? _deferredMusic;
   final Set<AudioPlayer> _activePlayers = <AudioPlayer>{};
+  final Map<AudioPlayer, _ActiveSound> _activeSoundsByPlayer = {};
+
+  /// Volume multipliers for sound-effect buses. Set them with
+  /// [setBusVolume] to update sounds that are already playing.
+  final Map<AudioBus, double> busVolumes = {
+    AudioBus.effects: 1,
+    AudioBus.ui: 1,
+    AudioBus.voice: 1,
+  };
 
   @override
-  Future<void> playSound(String assetPath, {double volume = 1.0}) =>
-      _play(assetPath, volume: volume);
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final focused = state == AppLifecycleState.resumed;
+    if (_disposed || focused == _appFocused) return;
+    _appFocused = focused;
+    _lifecycleQueue = _lifecycleQueue.catchError((Object _) {}).then((_) async {
+      if (_disposed) return;
+      if (_appFocused) {
+        await _resumeAfterFocus();
+      } else {
+        await _pauseForFocus();
+      }
+    });
+    unawaited(_lifecycleQueue);
+  }
+
+  Future<void> _pauseForFocus() async {
+    final next = _musicNext;
+    await Future.wait([
+      _music.pause(),
+      if (next != null) next.pause(),
+      pauseSounds(),
+    ]);
+  }
+
+  Future<void> _resumeAfterFocus() async {
+    final next = _musicNext;
+    await Future.wait([
+      _music.resume(),
+      if (next != null) next.resume(),
+      resumeSounds(),
+    ]);
+    final deferred = _deferredMusic;
+    _deferredMusic = null;
+    if (deferred != null && _appFocused) {
+      await playMusic(
+        deferred.path,
+        volume: deferred.volume,
+        loop: deferred.loop,
+      );
+    }
+  }
+
+  /// Plays a one-shot effect. Higher [priority] cues can replace lower
+  /// priority active sounds when the concurrency limit is reached.
+  @override
+  Future<void> playSound(
+    String assetPath, {
+    double volume = 1.0,
+    AudioBus bus = AudioBus.effects,
+    int priority = 0,
+  }) async {
+    await _play(assetPath, volume: volume, bus: bus, priority: priority);
+  }
+
+  /// Changes one effects bus and applies the new level to active sounds.
+  Future<void> setBusVolume(AudioBus bus, double volume) async {
+    final level = volume.clamp(0.0, 1.0);
+    busVolumes[bus] = level;
+    await Future.wait([
+      for (final entry in _activeSoundsByPlayer.entries)
+        if (entry.value.bus == bus)
+          entry.key.setVolume((entry.value.volume * level).clamp(0.0, 1.0)),
+    ]);
+  }
 
   @override
   Future<void> preloadSounds(Iterable<String> assetPaths) async {
@@ -412,7 +529,9 @@ class AudioManager
     required double listenerY,
     double maxDistance = 800,
     double volume = 1.0,
-  }) {
+    AudioBus bus = AudioBus.effects,
+    int priority = 0,
+  }) async {
     final params = positionalAudioParams(
       sourceX: sourceX,
       sourceY: sourceY,
@@ -421,7 +540,72 @@ class AudioManager
       maxDistance: maxDistance,
       baseVolume: volume,
     );
-    return _play(assetPath, volume: params.volume, balance: params.balance);
+    await _play(
+      assetPath,
+      volume: params.volume,
+      balance: params.balance,
+      bus: bus,
+      priority: priority,
+    );
+  }
+
+  /// Plays an effect while recalculating its distance and pan as its source
+  /// or listener moves. The tracking timer ends when the effect completes.
+  Future<void> playFollowingSound(
+    String assetPath, {
+    required Position Function() sourceAt,
+    required Position Function() listenerAt,
+    double maxDistance = 800,
+    double volume = 1.0,
+    AudioBus bus = AudioBus.effects,
+    int priority = 0,
+    Duration updateInterval = const Duration(milliseconds: 50),
+  }) async {
+    Timer? tracking;
+    final source = sourceAt();
+    final listener = listenerAt();
+    final initial = positionalAudioParams(
+      sourceX: source.x,
+      sourceY: source.y,
+      listenerX: listener.x,
+      listenerY: listener.y,
+      maxDistance: maxDistance,
+      baseVolume: volume,
+    );
+    final player = await _play(
+      assetPath,
+      volume: initial.volume,
+      balance: initial.balance,
+      bus: bus,
+      priority: priority,
+      onFinished: () => tracking?.cancel(),
+    );
+    if (player == null) return;
+    tracking = Timer.periodic(updateInterval, (_) {
+      final nextSource = sourceAt();
+      final nextListener = listenerAt();
+      final params = positionalAudioParams(
+        sourceX: nextSource.x,
+        sourceY: nextSource.y,
+        listenerX: nextListener.x,
+        listenerY: nextListener.y,
+        maxDistance: maxDistance,
+        baseVolume: volume,
+      );
+      final effectVolume = params.volume;
+      _activeSoundsByPlayer[player] = _ActiveSound(
+        priority,
+        bus,
+        effectVolume,
+        () => tracking?.cancel(),
+      );
+      unawaited(
+        player.setVolume(
+          (effectVolume * (busVolumes[bus] ?? 1.0)).clamp(0.0, 1.0),
+        ),
+      );
+      unawaited(player.setBalance(params.balance));
+    });
   }
 
   /// Plays a sound with advanced spatial audio features including occlusion,
@@ -439,7 +623,9 @@ class AudioManager
     SpatialAudioConfig config = const SpatialAudioConfig(),
     TileMap? tileMap,
     Position? tileMapOrigin,
-  }) {
+    AudioBus bus = AudioBus.effects,
+    int priority = 0,
+  }) async {
     final params = calculateSpatialAudioParams(
       sourceX: sourceX,
       sourceY: sourceY,
@@ -453,30 +639,56 @@ class AudioManager
       tileMap: tileMap,
       tileMapOrigin: tileMapOrigin,
     );
-    return _play(
+    await _play(
       assetPath,
       volume: params.volume,
       balance: params.balance,
       pitch: params.dopplerShift,
       lowPassFrequency: params.lowPassFrequency,
       reverbSend: params.reverbSend,
+      bus: bus,
+      priority: priority,
     );
   }
 
-  Future<void> _play(
+  Future<AudioPlayer?> _play(
     String assetPath, {
     double volume = 1.0,
     double balance = 0.0,
     double pitch = 1.0,
     double lowPassFrequency = 0.0,
     double reverbSend = 0.0,
+    AudioBus bus = AudioBus.effects,
+    int priority = 0,
+    void Function()? onFinished,
   }) async {
-    if (_disposed || _soundsPaused || _activeSounds >= _maxConcurrentSounds) {
-      return;
+    if (_disposed || !_appFocused || _soundsPaused) return null;
+    if (_activeSounds >= _maxConcurrentSounds) {
+      final weakest = _activeSoundsByPlayer.entries
+          .fold<MapEntry<AudioPlayer, _ActiveSound>?>(
+            null,
+            (current, entry) =>
+                current == null || entry.value.priority < current.value.priority
+                ? entry
+                : current,
+          );
+      if (weakest == null || priority <= weakest.value.priority) return null;
+      _activeSoundsByPlayer.remove(weakest.key);
+      _activePlayers.remove(weakest.key);
+      _activeSounds = math.max(0, _activeSounds - 1);
+      weakest.value.onFinished?.call();
+      unawaited(weakest.key.stop().whenComplete(weakest.key.dispose));
     }
     final player = _pool.isNotEmpty ? _pool.removeLast() : createEnginePlayer();
     _activeSounds++;
     _activePlayers.add(player);
+    final requestedVolume = volume;
+    _activeSoundsByPlayer[player] = _ActiveSound(
+      priority,
+      bus,
+      requestedVolume,
+      onFinished,
+    );
     var returned = false;
     late final StreamSubscription<void> subscription;
     subscription = player.onPlayerComplete.listen((_) {
@@ -484,6 +696,8 @@ class AudioManager
       returned = true;
       _activeSounds = math.max(0, _activeSounds - 1);
       _activePlayers.remove(player);
+      _activeSoundsByPlayer.remove(player);
+      onFinished?.call();
       subscription.cancel();
       if (!_disposed && _pool.length < maxPoolSize) {
         _pool.add(player);
@@ -495,17 +709,23 @@ class AudioManager
       await player.stop();
       await player.setReleaseMode(ReleaseMode.release);
       await player.setAudioContext(_sfxContext);
-      await player.setVolume(volume.clamp(0.0, 1.0));
+      await player.setVolume(
+        (requestedVolume * (busVolumes[bus] ?? 1.0)).clamp(0.0, 1.0),
+      );
       await player.setBalance(balance.clamp(-1.0, 1.0));
       await player.play(AssetSource(assetPath));
+      return player;
     } catch (_) {
       if (!returned) {
         returned = true;
         _activeSounds = math.max(0, _activeSounds - 1);
         _activePlayers.remove(player);
+        _activeSoundsByPlayer.remove(player);
+        onFinished?.call();
         await subscription.cancel();
         await player.dispose();
       }
+      return null;
     }
   }
 
@@ -515,21 +735,144 @@ class AudioManager
     double volume = 1.0,
     bool loop = true,
   }) async {
+    if (!_appFocused) {
+      _deferredMusic = (path: assetPath, volume: volume, loop: loop);
+      return;
+    }
+    final request = ++_musicRequest;
+    _cancelMusicTransition();
+    await _musicNext?.stop();
     await _music.stop();
+    if (request != _musicRequest) return;
     await _music.setReleaseMode(loop ? ReleaseMode.loop : ReleaseMode.release);
     await _music.setAudioContext(_musicContext);
     await _music.setVolume(volume.clamp(0.0, 1.0));
     await _music.play(AssetSource(assetPath));
+    _currentMusicVolume = volume.clamp(0.0, 1.0);
+  }
+
+  /// Crossfades from the current track to [assetPath] over [duration].
+  /// With no current track, this fades the new track in from silence.
+  Future<void> crossfadeMusic(
+    String assetPath, {
+    Duration duration = const Duration(milliseconds: 700),
+    double volume = 1.0,
+    bool loop = true,
+  }) async {
+    if (!_appFocused) {
+      _deferredMusic = (path: assetPath, volume: volume, loop: loop);
+      return;
+    }
+    final request = ++_musicRequest;
+    _cancelMusicTransition();
+    final oldPlayer = _music;
+    final nextPlayer = _musicNext ??= createEnginePlayer();
+    _musicNextStateSubscription ??= nextPlayer.onPlayerStateChanged.listen((
+      state,
+    ) {
+      _nextMusicPlaying = state == PlayerState.playing;
+    });
+    final oldVolume = musicPlaying ? _currentMusicVolume : 0.0;
+    await nextPlayer.stop();
+    await nextPlayer.setReleaseMode(
+      loop ? ReleaseMode.loop : ReleaseMode.release,
+    );
+    await nextPlayer.setAudioContext(_musicContext);
+    await nextPlayer.setVolume(0);
+    await nextPlayer.play(AssetSource(assetPath));
+    if (request != _musicRequest) return;
+
+    if (duration <= Duration.zero) {
+      await nextPlayer.setVolume(volume.clamp(0.0, 1.0));
+      await oldPlayer.stop();
+    } else {
+      await _rampMusic(oldPlayer, nextPlayer, oldVolume, volume, duration);
+      if (request != _musicRequest) return;
+      await oldPlayer.stop();
+    }
+    _music = nextPlayer;
+    _musicNext = oldPlayer;
+    _currentMusicVolume = volume.clamp(0.0, 1.0);
+  }
+
+  /// Fades the current music to silence, then stops it.
+  Future<void> fadeMusicOut({
+    Duration duration = const Duration(milliseconds: 500),
+  }) async {
+    final request = ++_musicRequest;
+    _deferredMusic = null;
+    _cancelMusicTransition();
+    if (duration <= Duration.zero) {
+      await stopMusic();
+      return;
+    }
+    final player = _music;
+    final startVolume = _currentMusicVolume;
+    await _rampMusic(player, null, startVolume, 0, duration);
+    if (request != _musicRequest) return;
+    await player.stop();
+    _currentMusicVolume = 0;
+  }
+
+  Future<void> _rampMusic(
+    AudioPlayer fromPlayer,
+    AudioPlayer? toPlayer,
+    double fromVolume,
+    double toVolume,
+    Duration duration,
+  ) async {
+    final done = Completer<void>();
+    _musicTransitionCompleter = done;
+    final watch = Stopwatch()..start();
+    _musicTransitionTimer = Timer.periodic(const Duration(milliseconds: 20), (
+      timer,
+    ) {
+      final t = (watch.elapsedMicroseconds / duration.inMicroseconds).clamp(
+        0.0,
+        1.0,
+      );
+      unawaited(fromPlayer.setVolume((fromVolume * (1 - t)).clamp(0.0, 1.0)));
+      if (toPlayer != null) {
+        unawaited(toPlayer.setVolume((toVolume * t).clamp(0.0, 1.0)));
+      }
+      if (t >= 1) {
+        timer.cancel();
+        _musicTransitionTimer = null;
+        _musicTransitionCompleter = null;
+        done.complete();
+      }
+    });
+    await done.future;
+  }
+
+  void _cancelMusicTransition() {
+    _musicTransitionTimer?.cancel();
+    _musicTransitionTimer = null;
+    final done = _musicTransitionCompleter;
+    _musicTransitionCompleter = null;
+    if (done != null && !done.isCompleted) done.complete();
   }
 
   @override
-  Future<void> stopMusic() => _music.stop();
+  Future<void> stopMusic() {
+    _musicRequest++;
+    _deferredMusic = null;
+    _cancelMusicTransition();
+    final next = _musicNext;
+    return Future.wait<void>([_music.stop(), if (next != null) next.stop()]);
+  }
 
   @override
-  Future<void> pauseMusic() => _music.pause();
+  Future<void> pauseMusic() => Future.wait<void>([
+    _music.pause(),
+    if (_musicNext != null) _musicNext!.pause(),
+  ]);
 
   @override
-  Future<void> resumeMusic() => _music.resume();
+  Future<void> resumeMusic() => Future.wait<void>([
+    _music.resume(),
+    if (_musicNext != null) _musicNext!.resume(),
+  ]);
 
   @override
   Future<void> pauseSounds() async {
@@ -543,12 +886,29 @@ class AudioManager
     await Future.wait([for (final player in _activePlayers) player.resume()]);
   }
 
-  Future<void> setMusicVolume(double volume) => _music.setVolume(volume);
+  Future<void> setMusicVolume(double volume) {
+    _currentMusicVolume = volume.clamp(0.0, 1.0);
+    return Future.wait<void>([
+      _music.setVolume(_currentMusicVolume),
+      if (_musicNext != null) _musicNext!.setVolume(_currentMusicVolume),
+    ]);
+  }
 
   void dispose() {
     _disposed = true;
+    _cancelMusicTransition();
+    WidgetsBinding.instance.removeObserver(this);
     unawaited(_musicStateSubscription.cancel());
+    unawaited(_musicNextStateSubscription?.cancel() ?? Future<void>.value());
     _music.dispose();
+    _musicNext?.dispose();
+    for (final entry in _activeSoundsByPlayer.entries) {
+      entry.value.onFinished?.call();
+      unawaited(entry.key.dispose());
+    }
+    _activeSoundsByPlayer.clear();
+    _activePlayers.clear();
+    _activeSounds = 0;
     for (final player in _pool) {
       player.dispose();
     }

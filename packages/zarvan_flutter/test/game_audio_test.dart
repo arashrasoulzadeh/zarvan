@@ -4,8 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 class _Recorder implements AudioOutput {
   final calls = <String>[];
   @override
-  Future<void> playSound(String assetPath, {double volume = 1.0}) async =>
-      calls.add('sfx $assetPath $volume');
+  Future<void> playSound(
+    String assetPath, {
+    double volume = 1.0,
+    AudioBus bus = AudioBus.effects,
+    int priority = 0,
+  }) async => calls.add('sfx $assetPath $volume $bus $priority');
   @override
   Future<void> playMusic(
     String assetPath, {
@@ -35,7 +39,7 @@ void main() {
     await audio.sfx('jump', volume: 0.5);
     await audio.music('theme', loop: false);
     expect(r.calls, [
-      'sfx sfx/jump.wav 0.25',
+      'sfx sfx/jump.wav 0.25 AudioBus.effects 0',
       'music music/theme.mp3 0.5 false',
     ]);
   });
@@ -67,6 +71,21 @@ void main() {
     expect(audio.currentTrack, isNull);
     await audio.music('boss');
     expect(r.calls.where((c) => c.startsWith('music')), hasLength(3));
+  });
+
+  test('sfx forwards its bus and priority', () async {
+    final r = _Recorder();
+    await make(r).sfx('jump', bus: AudioBus.ui, priority: 5);
+    expect(r.calls, ['sfx sfx/jump.wav 1.0 AudioBus.ui 5']);
+  });
+
+  test('crossfade and fade-out have a fallback for basic outputs', () async {
+    final r = _Recorder();
+    final audio = make(r);
+    await audio.crossfadeMusic('boss');
+    await audio.fadeMusicOut(duration: Duration.zero);
+    expect(r.calls, ['music music/boss.mp3 1.0 true', 'stop']);
+    expect(audio.currentTrack, isNull);
   });
 
   test(

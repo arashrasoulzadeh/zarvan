@@ -1,5 +1,6 @@
 import 'package:zarvan_flutter/zarvan_flutter.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart' show AppLifecycleState;
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -58,6 +59,42 @@ void main() {
     // has already torn down the mock channel handler -- flaky failure this
     // test would otherwise blame on "disposes without throwing".
     await Future<void>.delayed(Duration.zero);
+  });
+
+  test('AudioManager pauses while blurred and resumes when focused', () async {
+    final binding = TestWidgetsFlutterBinding.ensureInitialized();
+    final calls = <String>[];
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    for (final name in [
+      'xyz.luan/audioplayers',
+      'xyz.luan/audioplayers.global',
+    ]) {
+      messenger.setMockMethodCallHandler(MethodChannel(name), (call) async {
+        calls.add(call.method);
+        return null;
+      });
+    }
+
+    final audio = AudioManager();
+    binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await Future<void>.delayed(Duration.zero);
+    expect(calls, contains('pause'));
+
+    calls.clear();
+    binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await Future<void>.delayed(Duration.zero);
+    expect(calls, contains('resume'));
+
+    audio.dispose();
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    for (final name in [
+      'xyz.luan/audioplayers',
+      'xyz.luan/audioplayers.global',
+    ]) {
+      messenger.setMockMethodCallHandler(MethodChannel(name), null);
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 10));
   });
 
   // Exercising playSound()'s new pooling path (a player actually

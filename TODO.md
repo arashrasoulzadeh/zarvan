@@ -787,10 +787,9 @@ pubspec.yaml.
   — a melee swing is a zero-velocity, short-lived projectile positioned
   ahead of the attacker, so no new hitbox/collision machinery was
   needed.
-- Positional/spatial audio: `AudioManager.playPositionalSound` pans and
-  attenuates a one-shot SFX by distance from a listener position (the
-  camera, typically), via a new pure `positionalAudioParams` helper —
-  computed once at trigger time, not tracked live per frame.
+- Positional/spatial audio: `AudioManager.playPositionalSound` computes
+  one-shot pan and attenuation at trigger time; `playFollowingSound`
+  tracks moving source/listener positions until the effect completes.
 - Tilemap auto-tiling: `TileMap.withAutotile` resolves a designer's
   single placed "wall" tile id into the correct edge/corner sprite
   variant per cell, via the standard 4-bit neighbor bitmask

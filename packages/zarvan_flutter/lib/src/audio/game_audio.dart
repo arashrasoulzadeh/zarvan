@@ -3,8 +3,13 @@ import 'audio_manager.dart';
 /// The playback calls [GameAudio] needs, so it works over the real
 /// [AudioManager] in a game and over a recording fake in tests.
 abstract class AudioOutput {
-  /// Plays a one-shot sound from asset [assetPath].
-  Future<void> playSound(String assetPath, {double volume = 1.0});
+  /// Plays a one-shot sound from [assetPath] with a bus and priority.
+  Future<void> playSound(
+    String assetPath, {
+    double volume = 1.0,
+    AudioBus bus = AudioBus.effects,
+    int priority = 0,
+  });
 
   /// Starts background music from asset [assetPath].
   Future<void> playMusic(
@@ -93,9 +98,19 @@ class GameAudio {
 
   /// Plays the sound registered as [name] at [volume] (times [sfxVolume]).
   /// Throws an [ArgumentError] listing the known names if [name] is unknown.
-  Future<void> sfx(String name, {double volume = 1.0}) async {
+  Future<void> sfx(
+    String name, {
+    double volume = 1.0,
+    AudioBus bus = AudioBus.effects,
+    int priority = 0,
+  }) async {
     final path = _lookup(sounds, name, 'sound');
-    await _output?.playSound(path, volume: volume * sfxVolume);
+    await _output?.playSound(
+      path,
+      volume: volume * sfxVolume,
+      bus: bus,
+      priority: priority,
+    );
   }
 
   /// Starts the track registered as [name]. Asking for the track that is
@@ -125,6 +140,50 @@ class GameAudio {
       } catch (_) {
         if (_currentTrack == name) _currentTrack = null;
         rethrow;
+      }
+    });
+    await _musicQueue;
+  }
+
+  /// Crossfades to a named track when backed by [AudioManager].
+  /// Outputs without crossfade support start the new track normally.
+  Future<void> crossfadeMusic(
+    String name, {
+    Duration duration = const Duration(milliseconds: 700),
+    double volume = 1.0,
+    bool loop = true,
+  }) async {
+    final path = _lookup(tracks, name, 'track');
+    if (_currentTrack == name) return;
+    _currentTrack = name;
+    _musicQueue = _musicQueue.then((_) async {
+      if (_currentTrack != name) return;
+      final output = _output;
+      if (output is AudioManager) {
+        await output.crossfadeMusic(
+          path,
+          duration: duration,
+          volume: volume * musicVolume,
+          loop: loop,
+        );
+      } else {
+        await output?.playMusic(path, volume: volume * musicVolume, loop: loop);
+      }
+    });
+    await _musicQueue;
+  }
+
+  /// Fades out the current track when backed by [AudioManager].
+  Future<void> fadeMusicOut({
+    Duration duration = const Duration(milliseconds: 500),
+  }) async {
+    _currentTrack = null;
+    _musicQueue = _musicQueue.then((_) async {
+      final output = _output;
+      if (output is AudioManager) {
+        await output.fadeMusicOut(duration: duration);
+      } else {
+        await output?.stopMusic();
       }
     });
     await _musicQueue;

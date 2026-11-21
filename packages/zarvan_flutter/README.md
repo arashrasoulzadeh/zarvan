@@ -548,6 +548,9 @@ per-ray work.
 final audio = AudioManager();
 await audio.playSound('sfx/jump.wav');
 await audio.playMusic('music/theme.mp3', loop: true);
+await audio.crossfadeMusic('music/cave.mp3');
+await audio.playSound('sfx/confirm.wav', bus: AudioBus.ui, priority: 5);
+await audio.setBusVolume(AudioBus.ui, 0.7);
 
 // Data-driven cues from AnimationClip.frameEvents:
 AnimationSfxSystem(audio, soundIds: {'swing': 'sfx/sword.wav'})
@@ -556,6 +559,14 @@ AnimationShakeSystem(camera)..attach(world);
 AnimationParticleSystem()..attach(world);
 DialogueSfxSystem(audio)..attach(world); // PlaySoundEvent (dialogue + cinematic)
 ```
+
+Use `audio.fadeMusicOut()` for a smooth stop. `AudioManager.playFollowingSound`
+recalculates pan and distance attenuation while a source or listener moves;
+ordinary one-shots can keep using `playPositionalSound`'s one-time calculation.
+
+`AudioManager` pauses music and active effects while the app is unfocused,
+then resumes them when it returns. A music request made while unfocused is
+started after focus returns.
 
 See [docs/examples/animation-events.md](../../docs/examples/animation-events.md).
 For bespoke cues, subscribe to `AnimationFrameEvent` / `PlaySoundEvent`

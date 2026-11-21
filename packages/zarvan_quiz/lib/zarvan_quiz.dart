@@ -6,6 +6,8 @@ library;
 
 export 'package:zarvan_core/zarvan_core_quiz.dart';
 export 'src/quiz_session.dart';
+export 'src/quiz_analytics_observer.dart';
+export 'src/quiz_content_repository.dart';
 export 'src/ui/quiz_kit.dart';
 export 'src/ui/quiz_screen.dart';
 export 'src/ui/quiz_strings.dart';

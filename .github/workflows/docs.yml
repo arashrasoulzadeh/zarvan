@@ -30,6 +30,9 @@ on:
       - "mkdocs.yml"
       - "hooks/**"
       - "overrides/**"
+      - "packages/**/lib/**"
+      - "packages/**/pubspec.yaml"
+      - ".github/workflows/docs.yml"
   workflow_dispatch:
 
 permissions:
@@ -55,8 +58,14 @@ jobs:
 
       - run: pip install -r docs/requirements.txt
 
+      - name: Test agent discovery hook
+        run: python -m unittest discover -s hooks -p 'test_*.py'
+
       - name: Build site (broken links fail the build)
-        run: mkdocs build --strict
+        run: |
+          mkdocs build --strict
+          test -s site/llms.txt
+          test -s site/llms-full.txt
 
       - name: Install the standalone landing page
         run: cp landing/index.html site/index.html

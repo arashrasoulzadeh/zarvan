@@ -53,10 +53,7 @@ world.applyPatch(patch);           // an agent edits state through a patch
 
 ## The agent-facing API
 
-Three pieces make the engine safe to drive from an agent: content as data
-(`Level`), full state as JSON (`World.toJson()` / `applyPatch()`), and the
-`WorldView` + `Behavior` sandbox. See [the agent API](../concepts/agent-api.md)
-and [the ECS](../concepts/ecs.md).
+Three pieces support agent integration: content as data (`Level`), JSON state (`World.toJson()` / `applyPatch()`), and the cooperative `WorldView` + `Behavior` interface. Trusted Dart behaviors are not security-isolated. See [the agent API](../concepts/agent-api.md) and [the ECS](../concepts/ecs.md).
 
 ## Install
 

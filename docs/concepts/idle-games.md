@@ -12,6 +12,17 @@ Samples are executed by `packages/zarvan_core/test/doc_examples_idle_test.dart` 
 cloud-save walkthrough, localisation, research UI, …) lives under Idle polish in
 [`TODO.md`](https://github.com/arashrasoulzadeh/zarvan/blob/main/TODO.md).
 
+## Find the part you need
+
+| Goal | Section |
+|---|---|
+| Create a game or choose the genre layer | [Creating a new idle game](#creating-a-new-idle-game) |
+| Represent huge values and multiple currencies | [Numbers](#numbers-that-do-not-overflow), [BigTreasury](#resources-bigtreasury) |
+| Design data-driven economy and progression | [Describing a whole game as data](#describing-a-whole-game-as-data), [More rules](#more-rules-all-data) |
+| Handle persistence and offline progress | [Offline progress](#offline-progress), [Saving and returning](#saving-and-returning), [Storage choices](#storage-choices), [Trust](#trust-the-clock-and-the-save) |
+| Build menus and battle UI | [The screens](#the-screens), [Wave combat](#wave-combat-portrait-auto-fighter) |
+| Balance a game with an agent | [Tuning without playing](#tuning-without-playing), [idle operations](../reference/operations.md#idle) |
+
 ## Creating a new idle game
 
 ```bash

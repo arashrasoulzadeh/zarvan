@@ -11,12 +11,13 @@ words and the question bank are data you pass in.
 
 | Piece | What it does |
 |---|---|
-| `QuizSession` | Owns the round and `QuizProgress`; runs the race clock, saves after every answer, books a finished round (stars, coins, records). Exposes an event stream and `rewardForAd`. |
-| `QuizLifecycleHost` | Pauses the session when the app backgrounds. |
-| `QuizQuestionCard` | The question with its blank, right-to-left by default. |
-| `QuizOptions` | The four options with right/wrong colouring and hint-disabled state. |
-| `QuizFeedback` | The full answer, its author and a Next button. |
-| `QuizHud` | Score, streak, lives or race clock, coins and the hint button. |
+| `QuizSession` | Owns the round and `QuizProgress`; runs the race clock, saves after every answer, books a finished round (stars, coins, records). Exposes an event stream. |
+| `QuizContentRepository` | Loads bank and stop words from assets and builds a question factory. |
+| `QuizKit` | Shared session, factory, strings, themes, settings and optional integration hooks. |
+| `QuizScreen` | Engine `Scene` base for quiz screens. |
+| `QuizHomeScreen`, `QuizStagesScreen`, `QuizGameScreen`, `QuizResultScreen` | Main player flow. |
+| `QuizSettingsScreen`, `QuizAboutScreen`, `QuizTutorialScreen` | Supporting screens. |
+| `QuizAnalyticsObserver` | Maps session events to provider-neutral analytics. |
 
 Modes: `StageMode`, `EndlessMode` (offers one continue), `RaceMode`, `DailyMode`.
 
@@ -26,11 +27,15 @@ Modes: `StageMode`, `EndlessMode` (offers one continue), `RaceMode`, `DailyMode`
 final session = await QuizSession.open(store); // any KeyValueStore
 session.begin(QuizRound.stage(factory, const StageMode(),
     author: 'hafez', tier: QuizTier.easy));
-// QuizQuestionCard, QuizOptions, QuizFeedback, QuizHud(session: session)
+// The game supplies a QuizKit and uses the exported engine Scenes.
 ```
+
+Screens are drawn with the engine's own shapes and text, not Flutter widgets. See the [package README](../../packages/zarvan_quiz/README.md) for a `QuizKit` integration example and [Tutorial 8](../tutorials/08-quiz-game.md) for headless validation.
 
 A hint costs 20 coins and is not offered in a race. A daily already played on
 its date cannot be started again. See [Quiz games](../concepts/quiz-games.md).
+
+For a complete consumer application, see [Tutorial 9](../tutorials/09-flutter-quiz-app.md).
 
 ## Install
 

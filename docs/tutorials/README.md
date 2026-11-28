@@ -10,9 +10,12 @@ Linear walkthroughs. Each ends with something that runs.
 | 4 | [Multiplayer](04-multiplayer.md) | A host and two WebSocket clients, each on their own team | ~25 min |
 | 5 | [An idle game](05-idle-game.md) | Generate an idle game, edit its economy as JSON, check the pacing with the simulator | ~30 min |
 | 6 | [Drive the engine from an agent](06-agent-api.md) | Start the MCP / REST server, let an agent build and check a level, undo it | ~15 min |
+| 7 | [A top-down collection game](07-top-down-game.md) | Four-direction movement and tagged pickups | ~20 min |
+| 8 | [Build and test a quiz bank](08-quiz-game.md) | Deterministic questions, round JSON and balance simulation | ~20 min |
+| 9 | [Build a Flutter quiz app](09-flutter-quiz-app.md) | Complete consumer app, engine-drawn quiz screens and persistence | ~30 min |
 
 **New to the engine?** Do [Getting started](../getting-started.md) first, then
-whichever of 1 or 2 matches your game. Do 3 if you want an AI agent, a bot or
+whichever genre tutorial matches your game. Do 3 if you want an AI agent, a bot or
 an LLM to play or test your game.
 
 ```mermaid
@@ -21,6 +24,9 @@ flowchart LR
     GS --> T2[2 · Strategy]
     GS --> T5[5 · Idle]
     GS --> T6[6 · Agent API]
+    GS --> T7[7 · Top-down]
+    GS --> T8[8 · Quiz]
+    T8 --> T9[9 · Quiz app]
     T2 --> T3[3 · Agent-driven]
     T2 --> T4[4 · Multiplayer]
     T1 -.-> T3

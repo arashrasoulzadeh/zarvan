@@ -17,7 +17,9 @@ List<Operation> saveOperations() => [
     kind: OperationKind.read,
     scope: OperationScope.pure,
     idempotent: true,
-    params: const [Param('save', ParamType.object, required: true)],
+    params: const [Param('save', ParamType.object, required: true,
+      description: 'Save JSON object.',
+    )],
     examples: const [
       Example('Encode a save', {
         'save': {'coins': '42'},
@@ -36,7 +38,9 @@ List<Operation> saveOperations() => [
     scope: OperationScope.pure,
     idempotent: true,
     params: const [
-      Param('code', ParamType.string, required: true, positional: true),
+      Param('code', ParamType.string, required: true, positional: true,
+        description: 'Shareable save code to decode and verify.',
+      ),
     ],
     errors: {ErrorCode.validationFailed: 'The text is not a valid save code.'},
     handler: (ctx, a) {
@@ -58,8 +62,12 @@ List<Operation> saveOperations() => [
     scope: OperationScope.pure,
     idempotent: true,
     params: const [
-      Param('save', ParamType.object, required: true),
-      Param('toVersion', ParamType.integer, required: true, min: 1),
+      Param('save', ParamType.object, required: true,
+        description: 'Save JSON object.',
+      ),
+      Param('toVersion', ParamType.integer, required: true, min: 1,
+        description: 'Target save schema version.',
+      ),
     ],
     handler: (ctx, a) {
       try {

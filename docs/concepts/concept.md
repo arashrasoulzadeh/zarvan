@@ -36,7 +36,7 @@ to something that exists in the code today:
 
 | Property | What it means here | Where to read more |
 |---|---|---|
-| **Agent-Native** | An agent is a first-class user. It reads world state as JSON, changes it through patches, operations (CLI, MCP, REST) or orders, and drives an entity at runtime through a sandbox that cannot corrupt the simulation. | [The agent API](agent-api.md) · [Operations](../reference/operations.md) |
+| **Agent-Native** | An agent is a first-class user. It reads world state as JSON, changes it through patches, operations (CLI, MCP, REST) or orders, and drives an entity at runtime through a cooperative behavior/action interface for trusted Dart code. | [The agent API](agent-api.md) · [Operations](../reference/operations.md) |
 | **Simulation-First** | The simulation is the product; Flutter is only the shell for rendering, input and audio. The whole game can run headless (tests, replays, AI agents) with no screen. | [Architecture](architecture.md) |
 | **Data-Driven** | World state and content are plain, serializable data: components registered by name, levels and idle games as JSON. | [Content as data](content-as-data.md) |
 | **Deterministic** | Seeded randomness (`world.random`), a fixed timestep (`FixedStepper`), ordered systems and a serializable random stream, so the same inputs produce the same world. | [Writing games with less code](authoring.md) · [The ECS](ecs.md) |

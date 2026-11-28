@@ -8,11 +8,11 @@ Browse them three ways.
 
 | Package | Docs |
 |---|---|
-| `zarvan_core` | [zarvan_core API](https://meetarash.ir/agentic-game-engine/api/zarvan_core/) |
-| `zarvan_schema` | [zarvan_schema API](https://meetarash.ir/agentic-game-engine/api/zarvan_schema/) |
-| `zarvan_flutter` | [zarvan_flutter API](https://meetarash.ir/agentic-game-engine/api/zarvan_flutter/) |
-| `zarvan_platformer` | [zarvan_platformer API](https://meetarash.ir/agentic-game-engine/api/zarvan_platformer/) |
-| `zarvan_strategy` | [zarvan_strategy API](https://meetarash.ir/agentic-game-engine/api/zarvan_strategy/) |
+| `zarvan_core` | [zarvan_core API](https://meetarash.ir/zarvan/api/zarvan_core/) |
+| `zarvan_schema` | [zarvan_schema API](https://meetarash.ir/zarvan/api/zarvan_schema/) |
+| `zarvan_flutter` | [zarvan_flutter API](https://meetarash.ir/zarvan/api/zarvan_flutter/) |
+| `zarvan_platformer` | [zarvan_platformer API](https://meetarash.ir/zarvan/api/zarvan_platformer/) |
+| `zarvan_strategy` | [zarvan_strategy API](https://meetarash.ir/zarvan/api/zarvan_strategy/) |
 | `zarvan_idle` | [zarvan_idle API](https://meetarash.ir/zarvan/api/zarvan_idle/) |
 | `zarvan_quiz` | [zarvan_quiz API](https://meetarash.ir/zarvan/api/zarvan_quiz/) |
 | `zarvan_ads` | [zarvan_ads API](https://meetarash.ir/zarvan/api/zarvan_ads/) |
@@ -30,7 +30,7 @@ dart doc .                      # → doc/api/index.html
 
 ## 2. Package READMEs
 
-Each package README lists its public surface with examples:
+Use the [package overview](packages.md) to find every package's README and public API. Studio is a desktop application, not an imported library. Selected READMEs:
 [zarvan_core](https://github.com/arashrasoulzadeh/zarvan/blob/main/packages/zarvan_core/README.md) ·
 [zarvan_flutter](https://github.com/arashrasoulzadeh/zarvan/blob/main/packages/zarvan_flutter/README.md) ·
 [zarvan_platformer](https://github.com/arashrasoulzadeh/zarvan/blob/main/packages/zarvan_platformer/README.md) ·

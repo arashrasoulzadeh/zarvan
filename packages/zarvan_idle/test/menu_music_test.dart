@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zarvan_flutter/zarvan_flutter.dart' show AudioOutput;
+import 'package:zarvan_flutter/zarvan_flutter.dart' show AudioBus, AudioOutput;
 import 'package:zarvan_idle/zarvan_idle.dart';
 
 class _Out implements AudioOutput {
@@ -17,7 +17,12 @@ class _Out implements AudioOutput {
   }
 
   @override
-  Future<void> playSound(String assetPath, {double volume = 1.0}) async {}
+  Future<void> playSound(
+    String assetPath, {
+    double volume = 1.0,
+    AudioBus bus = AudioBus.effects,
+    int priority = 0,
+  }) async {}
 
   @override
   Future<void> stopMusic() async => calls.add('stop');

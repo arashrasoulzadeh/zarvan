@@ -68,7 +68,9 @@ List<Operation> schemaOperations() => [
     scope: OperationScope.pure,
     idempotent: true,
     params: const [
-      Param('name', ParamType.string, required: true, positional: true),
+      Param('name', ParamType.string, required: true, positional: true,
+        description: 'Registered component name from schema.components.',
+      ),
     ],
     errors: {ErrorCode.notFound: 'No component has that name.'},
     handler: (ctx, a) {
@@ -92,7 +94,9 @@ List<Operation> schemaOperations() => [
     scope: OperationScope.pure,
     idempotent: true,
     params: const [
-      Param('name', ParamType.string, required: true, positional: true),
+      Param('name', ParamType.string, required: true, positional: true,
+        description: 'Registered component name from schema.components.',
+      ),
     ],
     handler: (ctx, a) =>
         OpOutcome.data(_component(a['name']! as String).template),
@@ -110,8 +114,12 @@ List<Operation> schemaOperations() => [
     scope: OperationScope.pure,
     idempotent: true,
     params: const [
-      Param('name', ParamType.string, required: true, positional: true),
-      Param('value', ParamType.json, required: true),
+      Param('name', ParamType.string, required: true, positional: true,
+        description: 'Registered component name from schema.components.',
+      ),
+      Param('value', ParamType.json, required: true,
+        description: 'Component JSON to validate against its schema.',
+      ),
     ],
     handler: (ctx, a) {
       final name = a['name']! as String;

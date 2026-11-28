@@ -5,9 +5,9 @@ import '../ecs/world.dart';
 import '../ecs/world_view.dart';
 
 /// Drives every `AIState`-tagged entity by resolving its behavior and
-/// applying the `Action` it returns. Behaviors see a fresh `WorldView`
-/// each tick (built once per `update` call, not per entity — cheap,
-/// and guarantees every behavior this tick sees the same snapshot).
+/// applying the `Action` it returns. One live `WorldView` is reused for
+/// the update; each action applies immediately, so earlier actions can
+/// affect subsequent behavior decisions.
 class AISystem implements System {
   final BehaviorRegistry registry;
 

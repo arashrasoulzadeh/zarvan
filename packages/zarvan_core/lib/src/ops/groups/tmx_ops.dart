@@ -19,15 +19,23 @@ List<Operation> tmxOperations() => [
     kind: OperationKind.write,
     scope: OperationScope.project,
     params: const [
-      Param('path', ParamType.path, required: true, positional: true),
+      Param('path', ParamType.path, required: true, positional: true,
+        description: 'Project-relative level file containing the tile map.',
+      ),
       Param(
         'entity',
         ParamType.string,
         description: 'Entity holding the tileMap; default the first with one.',
       ),
-      Param('output', ParamType.path),
-      Param('image', ParamType.string, defaultValue: 'tiles.png'),
-      Param('tileset', ParamType.string, defaultValue: 'tiles'),
+      Param('output', ParamType.path,
+        description: 'Optional project-relative path of the exported TMX file.',
+      ),
+      Param('image', ParamType.string, defaultValue: 'tiles.png',
+        description: 'Tileset image filename referenced by the exported map.',
+      ),
+      Param('tileset', ParamType.string, defaultValue: 'tiles',
+        description: 'Name of the tileset in the exported map.',
+      ),
     ],
     handler: (ctx, a) {
       final rel = a['path']! as String;
@@ -99,13 +107,17 @@ List<Operation> tmxOperations() => [
     kind: OperationKind.write,
     scope: OperationScope.project,
     params: const [
-      Param('tmx', ParamType.path, required: true, positional: true),
+      Param('tmx', ParamType.path, required: true, positional: true,
+        description: 'Project-relative input Tiled TMX file.',
+      ),
       Param(
         'output',
         ParamType.path,
         description: 'Default: assets/levels/<tmx name>.json.',
       ),
-      Param('entity', ParamType.string, defaultValue: 'ground'),
+      Param('entity', ParamType.string, defaultValue: 'ground',
+        description: 'Name for the entity holding the imported tileMap.',
+      ),
       Param(
         'layer',
         ParamType.string,

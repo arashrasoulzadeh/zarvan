@@ -165,8 +165,12 @@ List<Operation> strategyOperations() => [
     scope: OperationScope.pure,
     idempotent: true,
     params: const [
-      Param('path', ParamType.path, positional: true),
-      Param('json', ParamType.json, cliFlag: 'inline-json'),
+      Param('path', ParamType.path, positional: true,
+        description: 'Project-relative level file describing the skirmish.',
+      ),
+      Param('json', ParamType.json, cliFlag: 'inline-json',
+        description: 'Inline skirmish level JSON instead of path.',
+      ),
       Param(
         'turns',
         ParamType.integer,
@@ -178,6 +182,7 @@ List<Operation> strategyOperations() => [
         ParamType.enumeration,
         options: ['aggressive', 'tactical'],
         defaultValue: 'aggressive',
+        description: 'Built-in AI policy for simulated teams.',
       ),
     ],
     errors: {

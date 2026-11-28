@@ -21,15 +21,25 @@ String _docsRel(String abs, String root) =>
     p.normalize(p.relative(abs, from: root)).replaceAll('\\', '/');
 
 /// Published site root (agents without a local `docs/` checkout).
-const kEngineDocsUrl = 'https://meetarash.ir/agentic-game-engine/';
+const kEngineDocsUrl = 'https://meetarash.ir/zarvan/';
 
-/// Curated pages listed when [OpContext.docsRoot] is unset (no markdown body).
+/// Curated pages listed when [OpContext.docsRoot] is unset (with bundled Markdown bodies).
 const kRemoteDocsPages = <String>[
+  'agents.md',
+  'guides/for-ai-agents.md',
+  'guides/extending-operations.md',
+  'examples/custom-component-system.md',
+  'examples/debug-deterministic-replay.md',
+  'concepts/agent-api.md',
+  'reference/components.md',
   'getting-started.md',
   'tutorials/01-hello-world.md',
   'tutorials/02-turn-based-strategy.md',
   'tutorials/05-idle-game.md',
   'tutorials/06-agent-api.md',
+  'tutorials/07-top-down-game.md',
+  'tutorials/08-quiz-game.md',
+  'tutorials/09-flutter-quiz-app.md',
   'concepts/ecs.md',
   'concepts/idle-games.md',
   'concepts/settings.md',
@@ -39,8 +49,14 @@ const kRemoteDocsPages = <String>[
   'reference/cheatsheet.md',
 ];
 
-String _docsPageUrl(String rel) =>
-    '$kEngineDocsUrl${rel.replaceFirst(RegExp(r'\.md$'), '/')}';
+String _docsPageUrl(String rel) {
+  final path = rel.replaceFirst(RegExp(r'\.md$'), '');
+  if (path == 'README' || path == 'index') return kEngineDocsUrl;
+  if (path.endsWith('/README') || path.endsWith('/index')) {
+    return '$kEngineDocsUrl${path.substring(0, path.lastIndexOf('/') + 1)}';
+  }
+  return '$kEngineDocsUrl$path/';
+}
 
 /// `engine.*`: what the server is, what it can do and what operations exist. The registry is passed in because
 /// these operations describe it.
@@ -124,6 +140,7 @@ List<Operation> engineOperations(OperationRegistry Function() registry) => [
         'kind',
         ParamType.enumeration,
         options: ['read', 'write', 'destructive'],
+        description: 'Restrict the catalogue to the specified operation kind.',
       ),
     ],
     handler: (ctx, a) => OpOutcome.data([

@@ -8,9 +8,10 @@ and you may not want to write much Dart. This page is your map.
 | Kind of game | Starter | First read |
 |---|---|---|
 | Platformer | `default_game` | [Tutorial 1](../tutorials/01-hello-world.md) |
-| Top-down (four-direction movement, pickups) | `topdown_game` | [Getting started](../getting-started.md) |
+| Top-down (four-direction movement, pickups) | `topdown_game` | [Tutorial 7](../tutorials/07-top-down-game.md) |
 | Turn-based strategy | `strategy_game` | [Tutorial 2](../tutorials/02-turn-based-strategy.md) |
 | Idle / incremental | `idle_game` | [Tutorial 5](../tutorials/05-idle-game.md) |
+| Quiz | No dedicated starter; use `zarvan_quiz` | [Tutorial 8](../tutorials/08-quiz-game.md) |
 
 ## Your first five minutes
 
@@ -43,5 +44,4 @@ and [Settings and accessibility](../concepts/settings.md).
 ## When something breaks
 
 [FAQ & troubleshooting](../faq.md), then the [Glossary](../reference/glossary.md)
-if a word is unfamiliar. Run `zarvan project open .` and read `project.problems`
-to see content problems in one list.
+if a word is unfamiliar. From a game project, run `zarvan project problems --json` to see content problems in one list. For a stateful MCP/HTTP session, use `project.open` as needed.

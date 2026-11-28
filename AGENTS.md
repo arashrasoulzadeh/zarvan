@@ -1,35 +1,35 @@
-# Repository guide for agents
+# Repository guide for AI coding agents
 
-Read [CLAUDE.md](CLAUDE.md) for the existing project constraints and
-engineering conventions before changing code. Read [TODO.md](TODO.md)
-for remaining work; a documentation task does not authorize working
-through that backlog or committing/pushing changes.
+ZARVAN is a Dart 2D game engine with a Flutter application shell. This file is for agents modifying the engine repository, not agents playing a game or editing a game project.
 
-## Project
+## Start here
 
-This repository contains a Dart 2D game engine and Flutter shell, split
-into four packages. See [ARCHITECTURE.md](ARCHITECTURE.md) for boundaries
-and runtime flow and [CONTRIBUTING.md](CONTRIBUTING.md) for local setup
-and validation commands.
+| Task | Read first |
+|---|---|
+| Understand the engine and package boundaries | [Architecture](ARCHITECTURE.md), [package map](docs/packages.md) |
+| Modify the engine | [Engineering conventions](CLAUDE.md), [local setup and validation](CONTRIBUTING.md) |
+| Use the public Dart API | [Developer guide](docs/guides/for-developers.md), [API reference](docs/api-reference.md) |
+| Drive a game or author content via tools | [Agent hub](docs/agents.md), [operations](docs/reference/operations.md), [transports](docs/reference/transports.md) |
+| Add documentation | [Documentation conventions](docs/contributing-docs.md) |
+| Understand planned versus shipped work | [TODO](TODO.md), [changelog](CHANGELOG.md), [ADRs](docs/adr/) |
 
-## Working rules
+## Non-negotiable rules
 
-- Keep `zarvan_core` free of Flutter. Put genre-specific gameplay in
-  `zarvan_platformer`, and rendering/input/audio integration in `zarvan_flutter`.
-- Preserve the package dependency direction. Shared data needed by the
-  renderer belongs in core, even when platformer systems use it.
-- Keep the engine 2D and built without another game engine.
-- Keep `test_game/` and `examples/` local and ignored; do not commit a sample app.
-- Preserve self-referencing Git dependencies in package manifests. Use
-  `pubspec_overrides.yaml` for local development; inspect actual manifest
-  refs before diagnosing dependency resolution, since prose can become stale.
-- Register new serializable components in the appropriate package registry,
-  provide JSON conversion and public API documentation, and test behavior.
-- Check system ordering when changing simulation code. Prefer the existing
-  `installPlatformerSystems` helper for the standard platformer pipeline.
-- Preserve unrelated working-tree changes. Report validation actually run
-  and any checks that could not be completed.
+- Keep the engine 2D; do not introduce another game engine. Keep simulation independent of Flutter. Preserve the package dependency DAG; consult package manifests for exact dependencies.
+- Keep ignored local sample games (`test_game/`, `examples/`) out of commits.
+- Preserve self-referencing Git dependencies in manifests and use local `pubspec_overrides.yaml` for monorepo work. Check actual refs, not historical prose.
+- Import public package libraries; `lib/src/` is implementation detail for consumers.
+- Register serializable components, provide JSON conversion and schema definitions where appropriate, and test registration and behavior.
+- Preserve deterministic simulation: fixed timestep, seeded randomness, explicit system ordering. Do not introduce wall-clock reads into simulation rules.
+- Follow the public API documentation and testing requirements in CLAUDE.md. Preserve unrelated changes and do not work through TODO.md unless asked.
+- Do not commit or push without authorization; report checks actually run and any that could not be completed.
 
-Package READMEs document APIs. Keep changes to those docs alongside API
-changes, record shipped changes in [CHANGELOG.md](CHANGELOG.md), and keep
-remaining work in the existing TODO files instead of creating duplicate lists.
+## Workflow
+
+1. Read the relevant package README, public exports, implementation and nearby tests. Source and manifests take precedence over stale prose.
+2. Identify affected packages and downstream dependents. Make the smallest change that satisfies the task.
+3. Add a regression or behavior test for code changes. Update docs and generated references in the same change when applicable.
+4. Run affected package tests and analysis (see CONTRIBUTING.md); for docs run `mkdocs build --strict`. Verify examples against actual signatures.
+5. Report changed files, validation results, limitations and any unresolved work.
+
+For an external agent using MCP, begin with `engine.capabilities`, `engine.operations` and `engine.operation`. Use the live registry rather than inventing arguments. Runtime Dart behaviors are trusted code, not a security sandbox; see [agent API](docs/concepts/agent-api.md).

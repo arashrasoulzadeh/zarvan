@@ -10,6 +10,10 @@ Remaining work is tracked in [TODO.md](../../TODO.md). This document keeps
 the requirements, the design, the decisions, and the record of delivered phases
 (source comments cite items such as "3.14" or "IDE.13" from Part 3).
 
+## Reading guide
+
+This is a historical design record, not a current API reference. Requirements and proposed designs in Parts 1–2 are not guarantees of shipped behavior. Part 3 records delivered work; Part 4 records decisions. For current usage start with the [user guide](user-guide.md), for outstanding work see [Studio status](studio.md), and for integration contracts see the [operation reference](../reference/operations.md).
+
 ---
 
 ## Part 1 — Product Requirements (PRD)

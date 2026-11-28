@@ -160,9 +160,15 @@ List<Operation> i18nOperations() => [
     scope: OperationScope.project,
     idempotent: true,
     params: const [
-      Param('locale', ParamType.string, required: true, positional: true),
-      Param('key', ParamType.string, required: true),
-      Param('text', ParamType.string, required: true),
+      Param('locale', ParamType.string, required: true, positional: true,
+        description: 'Locale identifier matching the catalog filename.',
+      ),
+      Param('key', ParamType.string, required: true,
+        description: 'Translation key to create or update.',
+      ),
+      Param('text', ParamType.string, required: true,
+        description: 'Localized text for the key.',
+      ),
     ],
     handler: (ctx, a) {
       final locale = a['locale']! as String;

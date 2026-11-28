@@ -304,13 +304,14 @@ List<Operation> quizOperations() => [
     idempotent: true,
     params: const [
       ..._bankParams,
-      Param('itemId', ParamType.string, required: true),
+      Param('itemId', ParamType.string, required: true, description: 'ID of an item in the bank.'),
       Param(
         'tier',
         ParamType.enumeration,
         options: ['easy', 'medium', 'hard', 'literary'],
+        description: 'Question difficulty; defaults to the item tier.',
       ),
-      Param('seed', ParamType.integer, defaultValue: 0),
+      Param('seed', ParamType.integer, defaultValue: 0, description: 'Deterministic seed for question generation.'),
     ],
     errors: {
       ErrorCode.notFound: 'The item is not in the bank.',
@@ -379,9 +380,9 @@ List<Operation> quizOperations() => [
     params: const [
       ..._bankParams,
       _modeParam,
-      Param('run', ParamType.json, required: true),
-      Param('choice', ParamType.integer, required: true, min: 0, max: 3),
-      Param('hint', ParamType.boolean, defaultValue: false),
+      Param('run', ParamType.json, required: true, description: 'Run JSON returned by quiz.start or the previous quiz.answer.'),
+      Param('choice', ParamType.integer, required: true, min: 0, max: 3, description: 'Zero-based index of the selected option.'),
+      Param('hint', ParamType.boolean, defaultValue: false, description: 'Use a hint before answering, if available.'),
     ],
     errors: {
       ErrorCode.invalidParams:
@@ -427,7 +428,7 @@ List<Operation> quizOperations() => [
     params: const [
       ..._bankParams,
       _modeParam,
-      Param('run', ParamType.json, required: true),
+      Param('run', ParamType.json, required: true, description: 'Run JSON returned by quiz.start or the previous quiz.answer.'),
     ],
     handler: (ctx, a) {
       final round = _resume(_factory(ctx, a), _mode(a), a);
@@ -450,10 +451,10 @@ List<Operation> quizOperations() => [
       ..._bankParams,
       _modeParam,
       ..._startParams,
-      Param('policy', ParamType.string, defaultValue: 'always_correct'),
-      Param('runs', ParamType.integer, min: 1, max: 10000, defaultValue: 100),
-      Param('seed', ParamType.integer, defaultValue: 1),
-      Param('secondsPerQuestion', ParamType.integer, min: 0, defaultValue: 4),
+      Param('policy', ParamType.string, defaultValue: 'always_correct', description: 'Scripted answer policy: always_correct, random or accuracy:<p>.'),
+      Param('runs', ParamType.integer, min: 1, max: 10000, defaultValue: 100, description: 'Number of rounds to simulate.'),
+      Param('seed', ParamType.integer, defaultValue: 1, description: 'Deterministic seed for the simulated answer policy.'),
+      Param('secondsPerQuestion', ParamType.integer, min: 0, defaultValue: 4, description: 'Simulated time per question in race mode.'),
     ],
     handler: (ctx, a) {
       final f = _factory(ctx, a);

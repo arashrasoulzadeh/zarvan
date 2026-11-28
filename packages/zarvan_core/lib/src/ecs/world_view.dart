@@ -4,11 +4,10 @@ import 'entity.dart';
 import '../physics/raycast.dart';
 import 'world.dart';
 
-/// Read-only window onto a [World] for runtime agents/NPC behaviors.
-/// Deliberately has no mutation methods — a `Behavior` only ever sees a
-/// `WorldView`, never the real `World`, so an agent-authored behavior
-/// can't corrupt simulation state directly; it can only return an
-/// [Action] for `AISystem` to apply.
+/// Live observation interface for trusted runtime behaviors.
+/// Queries can return mutable components and [world] exposes the underlying
+/// world. Behaviors should express changes as actions, except documented
+/// behavior memory; this is not a security sandbox for untrusted Dart.
 class WorldView {
   final World _world;
 

@@ -30,6 +30,7 @@ const _worldId = Param(
   ParamType.string,
   required: true,
   positional: true,
+  description: 'ID returned by world.build in the same server process.',
 );
 
 /// `world.*`: headless worlds held in memory. Kind `read` on purpose: they never touch files, so a read-only server
@@ -45,8 +46,8 @@ List<Operation> worldOperations() => [
     kind: OperationKind.read,
     scope: OperationScope.pure,
     params: [
-      const Param('path', ParamType.path, positional: true),
-      const Param('json', ParamType.json, cliFlag: 'inline-json'),
+      const Param('path', ParamType.path, positional: true, description: 'Project-relative level file; alternatively provide json.'),
+      const Param('json', ParamType.json, cliFlag: 'inline-json', description: 'Inline level JSON instead of path.'),
       Param(
         'systems',
         ParamType.array,
@@ -111,8 +112,8 @@ List<Operation> worldOperations() => [
     scope: OperationScope.pure,
     params: const [
       _worldId,
-      Param('ticks', ParamType.integer, min: 1, max: 100000, defaultValue: 1),
-      Param('dt', ParamType.number, min: 0.0001, max: 1, defaultValue: 1 / 60),
+      Param('ticks', ParamType.integer, min: 1, max: 100000, defaultValue: 1, description: 'Number of fixed simulation steps to run.'),
+      Param('dt', ParamType.number, min: 0.0001, max: 1, defaultValue: 1 / 60, description: 'Seconds per simulation step.'),
     ],
     handler: (ctx, a) {
       final world = _world(ctx, a);
@@ -161,6 +162,7 @@ List<Operation> worldOperations() => [
         'entities',
         ParamType.array,
         items: Param('', ParamType.integer),
+        description: 'Optional entity IDs to include in the snapshot.',
       ),
     ],
     handler: (ctx, a) {
@@ -187,9 +189,9 @@ List<Operation> worldOperations() => [
     scope: OperationScope.pure,
     params: const [
       _worldId,
-      Param('patch', ParamType.json, required: true),
-      Param('strict', ParamType.boolean, defaultValue: false),
-      Param('dryRun', ParamType.boolean, defaultValue: false),
+      Param('patch', ParamType.json, required: true, description: 'Snapshot-shaped JSON with an entities list and component maps.'),
+      Param('strict', ParamType.boolean, defaultValue: false, description: 'Reject invalid patches before applying any changes.'),
+      Param('dryRun', ParamType.boolean, defaultValue: false, description: 'Validate without applying; inspect data.ok and data.problems.'),
     ],
     handler: (ctx, a) {
       final world = _world(ctx, a);
@@ -229,8 +231,8 @@ List<Operation> worldOperations() => [
     idempotent: true,
     params: const [
       _worldId,
-      Param('component', ParamType.string, required: true),
-      Param('where', ParamType.object),
+      Param('component', ParamType.string, required: true, description: 'Registered component name, e.g. position.'),
+      Param('where', ParamType.object, description: 'Optional component field/value equality filters.'),
     ],
     handler: (ctx, a) {
       final world = _world(ctx, a);

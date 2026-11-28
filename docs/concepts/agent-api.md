@@ -1,20 +1,17 @@
 # The agent-facing API: `Behavior` + `WorldView` + `AISystem`
 
 This is the engine's other AI-agent-friendly pillar (alongside
-[content-as-data.md](content-as-data.md)): a sandbox for a runtime
+[content-as-data.md](content-as-data.md)): an interface for a runtime
 agent/NPC to *drive an entity during simulation* — whether that agent
 is a hand-written state machine, a rule-based patrol AI, or an
-LLM-backed decision-maker — without any path to corrupting world state.
+LLM-backed decision-maker — using a cooperative separation between observation and action. This is not a security boundary for untrusted Dart.
 
-## Why a sandbox
+## Why separate observation from action
 
 A behavior that could freely mutate `World` could, by a bug or a bad
 LLM tool call, break invariants another system depends on (move an
 entity outside the map, delete a component another system reads
-unconditionally, etc.). So a `Behavior` never sees the real, mutable
-`World` — only a read-only `WorldView` — and can only *propose* a
-change by returning an `Action`, which `AISystem` (not the behavior
-itself) applies against the real `World`.
+unconditionally, etc.). The intended pattern is to inspect a `WorldView`, then return an `Action` for `AISystem` to apply. A custom Dart behavior is trusted code: `WorldView.world` exposes the underlying `World`, and component queries can return mutable objects. Do not treat this interface as process isolation or execute arbitrary untrusted code.
 
 ```
 Behavior.decide(WorldView, EntityId self) -> Action
@@ -23,10 +20,10 @@ Behavior.decide(WorldView, EntityId self) -> Action
                                     AISystem: action.apply(world)
 ```
 
-## `WorldView`: read-only queries
+## `WorldView`: observation queries
 
 `packages/zarvan_core/lib/src/ecs/world_view.dart`. Wraps a `World` and
-exposes only queries — no setters:
+provides query helpers. The returned components are not necessarily immutable:
 
 ```dart
 class MyBehavior implements Behavior {
@@ -37,7 +34,7 @@ class MyBehavior implements Behavior {
 
     for (final other in view.entitiesWith<Position>()) {
       if (other == self) continue;
-      // read-only inspection of other entities is fine — mutation isn't possible here
+      // Inspect other entities; do not mutate their components here.
     }
 
     return const NoOpAction();
@@ -50,7 +47,7 @@ Useful queries: `component<T>(id)`, `hasComponent<T>(id)`,
 helper — see the full list in `world_view.dart` or
 `packages/zarvan_core/README.md`'s agent-API section.
 
-## `Action`: the only way to cause a change
+## `Action`: the intended way to cause a change
 
 ```dart
 abstract class Action {
@@ -65,16 +62,16 @@ subclass is how you extend this without the engine needing to know
 about your domain logic:
 
 ```dart
-class TakeDamageAction implements Action {
-  TakeDamageAction(this.target, this.amount);
+class StopAction implements Action {
+  StopAction(this.target);
   final EntityId target;
-  final double amount;
 
   @override
   void apply(World world) {
-    // this is the one place allowed to actually mutate World
-    final health = world.componentsOf<Health>().get(target);
-    // ...
+    final velocity = world.getComponent<Velocity>(target);
+    if (velocity == null) return;
+    velocity.x = 0;
+    velocity.y = 0;
   }
 }
 ```
@@ -92,28 +89,33 @@ components — they're registered under a string id rather than embedded
 in JSON, and `AIState.behaviorId` references that id:
 
 ```dart
-final behaviors = BehaviorRegistry();
-behaviors.register('patrol', PatrolBehavior(waypoints: [...]));
-world.addSystem(AISystem(behaviors));
+import 'package:zarvan_core/zarvan_core.dart';
 
-final enemy = world.spawn();
-world.componentsOf<AIState>().set(enemy, AIState('patrol'));
+void main() {
+  final world = World(width: 320, height: 240);
+  registerCoreComponents(world);
+
+  final behaviors = BehaviorRegistry();
+  behaviors.registerFn('idle', (view, self) => const NoOpAction());
+  world.addSystem(AISystem(behaviors));
+
+  final entity = world.spawn();
+  world.setComponent(entity, AIState('idle'));
+  world.step(1 / 60);
+}
 ```
 
 `AIState.memory` is a free-form JSON-serializable blackboard (a
 waypoint index, a cooldown timer) a behavior can carry state in between
 ticks without needing its own component type — mutate it directly on
 the `AIState` you read via `view.component<AIState>(self)` inside
-`decide`, since `AIState` itself isn't part of the read-only contract
-(only the `World` mutation path is guarded).
+`decide`, as a documented convention for trusted behaviors. Other component mutation should be expressed through actions.
 
 ## `AISystem`
 
 Runs every `AIState`-tagged entity once per tick: resolves its
 `behaviorId` via the registry, calls `decide`, applies the returned
-`Action`. Builds one `WorldView` per tick (not per entity) — every
-behavior that tick sees the same consistent snapshot, so ordering
-between two behaviors' decisions within the same tick can't matter.
+`Action`. Builds one `WorldView` per tick, then calls and applies each behavior in sequence. It is a live view, not an immutable snapshot: earlier actions can affect later observations. `AISystem` does not independently validate arbitrary custom `Action.apply` implementations.
 
 ## `zarvan_platformer`'s ready-made behaviors
 
@@ -131,20 +133,19 @@ these as a worked example of writing your own.
 
 ## Two doors, one idea: real-time and turn-based
 
-The sandbox principle — *an agent proposes, the engine applies* — has two
+The cooperative principle — *an agent proposes, the engine applies* — has two
 shapes in this engine:
 
 | | Real-time (platformer) | Turn-based (strategy) |
 |---|---|---|
 | Agent type | `Behavior` | `TurnAI` (or any external program) |
-| Reads | read-only `WorldView` | `World.toJson()` snapshot, or the typed stores |
+| Reads | `WorldView` (live observation) | `World.toJson()` snapshot, or the typed stores |
 | Proposes | an `Action` returned from `decide` | `Order`s passed to `submitOrder` |
 | Applied by | `AISystem` | `OrderSystem` |
-| Refused when | the action is invalid | not that team's turn, game over, or the order is illegal |
+| Refused when | the action implementation rejects it | not that team's turn, game over, or the order is illegal |
 | Cadence | every tick | once per team turn |
 
-In both cases an agent that is wrong, confused or hostile can at worst waste
-its own turn: it has no direct path to a unit's hit points or position.
+For untrusted external agents, expose a validated protocol with filtered observations, not the mutable Dart world. `TurnAI.playTurn` receives `World` and is also trusted code; built-in strategies follow order and fog rules by convention.
 
 For a complete turn-based agent that sees only JSON, see
 [Tutorial 3](../tutorials/03-agent-driven-game.md); for a hand-written

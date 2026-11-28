@@ -2,7 +2,7 @@
 
 How the packages fit together and what happens on every frame.
 
-## Package dependency chain
+## Package dependency graph
 
 Dependencies run one way. A package may use anything to its left, never
 anything to its right.
@@ -14,8 +14,15 @@ flowchart LR
     flutter --> platformer[zarvan_platformer]
     flutter --> strategy[zarvan_strategy]
     flutter --> idle[zarvan_idle]
+    flutter --> quiz[zarvan_quiz]
     core --> cli[zarvan_cli]
+    core --> api[zarvan_api]
+    platformer --> studio[zarvan_studio]
+    ads[zarvan_ads]
+    eye[zarvan_eye]
 ```
+
+This diagram shows the main dependency paths, not every direct manifest edge. See the [package map](../packages.md) and manifests for exact dependencies.
 
 The rule that keeps this honest: **genre-general _data_ belongs in
 `zarvan_core` even if only one genre uses it today; only genre-specific
@@ -112,5 +119,5 @@ cells and draws a marker.
 
 ## Further reading
 
-- [ADRs](https://github.com/arashrasoulzadeh/zarvan/tree/main/docs/adr) — why schemas are hand-written, why commands live in core, why play-test is a separate process.
+- [ADRs](https://github.com/arashrasoulzadeh/zarvan/tree/main/docs/adr) — why schemas are hand-written, why commands live in core, why the embedded preview superseded separate-process play-test.
 - [Root ARCHITECTURE.md](https://github.com/arashrasoulzadeh/zarvan/blob/main/ARCHITECTURE.md) — the short version.

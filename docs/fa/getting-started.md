@@ -48,3 +48,10 @@ zarvan project open .                         # سپس project.problems
 
 - [مفهوم ZARVAN](concept.md) · [معماری](architecture.md) · [API عامل](agent-api.md)
 - راهنمای کامل و آموزش‌ها (انگلیسی): [Getting started](../getting-started.md) · [Tutorials](../tutorials/README.md)
+
+## مسیرهای بعدی
+
+- [بازی حرکت چهارسویه](../tutorials/07-top-down-game.md) (انگلیسی)
+- [ساخت و آزمایش بانک پرسش](../tutorials/08-quiz-game.md) (انگلیسی)
+- [ساخت برنامهٔ کامل پرسش و پاسخ در Flutter](../tutorials/09-flutter-quiz-app.md) (انگلیسی)
+- [اتصال عامل به موتور](../tutorials/06-agent-api.md) (انگلیسی)

@@ -1,6 +1,6 @@
 # zarvan_cli
 
-**Runtime:** pure Dart · **Audience:** game makers, agents · **Depends on:** `zarvan_core`
+**Runtime:** pure Dart · **Audience:** game makers, agents · **Depends on:** `zarvan_core`, `zarvan_schema`
 
 The `zarvan` command. Besides scaffolding, every registry operation is also a
 command (the 1:1 rule), so anything an agent can call over MCP you can run in a shell.

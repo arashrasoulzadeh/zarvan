@@ -2,7 +2,7 @@ import 'dart:ui' show Offset, Size;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zarvan_core/zarvan_core.dart';
 import 'package:zarvan_flutter/zarvan_flutter.dart' as eng;
-import 'package:zarvan_flutter/zarvan_flutter.dart' show AudioOutput;
+import 'package:zarvan_flutter/zarvan_flutter.dart' show AudioBus, AudioOutput;
 import 'package:zarvan_idle/src/menu/art_sizes.dart';
 import 'package:zarvan_idle/zarvan_idle.dart';
 
@@ -943,7 +943,12 @@ class _MusicOut implements AudioOutput {
   }) async => log.add('play $assetPath');
 
   @override
-  Future<void> playSound(String assetPath, {double volume = 1.0}) async {}
+  Future<void> playSound(
+    String assetPath, {
+    double volume = 1.0,
+    AudioBus bus = AudioBus.effects,
+    int priority = 0,
+  }) async {}
 
   @override
   Future<void> stopMusic() async => log.add('stop');

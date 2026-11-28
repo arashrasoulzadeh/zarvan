@@ -8,8 +8,7 @@ ZARVAN is an agent-native, simulation-first game engine built with Dart: a pure-
 first-class design goal, not an afterthought: world state is
 JSON-serializable data an agent can read/patch, content is authored as
 data (not code), and a `Behavior`/`WorldView` sandbox lets an agent
-drive an entity at runtime without any path to corrupting simulation
-state. Flutter is used only as the cross-platform rendering/input/audio
+drive an entity at runtime through a cooperative interface. Trusted Dart behaviors can access mutable state; do not treat it as a security sandbox. Flutter is used only as the cross-platform rendering/input/audio
 shell — the actual engine (`zarvan_core`) has zero Flutter dependency.
 
 **This repo is the engine library itself, not a game.** There is
@@ -23,15 +22,17 @@ made explicitly (see the "Remove root sample app" commit).
 
 | Package | What | Depends on |
 |---|---|---|
-| `packages/zarvan_core` | Genre-general ECS, `TileMap` data, content DSL, agent API. Pure Dart, no Flutter. | nothing engine-internal |
+| `packages/zarvan_core` | Genre-general ECS, `TileMap` data, content DSL, agent API. Pure Dart, no Flutter. | `zarvan_schema` |
+| `packages/zarvan_schema` | Shared component schemas and validation. Pure Dart. | none |
 | `packages/zarvan_flutter` | Rendering, input, camera, audio, save/load. | `zarvan_core` |
 | `packages/zarvan_platformer` | Platformer-genre gameplay: gravity, jump, tile/platform collision, spawn helpers, patrol/follow behaviors, movement animation. | `zarvan_core`, `zarvan_flutter` |
 | `packages/zarvan_strategy` | Turn-based strategy assembly: `installStrategySystems`, `spawnStrategyUnit`. Rules/data live in `zarvan_core/lib/src/turn/`. | `zarvan_core`, `zarvan_flutter` |
 | `packages/zarvan_idle` | Idle / incremental-game layer: widgets, `IdleController`, `IdleSession` (lifecycle/saving). The Flutter-free idle rules live in `zarvan_core` (`zarvan_core_idle.dart`) so the CLI can use them; see the idle section of `TODO.md`. | `zarvan_core`, `zarvan_flutter` |
-| `packages/zarvan_quiz` | Quiz / fill-in-the-blank layer: `QuizSession` (round, progress, race clock, saving) and the question card, options, feedback and HUD widgets. The Flutter-free rules (bank, question factory, rounds and modes, scoring, progress, validation, simulation) live in `zarvan_core` (`zarvan_core_quiz.dart`) so the CLI/MCP can use them (`quiz.*` operations). | `zarvan_core`, `zarvan_flutter` |
+| `packages/zarvan_quiz` | Quiz / fill-in-the-blank layer: `QuizSession` (round, progress, race clock, saving) and engine-drawn quiz scenes. The Flutter-free rules (bank, question factory, rounds and modes, scoring, progress, validation, simulation) live in `zarvan_core` (`zarvan_core_quiz.dart`) so the CLI/MCP can use them (`quiz.*` operations). | `zarvan_core`, `zarvan_flutter` |
 | `packages/zarvan_ads` | Ads: `AdService` over AdMob (banner, interstitial, rewarded), `InterstitialPacing`, `NoAdsService`/`FakeAdService`. Leaf package, depends on no engine package; the game wires rewards (e.g. `IdleSession.doubleOffline`) itself. | `google_mobile_ads` |
-| `packages/zarvan_api` | MCP server + HTTP/JSON-RPC API over the operation registry in `zarvan_core` (spec: `engine_mcp.md`; adding an operation: see the checklist in `TODO.md`'s agent-API section and regenerate `docs/reference/operations.md`). Every operation also exists as a `zarvan` command (1:1 rule). | `zarvan_core` |
-| `packages/zarvan_cli` | `zarvan` CLI: `create`/`upgrade`/`lint`. | `zarvan_core` (for `lint`) |
+| `packages/zarvan_api` | MCP server + HTTP/JSON-RPC API over the operation registry in `zarvan_core` (spec: `engine_mcp.md`; adding an operation: see the checklist in `TODO.md`'s agent-API section and regenerate `docs/reference/operations.md`). Every operation also exists as a `zarvan` command (1:1 rule). | `zarvan_core`, `zarvan_schema` |
+| `packages/zarvan_cli` | `zarvan` CLI: `create`/`upgrade`/`lint`. | `zarvan_core`, `zarvan_schema` |
+| `packages/zarvan_studio` | Desktop editor for levels, graphs and assets. | `zarvan_core`, `zarvan_schema`, `zarvan_flutter`, `zarvan_platformer` |
 | `packages/zarvan_eye` | Flutter-free Dart client for Eye analytics: sessions, identity, batching and retries. | none |
 
 **Dependency direction is a one-way DAG: `zarvan_core` → `zarvan_flutter`
@@ -61,7 +62,7 @@ Read each package's own README for its API — this file is about
   in `zarvan_flutter`, stop and put it in `zarvan_core` instead.
 - **No other game engines** (not Flame, not Unity, not Godot) — this is
   built from scratch on purpose.
-- Every `zarvan_flutter`/`zarvan_cli` package depends on `zarvan_core`
+- Engine-internal packages depend on their siblings
   via a **self-referencing git dependency** (same URL, same `ref: main`
   a consumer would use), not a local `path:` — this is load-bearing,
   not accidental. A local `path:` dependency makes `pub` see two
@@ -85,9 +86,7 @@ Read each package's own README for its API — this file is about
   never *what* — the code already says what. Look at any existing file
   for the calibration.
 - **Every change gets a test**, and the test suite must pass before
-  committing: `dart test`/`dart analyze --fatal-infos` for
-  `zarvan_core`/`zarvan_cli`, `flutter test`/`flutter analyze
-  --fatal-infos` for `zarvan_flutter`/`zarvan_platformer`.
+  committing: use the package-specific commands in [CONTRIBUTING.md](CONTRIBUTING.md), including downstream packages affected by the change.
 - **Documentation and test coverage are both non-negotiable, not
   best-effort.** Every new public class/field/function gets a doc
   comment (the *why*, per the no-unnecessary-comments rule above — not

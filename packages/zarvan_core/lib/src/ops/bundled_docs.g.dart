@@ -3,6 +3,1610 @@
 
 /// Curated markdown bodies for [kRemoteDocsPages] (engine.docs offline).
 const kBundledDocs = <String, String>{
+  'agents.md': '''---
+title: Agent hub
+description: Entry points, permission boundaries and verified control loops for agents working with ZARVAN.
+---
+
+# Agent hub
+
+Choose the role before choosing an API. A repository coding agent, a game-content operator and a runtime NPC have different permissions and interfaces.
+
+| Role | Start here | Contract |
+|---|---|---|
+| Coding agent modifying the engine | [Repository AGENTS.md](../AGENTS.md) | Public Dart exports, source, tests and package manifests |
+| Project author/operator | [Tutorial 6](tutorials/06-agent-api.md) | Operation registry over MCP, REST, JSON-RPC or CLI |
+| External strategy player | [Tutorial 3](tutorials/03-agent-driven-game.md) | Filtered observations and validated orders |
+| Trusted runtime behavior | [Runtime agent API](concepts/agent-api.md) | `Behavior.decide(WorldView, EntityId)` returns an `Action` |
+
+## Discover the contract
+
+Before invoking a tool, call `engine.capabilities` to discover restrictions and registry version, `engine.operations` to enumerate available operations, and `engine.operation` with `{"name":"level.list"}` (or the operation you need) to obtain its input schema, errors and examples. Use `engine.docs` for available Markdown documentation.
+
+```bash
+zarvan engine capabilities --json
+zarvan engine operations --json
+zarvan engine operation level.list --json
+```
+
+See [operations](reference/operations.md), [components](reference/components.md), [events](reference/events.md), and [transports](reference/transports.md). Published discovery resources: [llms.txt](https://meetarash.ir/zarvan/llms.txt) (index) and [llms-full.txt](https://meetarash.ir/zarvan/llms-full.txt) (complete technical Markdown). See [API reference](api-reference.md) for public Dart libraries.
+
+## Retrieve only the context you need
+
+The site publishes [agent-docs/manifest.json](https://meetarash.ir/zarvan/agent-docs/manifest.json), a versioned JSON index with source paths, canonical page URLs, Markdown URLs, language and SHA-256 hashes. The hashes identify content, not engine compatibility. The [world operation group](https://meetarash.ir/zarvan/agent-docs/operations/world.md) and other per-group Markdown references carry the common permission contract; discover their URLs in the manifest.
+
+Prefer a single relevant Markdown page or group over the full corpus. For exact parameters and permissions of the installed engine, still query the live registry. Relative links in raw Markdown refer to the original source paths.
+
+## Observe, validate, act, observe again
+
+1. Inspect project or world state before editing.
+2. Validate content with `level.validate`, `level.lint` or `project.problems`; inspect the returned result, not only the transport status.
+3. Preview project writes where supported; destructive operations require confirmation. For `world.patch`, pass `dryRun: true` to validate and `strict: true` when applying.
+4. Inspect the resulting diff, warnings and state. Undo journalled file edits if necessary; in-memory world operations are not file undo entries.
+
+In trusted Dart code, use the actual behavior signature:
+
+```dart
+import \'package:zarvan_core/zarvan_core.dart\';
+
+class IdleBehavior implements Behavior {
+  @override
+  Action decide(WorldView view, EntityId self) {
+    return const NoOpAction();
+  }
+}
+```
+
+Register the behavior in a `BehaviorRegistry`, attach `AIState` to an entity and install `AISystem`. The system calls `decide` and applies each action immediately. See the [custom behavior recipe](examples/custom-behavior.md).
+
+## Permission and safety boundaries
+
+- `--read-only` protects against operations classified as file writes or destructive operations; some operations classified as reads change session or sandbox-world state. Use an explicit server allowlist when observation must not change that state. Legacy CLI commands do not all use the registry policy; do not treat the CLI flag as a filesystem sandbox.
+- `WorldView` is a cooperative interface, not a security sandbox: it exposes the underlying world and may return mutable component objects. Never execute arbitrary untrusted Dart as an NPC.
+- Filter observations for external strategy agents before sending them. Fog-aware order validation does not make a full world snapshot private.
+- The API can perform file edits; use least privilege, previews, validation and confirmation. Never expose the bearer token to an untrusted agent.
+- Use public exports, fixed simulation steps and seeded randomness. Verify changes with tests.
+
+For a linear workflow, see [For AI agents](guides/for-ai-agents.md).
+''',
+
+  'guides/for-ai-agents.md': '''# For AI agents
+
+Use this guide if you are building an agent that reads, changes or plays a ZARVAN world. If you are modifying the engine repository itself, read [AGENTS.md](../../AGENTS.md) instead.
+
+## Choose a role
+
+| Role | Observes | Acts through |
+|---|---|---|
+| Trusted runtime NPC | `WorldView` | `Behavior.decide(view, self)`, returning an `Action` |
+| External strategy player | A team-filtered observation | Validated orders |
+| Author/operator | Project files, schemas, sandbox-world snapshots | Operation registry (MCP, CLI, REST or JSON-RPC) |
+
+The runtime Dart interface is cooperative, not process isolation. A custom behavior can access mutable state; never execute arbitrary untrusted Dart as a behavior. See [runtime agent API](../concepts/agent-api.md).
+
+## Discover before calling
+
+1. Call `engine.capabilities` to check availability and restrictions.
+2. Call `engine.operations` to enumerate visible operations.
+3. Call `engine.operation` with `{"name":"level.list"}` (or the desired operation) to obtain its exact input schema, errors and examples.
+4. Call `engine.docs` for available Markdown pages or read the [published index](https://meetarash.ir/zarvan/llms.txt) or [full technical Markdown](https://meetarash.ir/zarvan/llms-full.txt).
+
+Use the [operations reference](../reference/operations.md), [component shapes](../reference/components.md), [events](../reference/events.md) and [transport quick start](../reference/transports.md).
+
+## Retrieve focused context
+
+Read [the documentation manifest](https://meetarash.ir/zarvan/agent-docs/manifest.json) for raw Markdown URLs and operation-group files. Choose only the pages that match the task. Use the live registry when published docs and the installed version differ. For repository work, see [custom components](../examples/custom-component-system.md), [operation extensions](extending-operations.md) and [replay diagnosis](../examples/debug-deterministic-replay.md).
+
+## Validate before applying
+
+Dart patches use a two-step pattern:
+
+```dart
+final problems = world.checkPatch(patch);
+if (problems.isEmpty) {
+  world.applyPatch(patch, strict: true);
+}
+```
+
+The `world.patch` registry operation separately accepts `dryRun: true` to return problems without applying a patch. Inspect both the result envelope and validation data. Use `strict: true` for actual application.
+
+For project content, inspect `project.problems`, `level.validate` or `level.lint`; preview file writes and inspect the resulting diff. Destructive edits require a confirmation token. Journalled file writes can be undone; sandbox-world changes are not file undo entries.
+
+## Rules and limits
+
+- Treat `--read-only` as a restriction on operation kinds, not immutable simulation state. Some read-classified operations change session or in-memory worlds. Restrict the server allowlist if observation must be side-effect free. Legacy CLI commands do not all use the registry policy.
+- Treat full snapshots as privileged: filter them before sharing with an external player. Order validation does not prevent information leaks.
+- Use `world.random` and fixed timesteps for deterministic simulation.
+- Register components before expecting them to appear in serialization. See [FAQ](../faq.md#my-component-isnt-saved-or-loaded).
+- Do not guess missing parameters, enum values, imports or result shapes. Inspect live schemas and public exports.
+
+Continue with [agent hub](../agents.md), [external strategy player tutorial](../tutorials/03-agent-driven-game.md) or [operator tutorial](../tutorials/06-agent-api.md).
+''',
+
+  'guides/extending-operations.md': '''# Extend the operation registry
+
+**Audience:** engine contributors. The registry is the common contract for agent discovery, CLI, MCP, REST and JSON-RPC.
+
+## Locate the correct layer
+
+- Operation declarations: `packages/zarvan_core/lib/src/ops/groups/`.
+- Registry assembly: [all_operations.dart](../../packages/zarvan_core/lib/src/ops/all_operations.dart).
+- Parameter and result types: [param.dart](../../packages/zarvan_core/lib/src/ops/param.dart), [result.dart](../../packages/zarvan_core/lib/src/ops/result.dart).
+- Transport adapters: `zarvan_api` and `zarvan_cli`.
+
+## Example: a pure read
+
+This is an illustrative operation declaration, not an installed ZARVAN operation. Add it only if the feature is needed.
+
+```dart
+Operation(
+  name: \'example.echo\',
+  summary: \'Return the supplied text unchanged.\',
+  description: \'Returns the supplied text without changing state.\',
+  kind: OperationKind.read,
+  scope: OperationScope.pure,
+  idempotent: true,
+  params: const [
+    Param(\'text\', ParamType.string,
+      required: true, description: \'Text to return unchanged.\'),
+  ],
+  handler: (ctx, args) => OpOutcome.data({\'text\': args[\'text\']}),
+  examples: const [
+    Example(\'Echo text\', {\'text\': \'hello\'}, expect: {\'text\': \'hello\'}),
+  ],
+)
+```
+
+Import `package:zarvan_core/zarvan_core_ops.dart` when using public operation types. When adding a built-in operation inside core, follow the sibling source imports and register it in the appropriate group.
+
+## Contract checklist
+
+Choose the operation kind according to actual effects. A read-classified operation may still mutate an in-memory session; disclose those effects and never use this classification to bypass file-write policy. Project content writes should return an `OpOutcome.proposal` with a `Proposal` of `FileChange` records for the safety pipeline. Do not write project content directly from the handler. Destructive edits require preview and confirmation.
+
+Describe every parameter, default, unit and constraint. Return stable error codes with useful paths and hints. Keep secrets out of examples, logs and outputs. Add examples, tests for invalid input and permissions, and output schema where practical.
+
+## Validate and regenerate
+
+```bash
+(cd packages/zarvan_core && dart analyze --fatal-infos && dart test)
+(cd packages/zarvan_api && dart run tool/gen_api_docs.dart > ../../docs/reference/operations.md)
+(cd packages/zarvan_api && dart run tool/gen_api_docs.dart --transports > ../../docs/reference/transports.md)
+(cd packages/zarvan_core && dart run tool/gen_bundled_docs.dart)
+(cd packages/zarvan_api && dart test)
+mkdocs build --strict
+```
+
+Verify the operation is discoverable via `engine.operation`, that its declared example works and that applicable transports return the same envelope. See [documentation conventions](../contributing-docs.md).
+''',
+
+  'examples/custom-component-system.md': '''# Recipe: a custom component and system
+
+**Audience:** Dart game developers and coding agents. **Runtime:** pure Dart. Use this pattern for gameplay data that must serialize, validate and step without Flutter.
+
+## Define the data, schema and system
+
+The example stores energy, consumes one unit per second, and clamps at zero. Put it in a Dart file in a project that depends on `zarvan_core`.
+
+```dart
+import \'package:zarvan_core/zarvan_core.dart\';
+
+class Energy {
+  Energy(this.amount);
+  double amount;
+
+  Map<String, dynamic> toJson() => {\'amount\': amount};
+
+  factory Energy.fromJson(Map<String, dynamic> json) {
+    final amount = (json[\'amount\'] as num).toDouble();
+    if (!amount.isFinite || amount < 0) {
+      throw FormatException(\'Energy must be finite and non-negative.\');
+    }
+    return Energy(amount);
+  }
+}
+
+const energySchema = ComponentSchema(\'energy\', [
+  FieldSchema(\'amount\', FieldType.double, min: 0, required: true),
+]);
+
+void registerEnergy(World world) {
+  world.components.register<Energy>(
+    \'energy\',
+    (energy) => energy.toJson(),
+    Energy.fromJson,
+    schema: energySchema,
+  );
+}
+
+World makeEnergyWorld() {
+  final world = World(width: 320, height: 240);
+  registerEnergy(world);
+  world.addSystemFn(\'energy-drain\', (world, dt) {
+    final store = world.componentsOf<Energy>();
+    for (var i = 0; i < store.length; i++) {
+      final energy = store.denseAt(i);
+      final next = energy.amount - dt;
+      energy.amount = next < 0 ? 0 : next;
+    }
+  });
+  return world;
+}
+```
+
+Registration binds the stable JSON name to the Dart type and serializers. Register once per world, before spawning the component or loading a level. The schema describes the JSON contract; constructor/deserializer checks still matter because callers can enter through different APIs.
+
+## Exercise it
+
+```dart
+final world = makeEnergyWorld();
+final id = world.spawnWith([Energy(5)]);
+world.step(0.5);
+assert(world.getComponent<Energy>(id)!.amount == 4.5);
+
+final patch = <String, dynamic>{
+  \'entities\': [
+    {
+      \'id\': id,
+      \'components\': {
+        \'energy\': {\'amount\': 2},
+      },
+    },
+  ],
+};
+final problems = world.checkPatch(patch);
+if (problems.isEmpty) world.applyPatch(patch, strict: true);
+```
+
+This updates an existing entity. It does not create missing entities or merge individual fields into the old component automatically.
+
+## Agent and Studio integration
+
+A game-local registration makes the component available in that world. It does **not** automatically add the schema to the engine-wide `allComponentSchemas` used by the stock CLI, MCP server and Studio. A reusable engine component requires an exported schema in `zarvan_schema`, registration in the correct runtime package, and regenerated component documentation. For a game-specific tool, supply the game\'s schemas explicitly to its validator.
+
+Do not put a game-specific component into core solely to make the stock tools accept it.
+
+## Verification
+
+The example has a regression test in [custom_component_docs_test.dart](../../packages/zarvan_core/test/custom_component_docs_test.dart):
+
+```bash
+cd packages/zarvan_core
+dart test test/custom_component_docs_test.dart
+```
+
+Related: [ECS](../concepts/ecs.md), [component reference](../reference/components.md), [content as data](../concepts/content-as-data.md).
+''',
+
+  'examples/debug-deterministic-replay.md': '''# Recipe: diagnose a divergent replay
+
+**Audience:** developers and agents investigating reproducibility. **Runtime:** pure Dart.
+
+The goal is to find the first differing tick, not to compare only the final world.
+
+## Capture the inputs
+
+Record the engine Git ref, initial level/content version, world seed, system order, fixed timestep, and all external input or agent orders by tick. Copy mutable input maps before recording them with `ReplayRecorder`. The recorder stores arbitrary input data and timing; it does not automatically capture every simulation decision.
+
+## Reproduce with two worlds
+
+```dart
+import \'package:zarvan_core/zarvan_core.dart\';
+
+World makeWorld() {
+  final world = World(width: 320, height: 240, seed: 42);
+  registerCoreComponents(world);
+  world.addSystem(MovementSystem());
+  world.spawnWith([Position(0, 0), Velocity(10, 0)]);
+  return world;
+}
+
+void main() {
+  final a = makeWorld();
+  final b = makeWorld();
+  for (var tick = 0; tick < 60; tick++) {
+    a.step(1 / 60);
+    b.step(1 / 60);
+    // Compare canonicalized snapshot JSON at this tick in a test.
+  }
+}
+```
+
+In a regression test, compare `WorldSnapshot.capture(a).toJson()` with the equivalent snapshot from `b` after every step. Dart\'s test `equals` matcher compares nested maps and lists structurally. If a mismatch appears, report the tick, entity ID, component name, expected value and actual value. Keep the seed and inputs fixed while reducing the reproduction.
+
+## Diagnose the first differing tick
+
+| Symptom | Inspect |
+|---|---|
+| Different random choice | World seed and `world.random.state`; find unseeded random generators |
+| Different position or timer | Exact step duration, number of steps, system phase/order |
+| Different entity IDs | Spawn/destruction order, deferred commands and initialization |
+| Different agent decision | Observations, behavior memory, order of actions |
+| Snapshot missing data | Component registration and serializers |
+| Replay diverges after restore | System-owned mutable state, queued callbacks, timers or external side effects |
+
+## Choose the right state API
+
+`World.toJson()` is the inspection format. `applyPatch` updates existing entities. `WorldSnapshot.capture(world)` captures registered entity components, tick and random state; `snapshot.restoreInto(world)` restores that data into a configured world. It does not serialize arbitrary Dart callbacks, installed systems or external resources. Rebuild the same systems and include game-specific state needed by the simulation.
+
+A fixed timestep and seed are necessary for reproducibility, not a guarantee of it. Keep real-time UI, audio and network arrival timing outside deterministic game rules.
+
+See [ECS](../concepts/ecs.md), [networking](../concepts/networking.md) and [save/load](save-load.md).
+''',
+
+  'concepts/agent-api.md': '''# The agent-facing API: `Behavior` + `WorldView` + `AISystem`
+
+This is the engine\'s other AI-agent-friendly pillar (alongside
+[content-as-data.md](content-as-data.md)): an interface for a runtime
+agent/NPC to *drive an entity during simulation* — whether that agent
+is a hand-written state machine, a rule-based patrol AI, or an
+LLM-backed decision-maker — using a cooperative separation between observation and action. This is not a security boundary for untrusted Dart.
+
+## Why separate observation from action
+
+A behavior that could freely mutate `World` could, by a bug or a bad
+LLM tool call, break invariants another system depends on (move an
+entity outside the map, delete a component another system reads
+unconditionally, etc.). The intended pattern is to inspect a `WorldView`, then return an `Action` for `AISystem` to apply. A custom Dart behavior is trusted code: `WorldView.world` exposes the underlying `World`, and component queries can return mutable objects. Do not treat this interface as process isolation or execute arbitrary untrusted code.
+
+```
+Behavior.decide(WorldView, EntityId self) -> Action
+                                                 |
+                                                 v
+                                    AISystem: action.apply(world)
+```
+
+## `WorldView`: observation queries
+
+`packages/zarvan_core/lib/src/ecs/world_view.dart`. Wraps a `World` and
+provides query helpers. The returned components are not necessarily immutable:
+
+```dart
+class MyBehavior implements Behavior {
+  @override
+  Action decide(WorldView view, EntityId self) {
+    final myPos = view.component<Position>(self);
+    if (myPos == null) return const NoOpAction();
+
+    for (final other in view.entitiesWith<Position>()) {
+      if (other == self) continue;
+      // Inspect other entities; do not mutate their components here.
+    }
+
+    return const NoOpAction();
+  }
+}
+```
+
+Useful queries: `component<T>(id)`, `hasComponent<T>(id)`,
+`entitiesWith<T>()`, `entitiesWithAll<A, B>()`, and a closest-entity
+helper — see the full list in `world_view.dart` or
+`packages/zarvan_core/README.md`\'s agent-API section.
+
+## `Action`: the intended way to cause a change
+
+```dart
+abstract class Action {
+  void apply(World world);
+}
+```
+
+The engine ships generic actions (e.g. `NoOpAction`,
+`SetVelocityAction` in `packages/zarvan_core/lib/src/ai/set_velocity_action.dart`)
+plus whatever your game defines itself — a game-specific `Action`
+subclass is how you extend this without the engine needing to know
+about your domain logic:
+
+```dart
+class StopAction implements Action {
+  StopAction(this.target);
+  final EntityId target;
+
+  @override
+  void apply(World world) {
+    final velocity = world.getComponent<Velocity>(target);
+    if (velocity == null) return;
+    velocity.x = 0;
+    velocity.y = 0;
+  }
+}
+```
+
+## `Behavior` + `BehaviorRegistry`
+
+```dart
+abstract class Behavior {
+  Action decide(WorldView view, EntityId self);
+}
+```
+
+Behaviors carry logic (closures, state machines) so — unlike plain-data
+components — they\'re registered under a string id rather than embedded
+in JSON, and `AIState.behaviorId` references that id:
+
+```dart
+import \'package:zarvan_core/zarvan_core.dart\';
+
+void main() {
+  final world = World(width: 320, height: 240);
+  registerCoreComponents(world);
+
+  final behaviors = BehaviorRegistry();
+  behaviors.registerFn(\'idle\', (view, self) => const NoOpAction());
+  world.addSystem(AISystem(behaviors));
+
+  final entity = world.spawn();
+  world.setComponent(entity, AIState(\'idle\'));
+  world.step(1 / 60);
+}
+```
+
+`AIState.memory` is a free-form JSON-serializable blackboard (a
+waypoint index, a cooldown timer) a behavior can carry state in between
+ticks without needing its own component type — mutate it directly on
+the `AIState` you read via `view.component<AIState>(self)` inside
+`decide`, as a documented convention for trusted behaviors. Other component mutation should be expressed through actions.
+
+## `AISystem`
+
+Runs every `AIState`-tagged entity once per tick: resolves its
+`behaviorId` via the registry, calls `decide`, applies the returned
+`Action`. Builds one `WorldView` per tick, then calls and applies each behavior in sequence. It is a live view, not an immutable snapshot: earlier actions can affect later observations. `AISystem` does not independently validate arbitrary custom `Action.apply` implementations.
+
+## `zarvan_platformer`\'s ready-made behaviors
+
+`PatrolBehavior`, `FollowBehavior`, `AvoidanceBehavior`,
+`PathFollowBehavior` (`packages/zarvan_platformer/lib/src/ai/`) are
+concrete `Behavior` implementations for common enemy AI — read one of
+these as a worked example of writing your own.
+
+## See also
+
+- [ecs.md](ecs.md) — `World`/`ComponentStore`/`System` underneath all of this.
+- [content-as-data.md](content-as-data.md) — the other read/write path (patching from outside simulation, vs. deciding during it).
+- [examples/custom-behavior.md](../examples/custom-behavior.md) — a focused, minimal worked example.
+- [`packages/zarvan_core/README.md`](../../packages/zarvan_core/README.md)\'s "The agent-facing API" section.
+
+## Two doors, one idea: real-time and turn-based
+
+The cooperative principle — *an agent proposes, the engine applies* — has two
+shapes in this engine:
+
+| | Real-time (platformer) | Turn-based (strategy) |
+|---|---|---|
+| Agent type | `Behavior` | `TurnAI` (or any external program) |
+| Reads | `WorldView` (live observation) | `World.toJson()` snapshot, or the typed stores |
+| Proposes | an `Action` returned from `decide` | `Order`s passed to `submitOrder` |
+| Applied by | `AISystem` | `OrderSystem` |
+| Refused when | the action implementation rejects it | not that team\'s turn, game over, or the order is illegal |
+| Cadence | every tick | once per team turn |
+
+For untrusted external agents, expose a validated protocol with filtered observations, not the mutable Dart world. `TurnAI.playTurn` receives `World` and is also trusted code; built-in strategies follow order and fog rules by convention.
+
+For a complete turn-based agent that sees only JSON, see
+[Tutorial 3](../tutorials/03-agent-driven-game.md); for a hand-written
+opponent, the [custom TurnAI recipe](../examples/custom-turn-ai.md).
+''',
+
+  'reference/components.md': '''# Component reference
+
+<!-- Generated by packages/zarvan_schema/tool/gen_component_docs.dart. Do not edit. -->
+
+Every built-in component and the exact JSON shape it serializes to — what you see in `World.toJson()` and what `applyPatch` / `Level.loadInto` accept. This page is generated from `zarvan_schema`, the same schemas the studio and `zarvan lint` validate against, so it is always current.
+
+**106 components** across 4 packages. Jump to: [zarvan_core](#zarvan_core) · [zarvan_flutter](#zarvan_flutter) · [zarvan_platformer](#zarvan_platformer) · [zarvan_idle](#zarvan_idle)
+
+## zarvan_core
+
+Genre-general data. Registered by `registerCoreComponents`.
+
+### `position`
+
+| Field | Type | Notes |
+|---|---|---|
+| `x` | `double` | required; default `0` |
+| `y` | `double` | required; default `0` |
+
+### `velocity`
+
+| Field | Type | Notes |
+|---|---|---|
+| `x` | `double` | required; default `0` |
+| `y` | `double` | required; default `0` |
+
+### `collider`
+
+| Field | Type | Notes |
+|---|---|---|
+| `radius` | `double` | required; 0 to ∞ |
+| `blocksLight` | `bool` | default `false` |
+| `pushable` | `bool` | default `true` |
+| `collisionGroup` | `int` | default `1` |
+| `collisionMask` | `int` | default `-1` |
+
+### `aiState`
+
+| Field | Type | Notes |
+|---|---|---|
+| `behaviorId` | `string` | required |
+| `memory` | `object` | may be null |
+
+### `button`
+
+| Field | Type | Notes |
+|---|---|---|
+| `actionId` | `string` | required |
+
+### `buttonHitBox`
+
+| Field | Type | Notes |
+|---|---|---|
+| `width` | `double` | required; 0 to ∞ |
+| `height` | `double` | required; 0 to ∞ |
+
+### `roomExit`
+
+| Field | Type | Notes |
+|---|---|---|
+| `targetSceneId` | `string` | required |
+| `spawnPoint` | `string` | required |
+
+### `tileMap`
+
+| Field | Type | Notes |
+|---|---|---|
+| `cols` | `int` | required; 1 to ∞ |
+| `rows` | `int` | required; 1 to ∞ |
+| `tileWidth` | `double` | required; 0 to ∞ |
+| `tileHeight` | `double` | required; 0 to ∞ |
+| `tiles` | `list` | required |
+| `solidTileIds` | `list` |  |
+| `oneWayTileIds` | `list` |  |
+| `slopeUpRightTileIds` | `list` |  |
+| `slopeUpLeftTileIds` | `list` |  |
+| `ladderTileIds` | `list` |  |
+| `conveyorSpeedByTileId` | `object` |  |
+| `frictionByTileId` | `object` |  |
+| `atlasId` | `string` | may be null |
+| `regionByTileId` | `object` |  |
+| `zIndex` | `int` | default `0` |
+| `backgroundTiles` | `list` | may be null |
+| `foregroundTiles` | `list` | may be null |
+| `tileAnimations` | `object` | may be null |
+| `tileAnimationFps` | `double` | 0 to ∞; default `6` |
+| `collisionGroups` | `object` | may be null |
+
+### `particle`
+
+| Field | Type | Notes |
+|---|---|---|
+| `age` | `double` | 0 to ∞ |
+| `lifetime` | `double` | required; 0 to ∞ |
+| `startScale` | `double` | 0 to ∞ |
+| `endScale` | `double` | 0 to ∞ |
+| `startAlpha` | `double` | 0 to 1 |
+| `endAlpha` | `double` | 0 to 1 |
+| `colorArgb` | `int` |  |
+| `zIndex` | `int` |  |
+| `followEmitter` | `bool` |  |
+| `emitterEntityId` | `int` | may be null |
+
+### `particleEmitter`
+
+| Field | Type | Notes |
+|---|---|---|
+| `rate` | `double` | 0 to ∞ |
+| `burstCount` | `int` | 0 to ∞ |
+| `speedMin` | `double` | 0 to ∞ |
+| `speedMax` | `double` | 0 to ∞ |
+| `angleMin` | `double` |  |
+| `angleMax` | `double` |  |
+| `lifetimeMin` | `double` | 0 to ∞ |
+| `lifetimeMax` | `double` | 0 to ∞ |
+| `startScale` | `double` | 0 to ∞ |
+| `endScale` | `double` | 0 to ∞ |
+| `startAlpha` | `double` | 0 to 1 |
+| `endAlpha` | `double` | 0 to 1 |
+| `colorArgb` | `int` |  |
+| `zIndex` | `int` |  |
+| `emissionShape` | `enumeration` | one of `point`, `circle`, `rect`, `edge`; default `point` |
+| `emissionRadius` | `double` | 0 to ∞ |
+| `emissionHalfWidth` | `double` | 0 to ∞ |
+| `emissionHalfHeight` | `double` | 0 to ∞ |
+| `edgeStartX` | `double` |  |
+| `edgeStartY` | `double` |  |
+| `edgeEndX` | `double` |  |
+| `edgeEndY` | `double` |  |
+| `followEmitter` | `bool` |  |
+| `accumulator` | `double` | 0 to ∞ |
+
+### `tween`
+
+| Field | Type | Notes |
+|---|---|---|
+| `from` | `double` | required |
+| `to` | `double` | required |
+| `duration` | `double` | required; 0 to ∞ |
+| `elapsed` | `double` | 0 to ∞ |
+| `loop` | `bool` |  |
+| `pingPong` | `bool` |  |
+| `easing` | `enumeration` | one of `linear`, `easeInQuad`, `easeOutQuad`, `easeInOutQuad`; default `linear` |
+| `reversed` | `bool` |  |
+
+### `triggerZone`
+
+| Field | Type | Notes |
+|---|---|---|
+| `triggerId` | `string` | required |
+| `data` | `object` | may be null |
+
+### `pushable`
+
+| Field | Type | Notes |
+|---|---|---|
+| `pushSpeed` | `double` | 0 to ∞ |
+
+### `dialogueGraph`
+
+| Field | Type | Notes |
+|---|---|---|
+| `nodes` | `object` | required |
+| `startNodeId` | `string` | required |
+| `metadata` | `object` | may be null |
+
+### `gameState`
+
+| Field | Type | Notes |
+|---|---|---|
+| `data` | `object` |  |
+| `migrationVersion` | `int` | 1 to ∞; default `1` |
+
+### `inventory`
+
+| Field | Type | Notes |
+|---|---|---|
+| `items` | `object` |  |
+
+### `particleForces`
+
+| Field | Type | Notes |
+|---|---|---|
+| `radius` | `double` | 0 to ∞; default `100` |
+| `strength` | `double` | default `500` |
+| `isWind` | `bool` | default `false` |
+| `windDirection` | `double` | default `0` |
+| `falloffExponent` | `double` | 0 to ∞; default `2` |
+
+### `hearing`
+
+| Field | Type | Notes |
+|---|---|---|
+| `range` | `double` | required; 0 to ∞ |
+
+### `soundEvent`
+
+| Field | Type | Notes |
+|---|---|---|
+| `x` | `double` | required |
+| `y` | `double` | required |
+| `loudness` | `double` | required; 0 to ∞ |
+| `tag` | `string` | may be null |
+| `data` | `object` | may be null |
+
+### `team`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+
+### `actionPoints`
+
+| Field | Type | Notes |
+|---|---|---|
+| `max` | `int` | required; 0 to ∞ |
+| `current` | `int` | 0 to ∞ |
+
+### `turnState`
+
+| Field | Type | Notes |
+|---|---|---|
+| `order` | `list` | required |
+| `activeIndex` | `int` | 0 to ∞ |
+| `round` | `int` | 1 to ∞ |
+| `eliminated` | `list` |  |
+| `winner` | `string` | may be null |
+
+### `gridPosition`
+
+| Field | Type | Notes |
+|---|---|---|
+| `col` | `int` | required |
+| `row` | `int` | required |
+
+### `gridFootprint`
+
+| Field | Type | Notes |
+|---|---|---|
+| `size` | `int` | 1 to ∞ |
+
+### `orderQueue`
+
+| Field | Type | Notes |
+|---|---|---|
+| `orders` | `list` |  |
+
+### `selected`
+
+A marker: present or absent, no fields.
+
+### `countdownTimer`
+
+| Field | Type | Notes |
+|---|---|---|
+| `name` | `string` | required |
+| `remaining` | `double` | required; 0 to ∞ |
+| `interval` | `double` | may be null; 0 to ∞ |
+
+### `tags`
+
+| Field | Type | Notes |
+|---|---|---|
+| `tags` | `list` | required |
+
+### `prefabRef`
+
+| Field | Type | Notes |
+|---|---|---|
+| `name` | `string` | required |
+
+### `name`
+
+| Field | Type | Notes |
+|---|---|---|
+| `value` | `string` | required |
+
+### `parent`
+
+| Field | Type | Notes |
+|---|---|---|
+| `entity` | `int` | required; 0 to ∞ |
+
+### `unitStats`
+
+| Field | Type | Notes |
+|---|---|---|
+| `maxHp` | `int` | required; 1 to ∞ |
+| `hp` | `int` | 0 to ∞ |
+| `attack` | `int` | 0 to ∞; default `1` |
+| `defense` | `int` | 0 to ∞; default `0` |
+
+### `vision`
+
+| Field | Type | Notes |
+|---|---|---|
+| `range` | `int` | required; 0 to ∞ |
+
+### `fogOfWar`
+
+| Field | Type | Notes |
+|---|---|---|
+| `cols` | `int` | required; 1 to ∞ |
+| `rows` | `int` | required; 1 to ∞ |
+| `visible` | `object` |  |
+| `explored` | `object` |  |
+
+### `attackProfile`
+
+| Field | Type | Notes |
+|---|---|---|
+| `range` | `int` | 1 to ∞; default `1` |
+| `cost` | `int` | 0 to ∞; default `1` |
+
+### `statusEffects`
+
+| Field | Type | Notes |
+|---|---|---|
+| `effects` | `list` |  |
+
+### `objective`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+| `col` | `int` | required |
+| `row` | `int` | required |
+| `owner` | `string` | may be null |
+
+### `objectiveRules`
+
+| Field | Type | Notes |
+|---|---|---|
+| `holdTurnsToWin` | `int` | required; 1 to ∞ |
+| `holds` | `object` |  |
+
+### `realtimeStats`
+
+| Field | Type | Notes |
+|---|---|---|
+| `speed` | `double` | 0 to ∞; default `2` |
+| `attackInterval` | `double` | 0 to ∞; default `1` |
+| `moveProgress` | `double` | 0 to ∞ |
+| `cooldown` | `double` | 0 to ∞ |
+
+### `vip`
+
+A marker: present or absent, no fields.
+
+### `flag`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+| `homeTeam` | `string` | required |
+| `homeCol` | `int` | required |
+| `homeRow` | `int` | required |
+| `col` | `int` |  |
+| `row` | `int` |  |
+| `carrier` | `int` | may be null |
+
+### `deliveryZone`
+
+| Field | Type | Notes |
+|---|---|---|
+| `team` | `string` | required |
+| `col` | `int` | required |
+| `row` | `int` | required |
+
+### `flagRules`
+
+| Field | Type | Notes |
+|---|---|---|
+| `capturesToWin` | `int` | required; 1 to ∞ |
+| `captures` | `object` |  |
+
+### `treasury`
+
+| Field | Type | Notes |
+|---|---|---|
+| `team` | `string` | required |
+| `amounts` | `object` |  |
+| `incomePerSecond` | `object` |  |
+| `carry` | `object` |  |
+
+### `producer`
+
+| Field | Type | Notes |
+|---|---|---|
+| `cost` | `object` |  |
+| `seconds` | `double` | required; 0 to ∞ |
+| `template` | `object` |  |
+| `queued` | `int` | 0 to ∞ |
+| `progress` | `double` | 0 to ∞ |
+| `paid` | `bool` |  |
+| `requires` | `list` |  |
+
+### `resourceNode`
+
+| Field | Type | Notes |
+|---|---|---|
+| `resource` | `string` | required |
+| `amount` | `int` | required; 0 to ∞ |
+
+### `depot`
+
+| Field | Type | Notes |
+|---|---|---|
+| `accepts` | `list` |  |
+
+### `gatherer`
+
+| Field | Type | Notes |
+|---|---|---|
+| `capacity` | `int` | 1 to ∞ |
+| `secondsPerUnit` | `double` | 0 to ∞ |
+| `node` | `int` | may be null |
+| `phase` | `enumeration` | one of `idle`, `toNode`, `harvesting`, `toDepot` |
+| `carrying` | `string` | may be null |
+| `carried` | `int` | 0 to ∞ |
+| `progress` | `double` | 0 to ∞ |
+
+### `construction`
+
+| Field | Type | Notes |
+|---|---|---|
+| `remaining` | `double` | required; 0 to ∞ |
+| `needsBuilder` | `bool` |  |
+
+### `builder`
+
+| Field | Type | Notes |
+|---|---|---|
+| `site` | `int` | may be null |
+
+### `techState`
+
+| Field | Type | Notes |
+|---|---|---|
+| `team` | `string` | required |
+| `researched` | `list` |  |
+
+### `provides`
+
+| Field | Type | Notes |
+|---|---|---|
+| `tech` | `list` |  |
+
+### `bigTreasury`
+
+| Field | Type | Notes |
+|---|---|---|
+| `amounts` | `object` |  |
+| `incomePerSecond` | `object` |  |
+
+### `spawner`
+
+| Field | Type | Notes |
+|---|---|---|
+| `prefab` | `string` | required |
+| `every` | `double` | 0 to ∞; default `1` |
+| `count` | `int` | 1 to ∞; default `1` |
+| `maxAlive` | `int` | 0 to ∞; default `0` |
+| `total` | `int` | 0 to ∞; default `0` |
+| `delay` | `double` | 0 to ∞; default `0` |
+| `radius` | `double` | 0 to ∞; default `0` |
+| `active` | `bool` | default `true` |
+| `waves` | `list` |  |
+| `elapsed` | `double` | 0 to ∞; default `0` |
+| `spawned` | `int` | 0 to ∞; default `0` |
+| `cycles` | `int` | 0 to ∞; default `0` |
+| `waveIndex` | `int` | 0 to ∞; default `0` |
+
+### `spawnedBy`
+
+| Field | Type | Notes |
+|---|---|---|
+| `spawner` | `int` | required |
+
+### `joint`
+
+| Field | Type | Notes |
+|---|---|---|
+| `kind` | `enumeration` | one of `spring`, `rope`, `rod`; default `spring` |
+| `other` | `int` | may be null |
+| `anchorX` | `double` | default `0` |
+| `anchorY` | `double` | default `0` |
+| `length` | `double` | 0 to ∞; default `50` |
+| `stiffness` | `double` | 0 to ∞; default `40` |
+| `damping` | `double` | 0 to ∞; default `4` |
+| `breakDistance` | `double` | 0 to ∞; default `0` |
+
+### `conveyorZone`
+
+| Field | Type | Notes |
+|---|---|---|
+| `width` | `double` | 0 to ∞; default `64` |
+| `height` | `double` | 0 to ∞; default `16` |
+| `speedX` | `double` | default `60` |
+| `speedY` | `double` | default `0` |
+
+### `teleporter`
+
+| Field | Type | Notes |
+|---|---|---|
+| `width` | `double` | 0 to ∞; default `32` |
+| `height` | `double` | 0 to ∞; default `32` |
+| `targetX` | `double` | default `0` |
+| `targetY` | `double` | default `0` |
+| `targetEntity` | `int` | may be null |
+| `cooldown` | `double` | 0 to ∞; default `0.5` |
+
+## zarvan_flutter
+
+Rendering and input data. Registered by `registerFlutterComponents` (called for you by `GameRunner`).
+
+### `sprite`
+
+| Field | Type | Notes |
+|---|---|---|
+| `atlasId` | `string` | required |
+| `region` | `string` | required |
+| `rotation` | `double` | default `0` |
+| `scaleX` | `double` | default `1` |
+| `scaleY` | `double` | default `1` |
+| `screenSpace` | `bool` | default `false` |
+| `offsetX` | `double` | default `0` |
+| `offsetY` | `double` | default `0` |
+| `zIndex` | `int` | default `0` |
+| `normalAtlasId` | `string` | may be null |
+| `tintArgb` | `int` | may be null |
+
+### `hitFlash`
+
+| Field | Type | Notes |
+|---|---|---|
+| `remaining` | `double` | 0 to ∞; default `0` |
+| `tintArgb` | `int` | default `4294914867` |
+
+### `animationState`
+
+| Field | Type | Notes |
+|---|---|---|
+| `clip` | `object` | required |
+| `frameIndex` | `int` | 0 to ∞; default `0` |
+| `elapsed` | `double` | 0 to ∞; default `0` |
+| `playing` | `bool` | default `true` |
+| `crossfadeSeconds` | `double` | 0 to ∞; default `0` |
+
+### `spriteStates`
+
+| Field | Type | Notes |
+|---|---|---|
+| `clips` | `object` | required |
+| `current` | `string` | default `idle` |
+| `restState` | `string` | default `idle` |
+| `holdStates` | `list` |  |
+
+### `oneShotFx`
+
+A marker: present or absent, no fields.
+
+### `inputState`
+
+| Field | Type | Notes |
+|---|---|---|
+| `pressed` | `list` |  |
+| `axes` | `object` |  |
+
+### `parallaxLayer`
+
+| Field | Type | Notes |
+|---|---|---|
+| `atlasId` | `string` | required |
+| `region` | `string` | required |
+| `scrollFactorX` | `double` | default `0.5` |
+| `scrollFactorY` | `double` | default `0` |
+| `tileX` | `bool` | default `true` |
+| `tileY` | `bool` | default `false` |
+| `fitHeight` | `bool` | default `false` |
+| `zIndex` | `int` | default `0` |
+
+### `text`
+
+| Field | Type | Notes |
+|---|---|---|
+| `text` | `string` | required |
+| `fontSize` | `double` | 1 to ∞; default `16` |
+| `colorArgb` | `int` | default `4294967295` |
+| `align` | `enumeration` | one of `left`, `center`, `right`; default `center` |
+| `screenSpace` | `bool` | default `false` |
+| `zIndex` | `int` | default `0` |
+| `maxWidth` | `double` | may be null; 0 to ∞ |
+| `textScale` | `double` | 0 to ∞; default `1` |
+| `alpha` | `double` | 0 to 1; default `1` |
+| `rtl` | `bool` | may be null |
+| `fontFamily` | `string` | may be null |
+| `shadowArgb` | `int` | may be null |
+
+### `hudBar`
+
+| Field | Type | Notes |
+|---|---|---|
+| `value` | `double` | required; 0 to ∞ |
+| `maxValue` | `double` | required; 0 to ∞ |
+| `width` | `double` | 0 to ∞; default `100` |
+| `height` | `double` | 0 to ∞; default `12` |
+| `fillColorArgb` | `int` | default `4283300428` |
+| `backgroundColorArgb` | `int` | default `2147483648` |
+| `screenSpace` | `bool` | default `true` |
+| `zIndex` | `int` | default `0` |
+
+### `shape`
+
+| Field | Type | Notes |
+|---|---|---|
+| `kind` | `enumeration` | one of `circle`, `roundedRect`, `ring`; default `circle` |
+| `width` | `double` | 0 to ∞; default `40` |
+| `height` | `double` | 0 to ∞; default `40` |
+| `cornerRadius` | `double` | 0 to ∞; default `0` |
+| `strokeWidth` | `double` | 0 to ∞; default `0` |
+| `colorArgb` | `int` | default `4294967295` |
+| `dashLength` | `double` | 0 to ∞; default `0` |
+| `gapLength` | `double` | 0 to ∞; default `0` |
+| `screenSpace` | `bool` | default `false` |
+| `alpha` | `double` | 0 to 1; default `1` |
+| `zIndex` | `int` | default `0` |
+
+### `nineSliceSprite`
+
+| Field | Type | Notes |
+|---|---|---|
+| `atlasId` | `string` | required |
+| `region` | `string` | required |
+| `width` | `double` | required; 0 to ∞ |
+| `height` | `double` | required; 0 to ∞ |
+| `insetLeft` | `double` | required; 0 to ∞ |
+| `insetTop` | `double` | required; 0 to ∞ |
+| `insetRight` | `double` | required; 0 to ∞ |
+| `insetBottom` | `double` | required; 0 to ∞ |
+| `zIndex` | `int` | default `0` |
+
+### `animationTransition`
+
+| Field | Type | Notes |
+|---|---|---|
+| `atlasId` | `string` | required |
+| `region` | `string` | required |
+| `scaleX` | `double` | default `1` |
+| `scaleY` | `double` | default `1` |
+| `rotation` | `double` | default `0` |
+| `zIndex` | `int` | default `0` |
+| `remainingSeconds` | `double` | required; 0 to ∞ |
+| `totalSeconds` | `double` | required; 0 to ∞ |
+
+### `light2d`
+
+| Field | Type | Notes |
+|---|---|---|
+| `radius` | `double` | 0 to ∞; default `100` |
+| `intensity` | `double` | 0 to ∞; default `1` |
+| `colorArgb` | `int` | default `16777215` |
+| `coneAngle` | `double` | may be null; 0 to ∞ |
+| `coneDirection` | `double` | default `0` |
+| `castsShadows` | `bool` | default `false` |
+| `blockOneWayPlatforms` | `bool` | default `false` |
+| `flickerSpeed` | `double` | 0 to ∞; default `0` |
+| `flickerAmount` | `double` | 0 to ∞; default `0.3` |
+| `flickerAffectsRadius` | `bool` | default `true` |
+| `baseIntensity` | `double` | may be null; 0 to ∞ |
+| `baseRadius` | `double` | may be null; 0 to ∞ |
+| `flickerElapsed` | `double` | 0 to ∞; default `0` |
+| `shadowRayCount` | `int` | 1 to ∞; default `48` |
+| `shadowSmoothingSeconds` | `double` | 0 to ∞; default `0` |
+| `shadowEdgeSoftness` | `double` | 0 to ∞; default `8` |
+| `minZIndex` | `int` | may be null |
+| `maxZIndex` | `int` | may be null |
+| `cacheShadowGeometry` | `bool` | default `false` |
+| `overbrightIntensity` | `double` | 0 to ∞; default `0` |
+| `openAirFalloffScale` | `double` | 0 to ∞; default `1` |
+| `useGpuShadows` | `bool` | default `false` |
+
+### `backdropBlur`
+
+| Field | Type | Notes |
+|---|---|---|
+| `sigma` | `double` | 0 to ∞; default `0` |
+| `belowZIndex` | `int` | required |
+
+### `shaderEffect`
+
+| Field | Type | Notes |
+|---|---|---|
+| `kind` | `enumeration` | one of `portal`, `glow`, `shine`; default `portal` |
+| `width` | `double` | required; 0 to ∞ |
+| `height` | `double` | required; 0 to ∞ |
+| `zIndex` | `int` | default `0` |
+| `speed` | `double` | 0 to ∞; default `1` |
+| `images` | `list` |  |
+| `blur` | `double` | 0 to ∞; default `0.03` |
+| `detail` | `double` | 1 to ∞; default `30` |
+| `rimGlow` | `double` | 0 to ∞; default `1` |
+| `saturation` | `double` | 0 to ∞; default `1` |
+| `border` | `double` | 0 to ∞; default `0` |
+| `intensity` | `double` | 0 to ∞; default `0.5` |
+| `period` | `double` | 0 to ∞; default `5` |
+| `rimArgb` | `int` | default `4290068492` |
+| `armArgb` | `int` | default `4294952253` |
+| `coreArgb` | `int` | default `4294963640` |
+| `params` | `list` |  |
+
+### `screenTint`
+
+| Field | Type | Notes |
+|---|---|---|
+| `colorArgb` | `int` | required |
+
+### `clipShape`
+
+| Field | Type | Notes |
+|---|---|---|
+| `isCircle` | `bool` | default `true` |
+| `radius` | `double` | 0 to ∞; default `100` |
+| `width` | `double` | 0 to ∞; default `200` |
+| `height` | `double` | 0 to ∞; default `200` |
+| `mode` | `enumeration` | one of `reveal`, `cutout`; default `reveal` |
+| `softness` | `double` | 0 to ∞; default `0` |
+
+### `playerOptions`
+
+| Field | Type | Notes |
+|---|---|---|
+| `masterVolume` | `double` | 0 to 1 |
+| `musicVolume` | `double` | 0 to 1 |
+| `sfxVolume` | `double` | 0 to 1 |
+| `controlScheme` | `string` |  |
+| `keyboardBindings` | `object` |  |
+| `gamepadBindings` | `object` |  |
+| `touchBindings` | `object` |  |
+| `textScale` | `double` | 0 to ∞ |
+| `highContrast` | `bool` |  |
+| `colorblindMode` | `string` |  |
+| `reduceMotion` | `bool` |  |
+| `screenShakeIntensity` | `double` | 0 to ∞ |
+| `dialogueSpeed` | `double` | 0 to ∞ |
+| `locale` | `string` |  |
+| `showFpsOverlay` | `bool` |  |
+| `custom` | `object` |  |
+
+### `sceneTransition`
+
+| Field | Type | Notes |
+|---|---|---|
+| `config` | `object` | required |
+| `covering` | `bool` |  |
+| `progress` | `double` | 0 to 1 |
+| `isRunning` | `bool` |  |
+| `isComplete` | `bool` |  |
+
+### `selectionMarker`
+
+| Field | Type | Notes |
+|---|---|---|
+| `owner` | `int` | required; 0 to ∞ |
+
+## zarvan_platformer
+
+Platformer gameplay data. Registered by `registerPlatformerComponents`.
+
+### `gravity`
+
+| Field | Type | Notes |
+|---|---|---|
+| `scale` | `double` | 0 to ∞; default `1` |
+| `fallMultiplier` | `double` | 0 to ∞; default `1` |
+
+### `platformBody`
+
+| Field | Type | Notes |
+|---|---|---|
+| `width` | `double` | required; 0 to ∞ |
+| `height` | `double` | required; 0 to ∞ |
+| `oneWay` | `bool` | default `false` |
+
+### `platformerController`
+
+| Field | Type | Notes |
+|---|---|---|
+| `grounded` | `bool` | default `false` |
+| `jumpSpeed` | `double` | 0 to ∞; default `300` |
+| `jumpRequested` | `bool` |  |
+| `coyoteTimeSeconds` | `double` | 0 to ∞ |
+| `jumpBufferSeconds` | `double` | 0 to ∞ |
+| `maxAirJumps` | `int` | 0 to ∞ |
+| `wallJumpPushSpeed` | `double` | 0 to ∞ |
+| `wallSlideMaxFallSpeed` | `double` | may be null; 0 to ∞ |
+| `dashSpeed` | `double` | 0 to ∞ |
+| `dashDurationSeconds` | `double` | 0 to ∞ |
+| `jumpCutMultiplier` | `double` | 0 to ∞ |
+| `timeSinceGrounded` | `double` | 0 to ∞ |
+| `timeSinceJumpPressed` | `double` | 0 to ∞ |
+| `airJumpsUsed` | `int` | 0 to ∞ |
+| `touchingWallLeft` | `bool` |  |
+| `touchingWallRight` | `bool` |  |
+| `dashRequested` | `bool` |  |
+| `dashTimeRemaining` | `double` | 0 to ∞ |
+| `dashUsed` | `bool` |  |
+| `jumpHeldLastTick` | `bool` |  |
+| `hitstunSeconds` | `double` | 0 to ∞ |
+| `facingSign` | `double` |  |
+| `climbSpeed` | `double` | 0 to ∞ |
+| `onLadder` | `bool` |  |
+| `groundFriction` | `double` | 0 to ∞ |
+| `ledgeGrabEnabled` | `bool` |  |
+| `ledgeGrabbing` | `bool` |  |
+| `ledgeMantleTargetX` | `double` |  |
+| `ledgeMantleTargetY` | `double` |  |
+| `inWater` | `bool` |  |
+
+### `movementAnimationSet`
+
+| Field | Type | Notes |
+|---|---|---|
+| `idle` | `object` | required |
+| `walk` | `object` | required |
+| `jump` | `object` | may be null |
+| `moveThreshold` | `double` | 0 to ∞ |
+
+### `jumpAnimationSet`
+
+| Field | Type | Notes |
+|---|---|---|
+| `start` | `object` | required |
+| `rising` | `object` | required |
+| `peak` | `object` | required |
+| `falling` | `object` | required |
+| `landing` | `object` | required |
+| `completed` | `object` | required |
+| `peakVelocityThreshold` | `double` | 0 to ∞ |
+| `startHoldSeconds` | `double` | 0 to ∞ |
+| `landingHoldSeconds` | `double` | 0 to ∞ |
+| `completedHoldSeconds` | `double` | 0 to ∞ |
+| `moveInterruptThreshold` | `double` | 0 to ∞ |
+
+### `jumpAnimationPhaseState`
+
+| Field | Type | Notes |
+|---|---|---|
+| `elapsed` | `double` | 0 to ∞ |
+
+### `health`
+
+| Field | Type | Notes |
+|---|---|---|
+| `current` | `double` | required; 0 to ∞ |
+| `max` | `double` | required; 1 to ∞ |
+| `invincibleSeconds` | `double` | 0 to ∞ |
+| `isGuarding` | `bool` | default `false` |
+| `guardDamageReduction` | `double` | 0 to 1; default `1` |
+| `stability` | `double` | 0 to ∞ |
+| `maxStability` | `double` | 0 to ∞ |
+| `guardBreakStunSeconds` | `double` | 0 to ∞ |
+| `guardBreakTimer` | `double` | 0 to ∞ |
+| `stabilityRegenPerSecond` | `double` | 0 to ∞ |
+
+### `checkpoint`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+| `activated` | `bool` | default `false` |
+
+### `lastCheckpoint`
+
+| Field | Type | Notes |
+|---|---|---|
+| `x` | `double` | required |
+| `y` | `double` | required |
+
+### `projectile`
+
+| Field | Type | Notes |
+|---|---|---|
+| `damage` | `double` | required; 0 to ∞ |
+| `lifetimeSeconds` | `double` | 0 to ∞ |
+| `elapsed` | `double` | 0 to ∞ |
+| `owner` | `int` | may be null |
+
+### `healthHudLink`
+
+| Field | Type | Notes |
+|---|---|---|
+| `source` | `int` | required |
+
+### `waterZone`
+
+| Field | Type | Notes |
+|---|---|---|
+| `width` | `double` | required; 0 to ∞ |
+| `height` | `double` | required; 0 to ∞ |
+| `maxFallSpeed` | `double` | 0 to ∞ |
+| `swimUpSpeed` | `double` | 0 to ∞ |
+
+### `weapon`
+
+| Field | Type | Notes |
+|---|---|---|
+| `kind` | `enumeration` | one of `melee`, `ranged`; default `melee` |
+| `damage` | `double` | 0 to ∞ |
+| `cooldownSeconds` | `double` | 0 to ∞ |
+| `cooldownRemaining` | `double` | 0 to ∞ |
+| `meleeRange` | `double` | 0 to ∞ |
+| `meleeRadius` | `double` | 0 to ∞ |
+| `meleeDurationSeconds` | `double` | 0 to ∞ |
+| `meleeHitboxFromAnimation` | `bool` | default `false` |
+| `projectileSpeed` | `double` | 0 to ∞ |
+| `projectileRadius` | `double` | 0 to ∞ |
+| `projectileLifetimeSeconds` | `double` | 0 to ∞ |
+| `comboCount` | `int` | 0 to ∞ |
+| `comboWindowSeconds` | `double` | 0 to ∞ |
+| `comboTimer` | `double` | 0 to ∞ |
+| `currentComboStep` | `int` | 0 to ∞ |
+| `comboDamageMultipliers` | `list` | may be null |
+| `comboCooldowns` | `list` | may be null |
+| `comboMeleeRanges` | `list` | may be null |
+| `comboMeleeRadii` | `list` | may be null |
+| `comboMeleeDurations` | `list` | may be null |
+| `atlasId` | `string` | may be null |
+| `spriteRegion` | `string` | may be null |
+
+### `enemyCombat`
+
+| Field | Type | Notes |
+|---|---|---|
+| `state` | `enumeration` | one of `idle`, `patrol`, `alert`, `approach`, `telegraph`, `attack`, `recovery`, `reposition`, `stagger`, `guard`, `retreat` |
+| `stateTimer` | `double` | 0 to ∞ |
+| `target` | `int` | may be null |
+| `detectionRange` | `double` | 0 to ∞ |
+| `engageRange` | `double` | 0 to ∞ |
+| `attackRange` | `double` | 0 to ∞ |
+| `telegraphDuration` | `double` | 0 to ∞ |
+| `attackDuration` | `double` | 0 to ∞ |
+| `recoveryDuration` | `double` | 0 to ∞ |
+| `repositionDuration` | `double` | 0 to ∞ |
+| `staggerDuration` | `double` | 0 to ∞ |
+| `guardDuration` | `double` | 0 to ∞ |
+| `retreatHealthFraction` | `double` | 0 to 1 |
+| `approachSpeed` | `double` | 0 to ∞ |
+| `repositionSpeed` | `double` | 0 to ∞ |
+| `retreatSpeed` | `double` | 0 to ∞ |
+| `patrolSpeed` | `double` | 0 to ∞ |
+| `patrolMinX` | `double` | may be null |
+| `patrolMaxX` | `double` | may be null |
+
+### `parry`
+
+| Field | Type | Notes |
+|---|---|---|
+| `parryTimer` | `double` | 0 to ∞ |
+| `parryCooldownTimer` | `double` | 0 to ∞ |
+| `parryWindowSeconds` | `double` | 0 to ∞ |
+| `parryStunSeconds` | `double` | 0 to ∞ |
+| `parryCooldownSeconds` | `double` | 0 to ∞ |
+
+## zarvan_idle
+
+Idle-game data. Registered by `registerIdleComponents`.
+
+### `generator`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+| `name` | `string` | may be null |
+| `nameKey` | `string` | may be null |
+| `owned` | `int` | 0 to ∞ |
+| `maxOwned` | `int` | may be null; 1 to ∞ |
+| `costResource` | `string` |  |
+| `cost` | `object` | required |
+| `output` | `object` |  |
+| `requires` | `list` |  |
+| `milestones` | `list` |  |
+
+### `upgrade`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+| `name` | `string` | may be null |
+| `nameKey` | `string` | may be null |
+| `cost` | `object` |  |
+| `target` | `string` |  |
+| `multiplier` | `string` |  |
+| `bonusPerOwned` | `string` | may be null |
+| `synergyOf` | `string` | may be null |
+| `purchased` | `bool` |  |
+| `requires` | `list` |  |
+
+### `idleModifiers`
+
+| Field | Type | Notes |
+|---|---|---|
+| `additive` | `object` |  |
+| `multiplicative` | `object` |  |
+
+### `idleStats`
+
+| Field | Type | Notes |
+|---|---|---|
+| `runEarned` | `object` |  |
+| `lifetimeEarned` | `object` |  |
+| `prestigeCount` | `int` | 0 to ∞ |
+| `taps` | `int` | 0 to ∞ |
+| `secondsPlayed` | `double` | 0 to ∞ |
+| `eventCounts` | `object` |  |
+
+### `prestigeRule`
+
+| Field | Type | Notes |
+|---|---|---|
+| `currency` | `string` | required |
+| `basedOn` | `string` | required |
+| `divisor` | `string` |  |
+| `exponent` | `double` | 0 to ∞ |
+| `bonusPerUnit` | `double` | 0 to ∞ |
+| `startingAmounts` | `object` |  |
+| `keepUpgrades` | `bool` |  |
+| `keepGenerators` | `list` |  |
+| `id` | `string` |  |
+| `resetsCurrencies` | `list` |  |
+
+### `achievement`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+| `name` | `string` | may be null |
+| `nameKey` | `string` | may be null |
+| `stat` | `string` | required |
+| `atLeast` | `string` | required |
+| `reward` | `string` |  |
+| `unlocked` | `bool` |  |
+
+### `researchNode`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+| `name` | `string` | may be null |
+| `nameKey` | `string` | may be null |
+| `cost` | `object` |  |
+| `requires` | `list` |  |
+| `unlocks` | `list` |  |
+| `purchased` | `bool` |  |
+
+### `timeWarpOffer`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+| `name` | `string` | may be null |
+| `nameKey` | `string` | may be null |
+| `seconds` | `int` | required; 1 to ∞ |
+| `cost` | `object` |  |
+
+### `seasonPass`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+| `name` | `string` | may be null |
+| `nameKey` | `string` | may be null |
+| `xpStat` | `string` | required |
+| `tiers` | `list` |  |
+| `claimed` | `int` | 0 to ∞ |
+
+### `boost`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+| `multiplier` | `string` | required |
+| `remaining` | `double` | required; 0 to ∞ |
+
+### `goldenEvents`
+
+| Field | Type | Notes |
+|---|---|---|
+| `meanInterval` | `double` | required; 1 to ∞ |
+| `lifetime` | `double` | required; 0 to ∞ |
+| `rewards` | `list` | required |
+| `countdown` | `double` |  |
+| `offered` | `int` | may be null; 0 to ∞ |
+| `offerRemaining` | `double` | 0 to ∞ |
+
+### `autoBuyer`
+
+| Field | Type | Notes |
+|---|---|---|
+| `enabled` | `bool` |  |
+| `intervalSeconds` | `double` | 0.01 to ∞ |
+| `mainResource` | `string` |  |
+| `maxPerRun` | `int` | 1 to ∞ |
+| `elapsed` | `double` | 0 to ∞ |
+
+### `challenge`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+| `name` | `string` | may be null |
+| `rules` | `list` |  |
+| `goalStat` | `string` | required |
+| `goalAtLeast` | `string` | required |
+| `reward` | `string` |  |
+| `active` | `bool` |  |
+| `completed` | `bool` |  |
+
+''',
+
   'getting-started.md': '''# Getting started
 
 From nothing to a running game in about five minutes.
@@ -47,6 +1651,14 @@ prints a warning).
     A player, solid ground, patrol enemy, coin, health bar, keyboard and
     on-screen controls. Continue with [Tutorial 1](tutorials/01-hello-world.md).
 
+=== "Top-down"
+
+    ```bash
+    zarvan create my_topdown --template topdown_game
+    ```
+
+    Four-direction movement and pickups. Continue with [Tutorial 7](tutorials/07-top-down-game.md).
+
 === "Turn-based strategy"
 
     ```bash
@@ -68,10 +1680,12 @@ prints a warning).
     catch-up — the economy is one JSON file. Continue with
     [Tutorial 5](tutorials/05-idle-game.md).
 
-Then:
+For quiz content there is no dedicated starter yet; use [Tutorial 8](tutorials/08-quiz-game.md) and `zarvan_quiz`.
+
+Then, for a generated starter:
 
 ```bash
-cd my_game          # or my_war / bakery
+cd my_game          # or my_topdown / my_war / bakery
 flutter run         # pick a device, or: flutter run -d chrome
 ```
 
@@ -140,14 +1754,14 @@ zarvan upgrade --ref main                     # move the engine pin forward
 zarvan lint assets/levels/main.level.json     # validate a level (add --playable)
 zarvan idle validate assets/idle_game.json    # idle definition check
 zarvan strategy simulate-turns assets/levels/skirmish.level.json --turns 4
-zarvan project open .                         # then project.problems / level.* / idle.*
+zarvan project problems --json               # from your game project
 zarvan pack-assets --input art --output-image assets/packed/atlas.png
 ```
 
 See the [CLI reference](reference/cli.md) and [transports](reference/transports.md) for MCP/REST.
 
 Published docs (when `engine.docs` has no local `docs/`):
-<https://meetarash.ir/agentic-game-engine/> (`engine.capabilities` → `docsUrl`).
+<https://meetarash.ir/zarvan/> (`engine.capabilities` → `docsUrl`).
 
 ## Why a git dependency?
 
@@ -697,9 +2311,11 @@ server list:
 }
 ```
 
-Useful flags: `--read-only` (agent can look but not touch), `--deny \'release.*\'`, `--allow \'level.*\'`.
+Useful server flags: `--read-only` (blocks non-read operation kinds, not in-memory world changes), `--deny \'release.*\'`, `--allow \'level.*\'`.
 
 ## 2. What an agent does
+
+Start with `engine.capabilities`, `engine.operations`, and `engine.operation` to discover exact schemas and permissions. Keep a single MCP/HTTP server process for stateful world operations; separate CLI invocations do not share in-memory worlds.
 
 A typical session, as tool calls:
 
@@ -707,7 +2323,7 @@ A typical session, as tool calls:
 2. `level.create`, `level.add_entity`, `level.move_entity`, `level.paint_tile` - build.
 3. `level.validate` / `level.lint` with `playable: true` / `project.problems` - check it. Fix what they report.
 4. `world.build` then `world.step` and `world.query` - run the level headlessly and look at the result. Nothing is written.
-5. `undo.undo` - take back the last change. Every write is journalled in `.studio/undo/` (the last 100).
+5. `undo.undo` - take back the last change. Journalled file edits are recorded in `.studio/undo/` (the last 100).
 
 Removing things (`level.remove_entity`, `graph.remove_node`, ...) is **destructive**: the first call returns a preview and
 a `confirmation` token, the second call with that token applies it. Tokens are tied to the server process and expire
@@ -722,8 +2338,8 @@ zarvan undo undo
 zarvan --read-only level list --json     # the exact result envelope
 ```
 
-Every command takes `--json` (print the envelope), `--stdin` or `--args \'{...}\'` (parameters as JSON), and writes take
-`--dry-run` to preview.
+Registry-backed commands take `--json` (print the envelope), `--stdin` or `--args \'{...}\'` (parameters as JSON), and file writes take
+`--dry-run` to preview. The `world.patch` operation instead takes `dryRun: true` in its JSON parameters.
 
 ## 4. Over HTTP
 
@@ -734,14 +2350,422 @@ curl -H "Authorization: Bearer \$TOKEN" -X POST localhost:7421/v1/level/list
 curl -H "Authorization: Bearer \$TOKEN" localhost:7421/v1/openapi.json
 ```
 
-The server listens on localhost only, needs the token for everything except `GET /v1/health`, limits request and result
+The server listens on localhost by default, needs the token for everything except `GET /v1/health`, limits request and result
 sizes and rate, and logs each call (no arguments, no results) to `.studio/api-requests.jsonl`. Send an
 `Idempotency-Key` header with a write to make retries safe. Configuration can live in `zarvan_api.yaml` in the project.
+
+
+## 5. A complete sandbox-world workflow
+
+Run these commands in Bash with `curl` and `jq` installed, after starting
+the HTTP server above and setting `TOKEN`. This example creates only an
+in-memory world. Use the same server process for every call.
+
+```bash
+set -euo pipefail
+
+api() {
+  curl -fsS -H "Authorization: Bearer \$TOKEN" \\
+    -H \'Content-Type: application/json\' \\
+    -X POST "http://127.0.0.1:7421/v1/\$1" -d "\$2"
+}
+
+built=\$(api world/build \'{"json":{"entities":[{"name":"probe","components":{"position":{"x":0,"y":0},"velocity":{"x":1,"y":0}}}]},"systems":["movement"]}\')
+world_id=\$(jq -er \'select(.ok).data.worldId\' <<< "\$built")
+entity_id=\$(jq -er \'.data.named.probe\' <<< "\$built")
+
+patch=\$(jq -n --arg w "\$world_id" --argjson id "\$entity_id" \\
+  \'{worldId:\$w,strict:true,dryRun:true,patch:{entities:[{id:\$id,components:{position:{x:10,y:20}}}]}}\')
+
+# Validate the proposal without mutating state.
+api world/patch "\$patch" | jq -e \'.ok and .data.ok\'
+
+# Apply the same checked patch and inspect the resulting component.
+api world/patch "\$(jq \'.dryRun = false\' <<< "\$patch")" | jq -e \'.ok and .data.applied\'
+query=\$(jq -n --arg w "\$world_id" \'{worldId:\$w,component:"position"}\')
+api world/query "\$query" | jq \'.data\'
+
+# Release the in-memory world.
+api world/discard "\$(jq -n --arg w "\$world_id" \'{worldId:\$w}\')" | jq -e \'.ok\'
+```
+
+The position query should include the probe at `x: 10, y: 20`. The world is
+not a running Flutter game; only the headless systems chosen at build time
+are installed. These world operations do not write project content, so they
+are allowed even on a read-only server unless the allow/deny policy excludes
+them. Inspect both outer `ok` and inner validation results before applying.
 
 ## What an agent cannot do
 
 Operations that need the Flutter SDK (`project.create`, `project.upgrade`, `release.build`) exist as CLI commands only
 (`zarvan create`, `upgrade`, `build-release`); `engine.capabilities` lists them as unsupported.
+''',
+
+  'tutorials/07-top-down-game.md': '''# 7 · A top-down collection game
+
+**You will build:** a top-down game with four-direction movement and collectible coins. The starter uses `zarvan_core` and `zarvan_flutter`, not platformer gravity or jump systems.
+
+## 1. Create and run
+
+Follow [Getting started](../getting-started.md) to install the CLI.
+
+```bash
+zarvan create my_topdown --template topdown_game
+cd my_topdown
+flutter run
+```
+
+Move the player with the arrow keys or the on-screen joystick. Touch the coins to remove them. The generated game draws its own simple sprite atlas.
+
+## 2. Understand the starter
+
+Open `lib/main.dart`. The scene spawns a player with position, velocity, collider and sprite components, then five tagged coins. The input system runs in `SystemPhase.prePhysics` and the movement system advances the position. The coin pickup system uses a proximity query and deferred destruction.
+
+The following extract is from the starter (inside `MainScene.populate`, where `world`, `input` and `_player` already exist):
+
+```dart
+SystemPresets.core(world);
+world.addSystemFn(\'topdown-input\', (world, dt) {
+  final s = input.state;
+  final v = world.getComponent<Velocity>(_player)!;
+  v.x = ((s.isPressed(\'right\') ? 1 : 0) -
+      (s.isPressed(\'left\') ? 1 : 0)) * 160.0 + s.axis(\'moveX\') * 160;
+  v.y = ((s.isPressed(\'down\') ? 1 : 0) -
+      (s.isPressed(\'up\') ? 1 : 0)) * 160.0 + s.axis(\'moveY\') * 160;
+}, phase: SystemPhase.prePhysics);
+
+world.addSystemFn(\'coin-pickup\', (world, dt) {
+  final p = world.getComponent<Position>(_player)!;
+  for (final id in world.findNear(p.x, p.y, 22, exclude: _player)) {
+    if (world.hasTag(id, \'coin\')) world.commands.destroy(id);
+  }
+});
+```
+
+See the [canonical template source](../../packages/zarvan_cli/templates/topdown_game/lib/main.dart.tmpl). This is an extract, not a standalone program.
+
+## 3. Make a change
+
+Change the movement speed from 160 to 100 in both axes; rerun and confirm movement is slower. Add another coin with a unique position. Use deferred `world.commands.destroy` when removing entities during queries.
+
+The starter creates its world in Dart, so there is no authored level file for an agent to edit yet. To make the layout data-driven, move entity definitions into level JSON and load them through `Level.loadInto`; see [Content as data](../concepts/content-as-data.md).
+
+## 4. Validate
+
+```bash
+flutter analyze
+flutter test
+```
+
+Manually check movement in every direction and collection of each coin. For more complex games, add headless tests using [GameTester](../concepts/authoring.md).
+
+Next: [pickups and waves](../examples/pickups-doors-waves.md), [ECS](../concepts/ecs.md), [rendering](../concepts/rendering.md).
+''',
+
+  'tutorials/08-quiz-game.md': '''# 8 · Build and test a quiz bank
+
+**You will build:** a small quiz content bank, generate deterministic questions, run a round and simulate its difficulty with the CLI. This is a headless workflow; a Flutter game can use the same bank and rules through `zarvan_quiz`. There is no dedicated quiz starter in the current CLI.
+
+## 1. Create a bank
+
+Install the CLI using [Getting started](../getting-started.md). In a game project, save this as `assets/bank.json`:
+
+```json
+{
+  "version": 1,
+  "authors": [{"id": "a", "name": "A"}],
+  "items": [
+    {"id": "x", "author": "a", "tier": "easy", "fame": 1, "lines": ["الف بب", "جج دد"]},
+    {"id": "y", "author": "a", "tier": "easy", "fame": 1, "lines": ["ابر باد", "ماه شب"]}
+  ]
+}
+```
+
+The example is intentionally tiny and follows the registry\'s documented bank shape. Real banks need enough distinct items and distractors to fill the selected round.
+
+## 2. Validate and generate
+
+Run the registry-backed CLI from the project directory (or pass the global `--project /path/to/game`).
+
+```bash
+zarvan quiz validate-bank --args \'{"bank":"assets/bank.json","stageSize":2}\' --json
+zarvan quiz generate --args \'{"bank":"assets/bank.json","itemId":"x","seed":42}\' --json
+```
+
+Inspect the outer `ok` and the validation report\'s `data.ok`, errors and warnings. Generating a question with the same bank, stop words, tier and seed gives the same question. If the bank is too small, add items and rerun validation.
+
+## 3. Start and answer a round
+
+Discover the exact mode schema with `zarvan engine operation quiz.start --json`. A stage takes a bank, mode, author and tier; a daily also needs its date. An endless or race round can take a seed base.
+
+```bash
+zarvan quiz start --args \'{"bank":"assets/bank.json","mode":"endless","seedBase":"demo"}\' --json
+```
+
+Keep the returned `data.run`. Invoke `quiz.answer` with the same bank and mode, the returned run object and a zero-based choice index. Replace the run with the new `data.run` on each answer. `quiz.state` summarizes the run without advancing it. Unlike `world.*`, these operations are stateless: the run travels in the request and response.
+
+For an untrusted player, do not expose internal run JSON containing question-answer information; provide a filtered player-facing view instead.
+
+## 4. Tune difficulty
+
+With a representative bank, simulate multiple rounds. For example:
+
+```bash
+zarvan quiz simulate --args \'{"bank":"assets/bank.json","mode":"endless","runs":10,"policy":"accuracy:0.7","seed":1}\' --json
+```
+
+Use a realistic bank for meaningful balance results. The engine\'s fixed-seed policies are reproducible, not a prediction of actual human performance.
+
+## 5. Integrate with a game
+
+Continue with [Tutorial 9: Build a Flutter quiz app](09-flutter-quiz-app.md) for a complete application entry point and integration smoke test.
+
+Use [zarvan_quiz](../packages/zarvan_quiz.md) for the session, content repository, `QuizKit` and engine-drawn screens. A game supplies its bank, stop words, localized strings, themes, settings and persistence. See the [package README](../../packages/zarvan_quiz/README.md) for its screen integration contract and [Quiz games](../concepts/quiz-games.md) for modes and rules.
+
+## Checkpoint
+
+The bank validates, repeated generation with the same seed is consistent, and you can pass the returned run into the next call without relying on process state. For exact parameters and error codes, use [Operations](../reference/operations.md#quiz).
+''',
+
+  'tutorials/09-flutter-quiz-app.md': '''# 9 · Build a Flutter quiz app
+
+**You will build:** a small portrait quiz with engine-drawn screens, deterministic questions and persistent player progress. Start with [Tutorial 8](08-quiz-game.md) if you want to understand the rules or validate a production question bank before integrating the UI.
+
+## 1. Create a consumer project
+
+Create a Flutter application (outside the engine repository):
+
+```bash
+flutter create word_garden
+cd word_garden
+```
+
+Add the three engine dependencies under the existing `dependencies:` section of `pubspec.yaml`. Keep the Flutter SDK dependency. These Git refs must agree with the engine\'s own sibling dependency refs; the example uses the current main-ref layout.
+
+```yaml
+  zarvan_core:
+    git:
+      url: https://github.com/arashrasoulzadeh/zarvan.git
+      path: packages/zarvan_core
+      ref: main
+  zarvan_flutter:
+    git:
+      url: https://github.com/arashrasoulzadeh/zarvan.git
+      path: packages/zarvan_flutter
+      ref: main
+  zarvan_quiz:
+    git:
+      url: https://github.com/arashrasoulzadeh/zarvan.git
+      path: packages/zarvan_quiz
+      ref: main
+```
+
+## 2. Add the application
+
+Replace `lib/main.dart` with the following complete demo. The bank contains short original English sentences rather than external copyrighted content. Each tier has two items; the stage is deliberately shortened to two questions. The UI strings and themes are game-owned configuration, not hidden defaults. Production games should supply a larger bank, fonts suitable for their language, and their own content and branding.
+
+```dart
+import \'package:flutter/widgets.dart\' show WidgetsFlutterBinding;
+import \'package:zarvan_core/zarvan_core.dart\' show KeyValueStore;
+import \'package:zarvan_flutter/zarvan_flutter.dart\';
+import \'package:zarvan_quiz/zarvan_quiz.dart\';
+
+Future<QuizKit> createKit(KeyValueStore store) async {
+  final bank = QuizBank.fromJson({
+    \'version\': 1,
+    \'authors\': [
+      {\'id\': \'garden\', \'name\': \'Word Garden\'},
+    ],
+    \'items\': [
+      for (final (tier, sentences) in [
+        (\'easy\', [
+          \'bright flowers grow beside rivers\',
+          \'gentle birds sing above trees\',
+        ]),
+        (\'medium\', [
+          \'silver moonlight covers quiet valleys\',
+          \'autumn leaves drift across meadows\',
+        ]),
+        (\'hard\', [
+          \'distant thunder echoes through mountains\',
+          \'morning mist surrounds ancient forests\',
+        ]),
+        (\'literary\', [
+          \'amber twilight softens silent horizons\',
+          \'patient tides polish weathered stones\',
+        ]),
+      ])
+        for (var i = 0; i < sentences.length; i++)
+          {
+            \'id\': \'\$tier-\$i\',
+            \'author\': \'garden\',
+            \'tier\': tier,
+            \'fame\': 10 - i,
+            \'lines\': [sentences[i]],
+          },
+    ],
+  });
+  return QuizKit(
+    session: await QuizSession.open(store),
+    factory: QuestionFactory(bank, const {}),
+    strings: strings,
+    themes: themes,
+    settings: await QuizSettings.load(store),
+    stageMode: const StageMode(
+      questionCount: 2,
+      passAt: 1,
+      starAt: [1, 2],
+    ),
+    transitions: false,
+  );
+}
+
+class WordGarden extends Game {
+  WordGarden(this.kit);
+  final QuizKit kit;
+
+  @override
+  GameConfig get config => const GameConfig(
+    title: \'Word Garden\',
+    worldWidth: QuizScreen.worldWidth,
+    worldHeight: QuizScreen.worldHeight,
+    orientation: GameOrientation.portrait,
+    onScreenControls: OnScreenControlsMode.off,
+    fixedTimestepSeconds: 1 / 60,
+  );
+
+  @override
+  ViewportConfig get viewportConfig => const ViewportConfig.fittingWorld(
+    QuizScreen.worldWidth, QuizScreen.worldHeight,
+  );
+
+  @override
+  Scene createInitialScene() =>
+      kit.session.progress.flags[\'tutorialDone\'] == true
+          ? QuizHomeScreen(kit)
+          : QuizTutorialScreen(kit);
+}
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final store = await PreferencesKeyValueStore.open();
+  runGame(WordGarden(await createKit(store)));
+}
+
+const strings = QuizStrings(
+  appName: \'Word Garden\',
+  coins: \'coins\',
+  settings: \'Settings\',
+  about: \'About\',
+  dailyChallenge: \'Daily\',
+  dailyDone: \'Done\',
+  dailyTodayPlay: \'Five new questions\',
+  chapters: \'Chapters\',
+  wallTitle: \'Collections\',
+  chaptersDone: \'complete\',
+  outOf: \'of\',
+  continueGame: \'Continue\',
+  endless: \'Endless\',
+  race: \'Race\',
+  stageLockedHint: \'Pass the previous stage\',
+  stars: \'stars\',
+  stage: \'Stage\',
+  next: \'Next\',
+  hint: \'Hint\',
+  lives: \'Lives\',
+  clock: \'Time\',
+  score: \'Score\',
+  streak: \'Streak\',
+  result: \'Result\',
+  stageResultPassed: \'Passed\',
+  stageResultFailed: \'Try again\',
+  newRecord: \'New record\',
+  coinsEarned: \'Coins earned\',
+  backToMenu: \'Menu\',
+  playAgain: \'Again\',
+  share: \'Share\',
+  copied: \'Copied\',
+  shareFailed: \'Could not share\',
+  continueWithAd: \'Continue with an ad\',
+  continueQuestion: \'Out of lives. One more for an ad?\',
+  noThanks: \'No, finish\',
+  tutorialTitle: \'Find the word\',
+  tutorialBody: \'One word is missing\',
+  tutorialDone: \'Start\',
+  tutorialTip: \'A hint costs 20 coins\',
+  theme: \'Theme\',
+  themeSystem: \'System\',
+  themeLight: \'Light\',
+  themeDark: \'Dark\',
+  sound: \'Sound\',
+  haptics: \'Haptics\',
+  aboutSource: \'Original demo sentences\',
+  aboutVersion: \'Version\',
+  aboutLicenseNote: \'Demo content\',
+  difficulty: \'Difficulty\',
+  notEnoughCoins: \'Not enough coins\',
+  loadError: \'Save not read\',
+  rewardAd: \'15 coins for an ad\',
+  tierNames: [\'Easy\', \'Medium\', \'Hard\', \'Literary\'],
+  number: _plain,
+);
+String _plain(int n) => \'\$n\';
+
+const themes = QuizThemes(
+  light: QuizTheme(
+    background: 0xFFFFFFFF,
+    ink: 0xFF111111,
+    soft: 0xFF888888,
+    surface: 0xFFEEEEEE,
+    accent: 0xFF1F6F6B,
+    onAccent: 0xFFFFFFFF,
+    correct: 0xFF2E7D32,
+    wrong: 0xFFC62828,
+  ),
+  dark: QuizTheme(
+    background: 0xFF101010,
+    ink: 0xFFEEEEEE,
+    soft: 0xFF999999,
+    surface: 0xFF222222,
+    accent: 0xFF6FC2BC,
+    onAccent: 0xFF101010,
+    correct: 0xFF66BB6A,
+    wrong: 0xFFEF5350,
+    isDark: true,
+  ),
+);
+```
+
+## 3. Run and check
+
+```bash
+flutter pub get
+flutter analyze
+flutter run
+```
+
+Complete the tutorial, open the chapter, play a short stage, and return to the menu. Restart the app and check that progress is retained. The demo does not wire ads, sharing, sound or haptic hooks. It uses a tiny bank for integration, not meaningful balance testing. Expand the bank before relying on long endless/race sessions.
+
+Flutter\'s generated counter widget test no longer applies after replacing the app entry point; replace it with a game-specific test rather than retaining the original counter assertions.
+
+## 4. Understand the responsibilities
+
+| Layer | Responsibility |
+|---|---|
+| `QuizBank`, `QuestionFactory`, `QuizRound` | Portable content and deterministic rules |
+| `QuizSession` | Current run, feedback, score, rewards and progress |
+| `QuizKit` | Session, content factory, strings, themes, settings and optional hooks |
+| `QuizScreen` and subclasses | Engine-drawn screens and transitions |
+| `Game`, `runGame` | Flutter lifecycle, rendering, viewport and scene management |
+| `PreferencesKeyValueStore` | Platform-backed persistence; use `MemoryKeyValueStore` for tests |
+
+For a real asset-backed game, declare bank and stop-word files under `flutter.assets` and call `QuizContentRepository.load(bankAsset: ..., stopWordsAsset: ...)` instead of embedding the bank. Supply its `factory` to the kit. Use a game-specific `QuizStrings` and `QuizThemes`; select `rtl: true` and a font with the appropriate glyphs when necessary.
+
+## Verification
+
+The exact demo is also checked by a package-level smoke test (see [tutorial_app_docs_test.dart](../../packages/zarvan_quiz/test/tutorial_app_docs_test.dart)). It constructs the kit with an in-memory store and starts a short stage, without launching a device or testing platform persistence. Run `flutter test test/tutorial_app_docs_test.dart` from `packages/zarvan_quiz`.
+
+Related: [Quiz package](../packages/zarvan_quiz.md), [quiz rules](../concepts/quiz-games.md), [agent operations](../reference/operations.md#quiz).
 ''',
 
   'concepts/ecs.md': '''# The ECS: World, Entity, Component, System
@@ -792,8 +2816,8 @@ abstract class System {
 }
 ```
 
-Add one with `world.addSystem(YourSystem())`. **Registration order
-matters** — a system that reads state another system produces this
+Add one with `world.addSystem(YourSystem())`. **System phase and registration order
+matter** — a system that reads state another system produces this
 tick must run after it. `zarvan_platformer`\'s `installPlatformerSystems`
 exists specifically because getting this order right by hand is a real,
 easy-to-get-wrong problem (see its own doc comment in
@@ -840,7 +2864,7 @@ common-case wrappers.
 ## See also
 
 - [content-as-data.md](content-as-data.md) — serializing/patching a `World` as JSON.
-- [agent-api.md](agent-api.md) — the `Behavior`/`WorldView` sandbox for runtime agents.
+- [agent-api.md](agent-api.md) — the cooperative `Behavior`/`WorldView` interface for trusted runtime agents.
 - [`packages/zarvan_core/README.md`](../../packages/zarvan_core/README.md) — full API reference.
 
 ## Time scale, hit-stop, pooling and spawners
@@ -897,6 +2921,17 @@ Samples are executed by `packages/zarvan_core/test/doc_examples_idle_test.dart` 
 `packages/zarvan_idle/test/doc_examples_test.dart`. Remaining idle work (device bench,
 cloud-save walkthrough, localisation, research UI, …) lives under Idle polish in
 [`TODO.md`](https://github.com/arashrasoulzadeh/zarvan/blob/main/TODO.md).
+
+## Find the part you need
+
+| Goal | Section |
+|---|---|
+| Create a game or choose the genre layer | [Creating a new idle game](#creating-a-new-idle-game) |
+| Represent huge values and multiple currencies | [Numbers](#numbers-that-do-not-overflow), [BigTreasury](#resources-bigtreasury) |
+| Design data-driven economy and progression | [Describing a whole game as data](#describing-a-whole-game-as-data), [More rules](#more-rules-all-data) |
+| Handle persistence and offline progress | [Offline progress](#offline-progress), [Saving and returning](#saving-and-returning), [Storage choices](#storage-choices), [Trust](#trust-the-clock-and-the-save) |
+| Build menus and battle UI | [The screens](#the-screens), [Wave combat](#wave-combat-portrait-auto-fighter) |
+| Balance a game with an agent | [Tuning without playing](#tuning-without-playing), [idle operations](../reference/operations.md#idle) |
 
 ## Creating a new idle game
 
@@ -1390,7 +3425,9 @@ expose and leave the others out of your menu.
 
 <!-- Generated by `dart run tool/gen_api_docs.dart` in packages/zarvan_api. Do not edit. -->
 
-Every operation is a CLI command, an MCP tool, a REST route and a JSON-RPC method. Reads change nothing; writes apply immediately and can be undone with `undo.undo`; destructive writes return a preview and a confirmation token first. Results are `{ok, data, warnings, diff?, undoId?, durationMs}` or `{ok:false, error:{code, message, hint?}}`.
+Non-Flutter operations are available on CLI, MCP, REST and JSON-RPC; Flutter-dependent operations are CLI-only. Read-classified operations do not write project content but can change session or sandbox-world state. Journalled file writes can be undone with `undo.undo`; destructive writes require preview and confirmation. Results are `{ok, data, warnings, diff?, undoId?, durationMs}` or `{ok:false, error:{code, message, hint?}}`.
+
+CLI blocks show command syntax, not complete runnable examples. For registry-backed commands, supply missing parameters via `--args` (JSON object) or `--stdin`, and request `--json` for the result envelope. Discover schemas and examples with `engine.operation`; for legacy or CLI-only commands use `zarvan help`. Stateful `world.*` workflows need a persistent MCP/HTTP process; separate CLI invocations do not share worlds.
 
 ## animation
 
@@ -1404,10 +3441,10 @@ Without `type`, clears every cue on the frame. With `type`, removes only matchin
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | string; required | |
-| `frame` | integer; required | |
-| `clip` | string | |
-| `type` | string | |
+| `path` | string; required | Project-relative animation clip JSON file. |
+| `frame` | integer; required | Zero-based index of the frame to edit. |
+| `clip` | string | Clip name when the file contains multiple clips. |
+| `type` | string | Optional event cue type to clear; omit to clear every type. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -1427,7 +3464,7 @@ Accepts a single clip object, a name→clip map, or `{ "clips": [ … ] }`. Retu
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | string; required | |
+| `path` | string; required | Project-relative animation clip JSON file. |
 
 Errors: `not_found`, `validation_failed`.
 
@@ -1447,9 +3484,9 @@ Ensures `frameEvents` exists, then appends `{type, data}` on `frame` (0-based). 
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | string; required | |
-| `frame` | integer; required | |
-| `type` | string; required | |
+| `path` | string; required | Project-relative animation clip JSON file. |
+| `frame` | integer; required | Zero-based index of the frame to edit. |
+| `type` | string; required | Type of the event cue to attach. |
 | `clip` | string | Clip name when the file holds more than one clip. |
 | `data` | object | Optional cue payload (e.g. {"id":"swing"}). |
 | `replaceType` | boolean | Replace existing cues of this type on the frame. |
@@ -1474,11 +3511,11 @@ Writes per-frame pivot offsets (atlas-pixel space). Pass `offsetX` and/or `offse
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | string; required | |
-| `frame` | integer; required | |
+| `path` | string; required | Project-relative animation clip JSON file. |
+| `frame` | integer; required | Zero-based index of the frame to edit. |
 | `clip` | string | Clip name when the file holds more than one clip. |
-| `offsetX` | number | |
-| `offsetY` | number | |
+| `offsetX` | number | Horizontal pivot offset in atlas pixels. |
+| `offsetY` | number | Vertical pivot offset in atlas pixels. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -1500,7 +3537,7 @@ Reports per-clip problems. `ok` is true when every clip passes.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | string; required | |
+| `path` | string; required | Project-relative animation clip JSON file. |
 
 Errors: `not_found`.
 
@@ -1522,7 +3559,7 @@ Look the atlas up by the id `asset.index` shows. Region objects are returned as 
 
 | Parameter | Type | Description |
 |---|---|---|
-| `atlas` | string; required | |
+| `atlas` | string; required | Atlas ID returned by asset.index. |
 
 Errors: `not_found`.
 
@@ -1557,10 +3594,10 @@ Recursively loads images under `input`, MaxRects-packs them (with optional resol
 | Parameter | Type | Description |
 |---|---|---|
 | `input` | path; required | Directory of source images (scanned recursively). |
-| `outputImage` | path; default `"assets/packed/atlas.png"` | |
+| `outputImage` | path; default `"assets/packed/atlas.png"` | Project-relative path of the packed PNG. |
 | `outputManifest` | path | Defaults to outputImage with a .json extension. |
-| `padding` | integer; default `2`; 0 to 64 | |
-| `maxWidth` | integer; default `2048`; 1 to 16384 | |
+| `padding` | integer; default `2`; 0 to 64 | Pixel padding between packed regions. |
+| `maxWidth` | integer; default `2048`; 1 to 16384 | Requested maximum atlas width in pixels. |
 | `scales` | string; default `"1.0"` | Comma-separated tiers, e.g. "1.0,0.5,0.25". |
 | `maxAttempts` | integer; default `20`; 1 to 100 | Grow-and-retry attempts before giving up. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
@@ -1655,7 +3692,7 @@ The catalogue. Filter by `group` or `kind`; operations hidden by the allow/deny 
 | Parameter | Type | Description |
 |---|---|---|
 | `group` | string | Only this group, e.g. level. |
-| `kind` | enumeration; one of `read`, `write`, `destructive` | |
+| `kind` | enumeration; one of `read`, `write`, `destructive` | Restrict the catalogue to the specified operation kind. |
 
 ```bash
 zarvan engine operations
@@ -1675,12 +3712,12 @@ The id defaults to `<kind><index>`. Parameters start at the kind\'s defaults (no
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `kind` | string; required | |
-| `id` | string | |
-| `params` | object | |
-| `x` | number; default `0` | |
-| `y` | number; default `0` | |
+| `path` | path; required | Project-relative graph JSON file. |
+| `kind` | string; required | Node kind from graph.node_kinds. |
+| `id` | string | Optional ID for the new node; defaults to a generated ID. |
+| `params` | object | Node parameter values overriding the kind defaults. |
+| `x` | number; default `0` | Horizontal canvas position of the node. |
+| `y` | number; default `0` | Vertical canvas position of the node. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -1700,9 +3737,9 @@ Behavior-tree children follow the canvas left to right. Dialogue graphs have no 
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `output` | path | |
-| `id` | string; default `"fsm"` | |
+| `path` | path; required | Project-relative graph JSON file. |
+| `output` | path | Optional project-relative path for the compiled JSON. |
+| `id` | string; default `"fsm"` | Identifier assigned to the compiled state machine. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -1724,11 +3761,11 @@ Ports are checked against the node kinds; a mismatch is `validation_failed` and 
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `from` | string; required | |
-| `fromPort` | string; required | |
-| `to` | string; required | |
-| `toPort` | string; required | |
+| `path` | path; required | Project-relative graph JSON file. |
+| `from` | string; required | Source node ID. |
+| `fromPort` | string; required | Output port on the source node. |
+| `to` | string; required | Destination node ID. |
+| `toPort` | string; required | Input port on the destination node. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -1748,8 +3785,8 @@ Files live under `graphs/`. Fails with `conflict` when the file exists.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `type` | enumeration; default `"dialogue"`; one of `dialogue`, `behaviorTree`, `stateMachine` | |
+| `path` | path; required | Project-relative graph JSON file. |
+| `type` | enumeration; default `"dialogue"`; one of `dialogue`, `behaviorTree`, `stateMachine` | Graph type determining the available node kinds and validation rules. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -1771,11 +3808,11 @@ Exact match on both ends; `not_found` when there is no such edge.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `from` | string; required | |
-| `fromPort` | string; required | |
-| `to` | string; required | |
-| `toPort` | string; required | |
+| `path` | path; required | Project-relative graph JSON file. |
+| `from` | string; required | Source node ID. |
+| `fromPort` | string; required | Output port on the source node. |
+| `to` | string; required | Destination node ID. |
+| `toPort` | string; required | Input port on the destination node. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -1809,7 +3846,7 @@ Ports are typed (flow, string, number, boolean, entity, event); `connect` only j
 
 | Parameter | Type | Description |
 |---|---|---|
-| `type` | enumeration; default `"dialogue"`; one of `dialogue`, `behaviorTree`, `stateMachine` | |
+| `type` | enumeration; default `"dialogue"`; one of `dialogue`, `behaviorTree`, `stateMachine` | Graph type determining the available node kinds and validation rules. |
 
 ```bash
 zarvan graph node-kinds <type>
@@ -1827,7 +3864,7 @@ The file as saved: type, graph (nodes, edges, variables, entryNodeId) and canvas
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
+| `path` | path; required | Project-relative graph JSON file. |
 
 ```bash
 zarvan graph read <path>
@@ -1845,8 +3882,8 @@ Destructive: previews first. Clears the entry node if it was this one.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `id` | string; required | |
+| `path` | path; required | Project-relative graph JSON file. |
+| `id` | string; required | ID of the node to remove. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -1866,10 +3903,10 @@ Free-form: the value is stored as given. Use graph.node_kinds to see what a kind
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `node` | string; required | |
-| `param` | string; required | |
-| `value` | json; required | |
+| `path` | path; required | Project-relative graph JSON file. |
+| `node` | string; required | ID of the node to edit. |
+| `param` | string; required | Name of the node parameter. |
+| `value` | json; required | JSON value to store for the parameter. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -1889,7 +3926,7 @@ Uses the checks of the graph\'s type (trees check shape, state machines allow lo
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
+| `path` | path; required | Project-relative graph JSON file. |
 
 ```bash
 zarvan graph validate <path>
@@ -1927,9 +3964,9 @@ Writes `assets/i18n/<locale>.json` (creates the file when missing). Keys are sor
 
 | Parameter | Type | Description |
 |---|---|---|
-| `locale` | string; required | |
-| `key` | string; required | |
-| `text` | string; required | |
+| `locale` | string; required | Locale identifier matching the catalog filename. |
+| `key` | string; required | Translation key to create or update. |
+| `text` | string; required | Localized text for the key. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -1951,10 +3988,10 @@ Loads the definition at its starting state (optionally with `owned` counts appli
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path | |
-| `json` | json | |
+| `path` | path | Project-relative idle game definition file; alternatively provide json. |
+| `json` | json | Inline idle game definition instead of path. |
 | `owned` | object | Generator id -> copies already owned. |
-| `mainResource` | string; default `"coins"` | |
+| `mainResource` | string; default `"coins"` | Resource ID used for income and balance reporting. |
 
 Errors: `validation_failed`.
 
@@ -1974,9 +4011,9 @@ Values are strings like "1.5e300" because they do not fit a double.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `value` | string; required | |
-| `style` | enumeration; default `"suffix"`; one of `suffix`, `scientific`, `engineering`, `grouped` | |
-| `decimals` | integer; default `2`; 0 to 10 | |
+| `value` | string; required | Big-number decimal or scientific-notation string. |
+| `style` | enumeration; default `"suffix"`; one of `suffix`, `scientific`, `engineering`, `grouped` | Number display notation. |
+| `decimals` | integer; default `2`; 0 to 10 | Number of decimal places to show. |
 
 ```bash
 zarvan idle format-number <value>
@@ -1994,12 +4031,12 @@ Always buys the best-payback purchase, waiting just long enough to afford it, an
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path | |
-| `json` | json | |
-| `days` | number; default `3`; 0.01 to 3650 | |
+| `path` | path | Project-relative idle game definition file; alternatively provide json. |
+| `json` | json | Inline idle game definition instead of path. |
+| `days` | number; default `3`; 0.01 to 3650 | Number of in-game days to simulate. |
 | `prestigeAt` | number; 0.01 to ∞ | Prestige a layer once its gain is this many times what is held of that layer\'s currency. |
 | `playChallenges` | boolean; default `true` | Start and complete incomplete challenges in definition order. |
-| `mainResource` | string; default `"coins"` | |
+| `mainResource` | string; default `"coins"` | Resource ID used for income and balance reporting. |
 
 Errors: `validation_failed`.
 
@@ -2019,10 +4056,10 @@ Loads the definition and, when `afterSeconds` is above zero, plays it with the g
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path | |
-| `json` | json | |
-| `afterSeconds` | integer; default `0`; 0 to 31536000 | |
-| `mainResource` | string; default `"coins"` | |
+| `path` | path | Project-relative idle game definition file; alternatively provide json. |
+| `json` | json | Inline idle game definition instead of path. |
+| `afterSeconds` | integer; default `0`; 0 to 31536000 | Number of simulated seconds before reading state. |
+| `mainResource` | string; default `"coins"` | Resource ID used for income and balance reporting. |
 
 Errors: `validation_failed`.
 
@@ -2042,7 +4079,7 @@ Give `path` (a project file such as assets/idle_game.json) or inline `json`. Not
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path | |
+| `path` | path | Project-relative idle game definition file; alternatively provide json. |
 | `json` | json | The definition, instead of a file. |
 
 ```bash
@@ -2063,10 +4100,10 @@ Conflicts when the entity already has the component; use level.set_field to chan
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `entity` | string; required | |
-| `component` | string; required | |
-| `values` | object | |
+| `path` | path; required | Project-relative level JSON file. |
+| `entity` | string; required | Name of the entity to edit. |
+| `component` | string; required | Registered component name. |
+| `values` | object | Map of fields to override on the new component. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -2088,11 +4125,11 @@ Add an entity whose components start at their schema defaults.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `name` | string | |
-| `components` | array | |
-| `index` | integer; 0 to ∞ | |
-| `values` | object | |
+| `path` | path; required | Project-relative level JSON file. |
+| `name` | string | Optional name for the new entity. |
+| `components` | array | Registered component names to attach at schema defaults. |
+| `index` | integer; 0 to ∞ | Zero-based insertion index in the level entity list. |
+| `values` | object | Map of component names to field overrides. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -2112,7 +4149,7 @@ Fails with `conflict` when the file exists. `entities` is the level\'s entity li
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
+| `path` | path; required | Project-relative level JSON file. |
 | `entities` | json | Entity list. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
@@ -2135,10 +4172,10 @@ Entities are matched by name. Each side is a project file (`a`, `b`) or inline J
 
 | Parameter | Type | Description |
 |---|---|---|
-| `a` | path | |
-| `b` | path | |
-| `aJson` | json | |
-| `bJson` | json | |
+| `a` | path | Project-relative path of the first level. |
+| `b` | path | Project-relative path of the second level. |
+| `aJson` | json | Inline JSON for the first level instead of a. |
+| `bJson` | json | Inline JSON for the second level instead of b. |
 
 ```bash
 zarvan level diff <a> <b>
@@ -2156,7 +4193,7 @@ Only formatting changes. A level that does not load is skipped and listed under 
 
 | Parameter | Type | Description |
 |---|---|---|
-| `paths` | array | |
+| `paths` | array | Optional list of level paths; omit to process all levels. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -2176,11 +4213,11 @@ Only tiles and the four collision sets (solid, one-way, slopes) survive; ladders
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
+| `path` | path; required | Project-relative level file containing the tile map. |
 | `entity` | string | Entity holding the tileMap; default the first with one. |
-| `output` | path | |
-| `image` | string; default `"tiles.png"` | |
-| `tileset` | string; default `"tiles"` | |
+| `output` | path | Optional project-relative path of the exported TMX file. |
+| `image` | string; default `"tiles.png"` | Tileset image filename referenced by the exported map. |
+| `tileset` | string; default `"tiles"` | Name of the tileset in the exported map. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -2200,11 +4237,11 @@ Four-connected fill, like the studio\'s bucket tool. Returns how many tiles chan
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `entity` | string; required | |
-| `col` | integer; required; 0 to ∞ | |
-| `row` | integer; required; 0 to ∞ | |
-| `tileId` | integer; required; 0 to ∞ | |
+| `path` | path; required | Project-relative level JSON file. |
+| `entity` | string; required | Name of the entity to edit. |
+| `col` | integer; required; 0 to ∞ | Zero-based tile column. |
+| `row` | integer; required; 0 to ∞ | Zero-based tile row. |
+| `tileId` | integer; required; 0 to ∞ | Tile ID to write; 0 erases the tile. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -2224,9 +4261,9 @@ Makes a new level whose single entity holds the imported tileMap. Fails with `co
 
 | Parameter | Type | Description |
 |---|---|---|
-| `tmx` | path; required | |
+| `tmx` | path; required | Project-relative input Tiled TMX file. |
 | `output` | path | Default: assets/levels/<tmx name>.json. |
-| `entity` | string; default `"ground"` | |
+| `entity` | string; default `"ground"` | Name for the entity holding the imported tileMap. |
 | `layer` | string | Name of the tile layer to import; required when the map has more than one. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
@@ -2249,9 +4286,9 @@ Always checks structure like the engine loader. With `playable:true` it also wal
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path | |
-| `json` | json | |
-| `playable` | boolean; default `false` | |
+| `path` | path | Project-relative level JSON file; alternatively provide json. |
+| `json` | json | Inline level JSON instead of path. |
+| `playable` | boolean; default `false` | Run the tile-connectivity reachability heuristic in addition to structural checks. |
 | `includeRender` | boolean; default `false` | Include a base64 PNG structural preview of the tileMap (needs ImageCodec). |
 
 ```bash
@@ -2284,7 +4321,7 @@ Writes `<level>.lock` naming this session as owner. Other writers are refused wh
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
+| `path` | path; required | Project-relative level JSON file. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -2306,7 +4343,7 @@ Reads `<level>.lock`. A lock older than two hours is treated as abandoned and re
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
+| `path` | path; required | Project-relative level JSON file. |
 
 ```bash
 zarvan level lock-status <path>
@@ -2324,10 +4361,10 @@ Per entity and component: one-sided changes win, identical changes apply once, d
 
 | Parameter | Type | Description |
 |---|---|---|
-| `base` | path; required | |
-| `ours` | path; required | |
-| `theirs` | path; required | |
-| `output` | path | |
+| `base` | path; required | Project-relative common ancestor level file. |
+| `ours` | path; required | Project-relative level containing our edits. |
+| `theirs` | path; required | Project-relative level containing the other edits. |
+| `output` | path | Optional project-relative destination for the merged level. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -2349,10 +4386,10 @@ Writes the `position` component (created when absent).
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `name` | string; required | |
-| `x` | number; required | |
-| `y` | number; required | |
+| `path` | path; required | Project-relative level JSON file. |
+| `name` | string; required | Name of the existing entity. |
+| `x` | number; required | Horizontal world-space position. |
+| `y` | number; required | Vertical world-space position. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -2372,11 +4409,11 @@ The entity needs a `tileMap` component; `col`/`row` must be inside its grid.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `entity` | string; required | |
-| `col` | integer; required; 0 to ∞ | |
-| `row` | integer; required; 0 to ∞ | |
-| `tileId` | integer; required; 0 to ∞ | |
+| `path` | path; required | Project-relative level JSON file. |
+| `entity` | string; required | Name of the entity to edit. |
+| `col` | integer; required; 0 to ∞ | Zero-based tile column. |
+| `row` | integer; required; 0 to ∞ | Zero-based tile row. |
+| `tileId` | integer; required; 0 to ∞ | Tile ID to write; 0 erases the tile. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -2396,11 +4433,11 @@ Returns the level JSON. `entity` narrows to one named entity; `components` keeps
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
+| `path` | path; required | Project-relative level JSON file. |
 | `entity` | string | Only the entity with this name. |
 | `components` | array | Only these components. |
-| `entityOffset` | integer; default `0`; 0 to ∞ | |
-| `entityLimit` | integer; default `1000`; 1 to 5000 | |
+| `entityOffset` | integer; default `0`; 0 to ∞ | Zero-based offset into the filtered entity list. |
+| `entityLimit` | integer; default `1000`; 1 to 5000 | Maximum entities returned in this page. |
 
 Errors: `not_found`.
 
@@ -2420,9 +4457,9 @@ Destructive: previews first and needs `apply` plus the confirmation token.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `entity` | string; required | |
-| `component` | string; required | |
+| `path` | path; required | Project-relative level JSON file. |
+| `entity` | string; required | Name of the entity to edit. |
+| `component` | string; required | Registered component name. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -2442,8 +4479,8 @@ Destructive: previews first and needs `apply` plus the confirmation token.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `name` | string; required | |
+| `path` | path; required | Project-relative level JSON file. |
+| `name` | string; required | Name of the existing entity. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -2463,11 +4500,11 @@ Creates the component when absent. The edited level must still validate.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `entity` | string; required | |
-| `component` | string; required | |
-| `field` | string; required | |
-| `value` | json; required | |
+| `path` | path; required | Project-relative level JSON file. |
+| `entity` | string; required | Name of the entity to edit. |
+| `component` | string; required | Registered component name. |
+| `field` | string; required | Name of the component field to set. |
+| `value` | json; required | New JSON value for the field. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -2487,10 +4524,10 @@ The component must already exist on the entity.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `entity` | string; required | |
-| `component` | string; required | |
-| `z` | integer; required | |
+| `path` | path; required | Project-relative level JSON file. |
+| `entity` | string; required | Name of the entity to edit. |
+| `component` | string; required | Registered component name. |
+| `z` | integer; required | Draw order to assign to the component. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -2510,8 +4547,8 @@ Only the owner releases a live lock unless `force` is true.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `force` | boolean; default `false` | |
+| `path` | path; required | Project-relative level JSON file. |
+| `force` | boolean; default `false` | Allow breaking a live lock owned by another session. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -2533,7 +4570,7 @@ Reports schema errors and warnings. Give either `path` or `json`. Nothing is wri
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path | |
+| `path` | path | Project-relative level JSON file. |
 | `json` | json | The level content, instead of a file. |
 
 ```bash
@@ -2568,10 +4605,10 @@ Fresh copies are added at the end of the level; entity names are made unique (`t
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `prefab` | string; required | |
-| `x` | number; default `0` | |
-| `y` | number; default `0` | |
+| `path` | path; required | Project-relative level JSON file. |
+| `prefab` | string; required | Name of the prefab to place. |
+| `x` | number; default `0` | Horizontal world-space placement coordinate. |
+| `y` | number; default `0` | Vertical world-space placement coordinate. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -2591,7 +4628,7 @@ The prefab JSON: its name and entities, positions relative to its origin.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `name` | string; required | |
+| `name` | string; required | Prefab name used to identify its saved JSON. |
 
 Errors: `not_found`.
 
@@ -2611,9 +4648,9 @@ Positions are stored relative to the group\'s top-left corner so the prefab can 
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `name` | string; required | |
-| `entities` | array; required | |
+| `path` | path; required | Project-relative level JSON file. |
+| `name` | string; required | Prefab name used to identify its saved JSON. |
+| `entities` | array; required | Names of level entities to capture in the prefab. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -2651,16 +4688,16 @@ Implemented by `zarvan create` because it runs `flutter create` and `pub get`; s
 
 | Parameter | Type | Description |
 |---|---|---|
-| `name` | string; required | |
-| `template` | enumeration; default `"default_game"`; one of `default_game`, `topdown_game`, `strategy_game`, `idle_game` | |
-| `org` | string; default `"com.example"` | |
-| `outputDir` | string; default `"."` | |
-| `ref` | string; default `"main"` | |
+| `name` | string; required | Name of the generated Flutter project. |
+| `template` | enumeration; default `"default_game"`; one of `default_game`, `topdown_game`, `strategy_game`, `idle_game` | Starter project to scaffold. |
+| `org` | string; default `"com.example"` | Reverse-domain identifier for application bundles. |
+| `outputDir` | string; default `"."` | Directory in which to create the generated project. |
+| `ref` | string; default `"main"` | Engine Git ref to pin; internal dependency refs must agree. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
 ```bash
-zarvan project create <name>
+zarvan create <name>
 ```
 
 ### `project.doctor`
@@ -2768,7 +4805,7 @@ Any UTF-8 text file inside the project, up to 1 MiB. Binary files are refused, a
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
+| `path` | path; required | Project-relative UTF-8 text file to read. |
 
 Errors: `not_found`, `too_large`, `forbidden`.
 
@@ -2788,8 +4825,8 @@ Case-insensitive substring search, as the studio\'s Find in project. Returns fil
 
 | Parameter | Type | Description |
 |---|---|---|
-| `query` | string; required | |
-| `limit` | integer; default `200`; 1 to 2000 | |
+| `query` | string; required | Case-insensitive text substring to find. |
+| `limit` | integer; default `200`; 1 to 2000 | Maximum number of matching results returned. |
 
 ```bash
 zarvan project search <query>
@@ -2825,8 +4862,8 @@ The same tree the studio shows. `filter` keeps one kind of file: code, level, gr
 
 | Parameter | Type | Description |
 |---|---|---|
-| `filter` | enumeration; default `"all"`; one of `all`, `code`, `level`, `graph`, `image`, `data`, `other` | |
-| `limit` | integer; default `2000`; 1 to 20000 | |
+| `filter` | enumeration; default `"all"`; one of `all`, `code`, `level`, `graph`, `image`, `data`, `other` | File category to include in the project tree. |
+| `limit` | integer; default `2000`; 1 to 20000 | Maximum number of matching results returned. |
 
 ```bash
 zarvan project tree
@@ -2848,7 +4885,7 @@ Implemented by `zarvan upgrade` because it runs `flutter pub upgrade`.
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
 ```bash
-zarvan project upgrade
+zarvan upgrade
 ```
 
 ### `project.validate`
@@ -2886,9 +4923,9 @@ Give the same bank and mode as quiz.start and the `run` it returned. With `hint`
 | `stopwords` | path | Stop-word file (`{"words": [...]}`). |
 | `stopWords` | array | Stop words inline. |
 | `mode` | json; required | stage, endless, race, daily, or a mode object such as {"type": "endless", "lives": 5}. |
-| `run` | json; required | |
-| `choice` | integer; required; 0 to 3 | |
-| `hint` | boolean; default `false` | |
+| `run` | json; required | Run JSON returned by quiz.start or the previous quiz.answer. |
+| `choice` | integer; required; 0 to 3 | Zero-based index of the selected option. |
+| `hint` | boolean; default `false` | Use a hint before answering, if available. |
 
 Errors: `invalid_params`, `conflict`.
 
@@ -2912,9 +4949,9 @@ Same as the game: the same bank, stop words, item, tier and seed always give the
 | `json` | json | The bank inline, instead of a file. |
 | `stopwords` | path | Stop-word file (`{"words": [...]}`). |
 | `stopWords` | array | Stop words inline. |
-| `itemId` | string; required | |
-| `tier` | enumeration; one of `easy`, `medium`, `hard`, `literary` | |
-| `seed` | integer; default `0` | |
+| `itemId` | string; required | ID of an item in the bank. |
+| `tier` | enumeration; one of `easy`, `medium`, `hard`, `literary` | Question difficulty; defaults to the item tier. |
+| `seed` | integer; default `0` | Deterministic seed for question generation. |
 
 Errors: `not_found`, `validation_failed`.
 
@@ -2944,10 +4981,10 @@ Play many rounds with a fixed policy and report the score, stars and pass rate.
 | `attempt` | integer; 1 to ∞ | Stage: attempt number; it changes which word is hidden. |
 | `date` | string | Daily: the local date, YYYY-MM-DD. |
 | `seedBase` | string | Endless and race: text the question seeds come from. |
-| `policy` | string; default `"always_correct"` | |
-| `runs` | integer; default `100`; 1 to 10000 | |
-| `seed` | integer; default `1` | |
-| `secondsPerQuestion` | integer; default `4`; 0 to ∞ | |
+| `policy` | string; default `"always_correct"` | Scripted answer policy: always_correct, random or accuracy:<p>. |
+| `runs` | integer; default `100`; 1 to 10000 | Number of rounds to simulate. |
+| `seed` | integer; default `1` | Deterministic seed for the simulated answer policy. |
+| `secondsPerQuestion` | integer; default `4`; 0 to ∞ | Simulated time per question in race mode. |
 
 ```bash
 zarvan quiz simulate
@@ -2999,7 +5036,7 @@ Reads the bank, mode and run; changes nothing.
 | `stopwords` | path | Stop-word file (`{"words": [...]}`). |
 | `stopWords` | array | Stop words inline. |
 | `mode` | json; required | stage, endless, race, daily, or a mode object such as {"type": "endless", "lives": 5}. |
-| `run` | json; required | |
+| `run` | json; required | Run JSON returned by quiz.start or the previous quiz.answer. |
 
 ```bash
 zarvan quiz state
@@ -3045,7 +5082,7 @@ Runs `flutter build`. Implemented by `zarvan build-release` because it needs the
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
 ```bash
-zarvan release build
+zarvan build-release
 ```
 
 ### `release.plan`
@@ -3058,19 +5095,19 @@ The same planning `zarvan build-release` does: the exact `flutter build` command
 
 | Parameter | Type | Description |
 |---|---|---|
-| `platform` | enumeration; required; one of `android`, `ios` | |
-| `target` | string; default `"lib/main.dart"` | |
-| `buildName` | string; default `"1.0.0"` | |
-| `buildNumber` | string; default `"1"` | |
-| `flavor` | string | |
-| `keystorePath` | string | |
-| `keystorePassword` | string | |
-| `keyAlias` | string | |
-| `keyPassword` | string | |
+| `platform` | enumeration; required; one of `android`, `ios` | Target store platform for the release plan. |
+| `target` | string; default `"lib/main.dart"` | Flutter application entry point. |
+| `buildName` | string; default `"1.0.0"` | User-visible application version. |
+| `buildNumber` | string; default `"1"` | Store build number. |
+| `flavor` | string | Optional Flutter build flavor. |
+| `keystorePath` | string | Path to the Android signing keystore. |
+| `keystorePassword` | string | Password for the Android keystore; supply securely. |
+| `keyAlias` | string | Alias of the Android signing key. |
+| `keyPassword` | string | Password for the Android signing key; supply securely. |
 | `gradleText` | string | Contents of android/app/build.gradle(.kts); checked for key.properties. |
-| `teamId` | string | |
-| `exportOptionsPlist` | string | |
-| `noCodesign` | boolean; default `false` | |
+| `teamId` | string | Apple developer team identifier. |
+| `exportOptionsPlist` | string | Path to the iOS export options property list. |
+| `noCodesign` | boolean; default `false` | Plan an unsigned iOS build. |
 
 ```bash
 zarvan release plan <platform>
@@ -3090,7 +5127,7 @@ Fails with `validation_failed` and a player-readable message when the text is da
 
 | Parameter | Type | Description |
 |---|---|---|
-| `code` | string; required | |
+| `code` | string; required | Shareable save code to decode and verify. |
 
 Errors: `validation_failed`.
 
@@ -3110,7 +5147,7 @@ The text carries the JSON in URL-safe base64 plus a checksum, so a typo is caugh
 
 | Parameter | Type | Description |
 |---|---|---|
-| `save` | object; required | |
+| `save` | object; required | Save JSON object. |
 
 ```bash
 zarvan save encode
@@ -3128,8 +5165,8 @@ Runs the registered migrations from the save\'s `saveVersion` (1 when absent) up
 
 | Parameter | Type | Description |
 |---|---|---|
-| `save` | object; required | |
-| `toVersion` | integer; required; 1 to ∞ | |
+| `save` | object; required | Save JSON object. |
+| `toVersion` | integer; required; 1 to ∞ | Target save schema version. |
 
 ```bash
 zarvan save migrate
@@ -3149,7 +5186,7 @@ Includes the default template, which is exactly what `level.add_entity` starts a
 
 | Parameter | Type | Description |
 |---|---|---|
-| `name` | string; required | |
+| `name` | string; required | Registered component name from schema.components. |
 
 Errors: `not_found`.
 
@@ -3201,7 +5238,7 @@ Start from this when building a component by hand.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `name` | string; required | |
+| `name` | string; required | Registered component name from schema.components. |
 
 ```bash
 zarvan schema template <name>
@@ -3219,8 +5256,8 @@ Runs the same validator as level validation on a one-entity level, so the answer
 
 | Parameter | Type | Description |
 |---|---|---|
-| `name` | string; required | |
-| `value` | json; required | |
+| `name` | string; required | Registered component name from schema.components. |
+| `value` | json; required | Component JSON to validate against its schema. |
 
 ```bash
 zarvan schema validate-component <name>
@@ -3254,10 +5291,10 @@ Loads a level (`path` or inline `json`) with team/grid/AP/unitStats entities, wi
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path | |
-| `json` | json | |
+| `path` | path | Project-relative level file describing the skirmish. |
+| `json` | json | Inline skirmish level JSON instead of path. |
 | `turns` | integer; default `1` | How many team-turns (TurnEndedEvent) to run before stopping. |
-| `ai` | enumeration; default `"aggressive"`; one of `aggressive`, `tactical` | |
+| `ai` | enumeration; default `"aggressive"`; one of `aggressive`, `tactical` | Built-in AI policy for simulated teams. |
 
 Errors: `validation_failed`.
 
@@ -3279,7 +5316,7 @@ Reads the journal in `.studio/undo/`. Each entry has the operation, who did it, 
 
 | Parameter | Type | Description |
 |---|---|---|
-| `limit` | integer; default `20`; 1 to 100 | |
+| `limit` | integer; default `20`; 1 to 100 | Maximum journal entries returned, newest first. |
 
 ```bash
 zarvan undo list
@@ -3298,7 +5335,7 @@ Re-applies a journal entry that was undone, if its files are still as the undo l
 | Parameter | Type | Description |
 |---|---|---|
 | `id` | string | Entry id from undo.list; default the newest undone. |
-| `force` | boolean; default `false` | |
+| `force` | boolean; default `false` | Allow restoring a journal entry despite conflicting file changes. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3321,7 +5358,7 @@ Restores the files of a journal entry to their content before that write. It ref
 | Parameter | Type | Description |
 |---|---|---|
 | `id` | string | Entry id from undo.list; default the newest not yet undone. |
-| `force` | boolean; default `false` | |
+| `force` | boolean; default `false` | Allow restoring a journal entry despite conflicting file changes. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3345,8 +5382,8 @@ Give `path` (a project level) or inline `json`. `systems` chooses what runs on e
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path | |
-| `json` | json | |
+| `path` | path | Project-relative level file; alternatively provide json. |
+| `json` | json | Inline level JSON instead of path. |
 | `systems` | array | Subset of: movement, collision, pushable, tileAnimation, tween, particles. |
 
 Errors: `rate_limited`, `validation_failed`.
@@ -3367,7 +5404,7 @@ The data form of the world summary: tick, seed, size, entity count, each compone
 
 | Parameter | Type | Description |
 |---|---|---|
-| `worldId` | string; required | |
+| `worldId` | string; required | ID returned by world.build in the same server process. |
 
 ```bash
 zarvan world describe <worldId>
@@ -3385,7 +5422,7 @@ Frees a slot; unknown ids are `not_found`.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `worldId` | string; required | |
+| `worldId` | string; required | ID returned by world.build in the same server process. |
 
 ```bash
 zarvan world discard <worldId>
@@ -3403,10 +5440,10 @@ The same patch `World.applyPatch` takes: `{entities: [{id, components: {name: js
 
 | Parameter | Type | Description |
 |---|---|---|
-| `worldId` | string; required | |
-| `patch` | json; required | |
-| `strict` | boolean; default `false` | |
-| `dryRun` | boolean; default `false` | |
+| `worldId` | string; required | ID returned by world.build in the same server process. |
+| `patch` | json; required | Snapshot-shaped JSON with an entities list and component maps. |
+| `strict` | boolean; default `false` | Reject invalid patches before applying any changes. |
+| `dryRun` | boolean; default `false` | Validate without applying; inspect data.ok and data.problems. |
 
 ```bash
 zarvan world patch <worldId>
@@ -3424,9 +5461,9 @@ Entities that have a component, optionally matching field values.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `worldId` | string; required | |
-| `component` | string; required | |
-| `where` | object | |
+| `worldId` | string; required | ID returned by world.build in the same server process. |
+| `component` | string; required | Registered component name, e.g. position. |
+| `where` | object | Optional component field/value equality filters. |
 
 ```bash
 zarvan world query <worldId>
@@ -3444,8 +5481,8 @@ The world as plain JSON (tick, entities and their components).
 
 | Parameter | Type | Description |
 |---|---|---|
-| `worldId` | string; required | |
-| `entities` | array | |
+| `worldId` | string; required | ID returned by world.build in the same server process. |
+| `entities` | array | Optional entity IDs to include in the snapshot. |
 
 ```bash
 zarvan world snapshot <worldId>
@@ -3463,9 +5500,9 @@ Each step is `dt` seconds (default 1/60). Returns the new tick and per-component
 
 | Parameter | Type | Description |
 |---|---|---|
-| `worldId` | string; required | |
-| `ticks` | integer; default `1`; 1 to 100000 | |
-| `dt` | number; default `0.016666666666666666`; 0.0001 to 1 | |
+| `worldId` | string; required | ID returned by world.build in the same server process. |
+| `ticks` | integer; default `1`; 1 to 100000 | Number of fixed simulation steps to run. |
+| `dt` | number; default `0.016666666666666666`; 0.0001 to 1 | Seconds per simulation step. |
 
 ```bash
 zarvan world step <worldId>
@@ -3697,7 +5734,7 @@ curl -H "Authorization: Bearer \$TOKEN" -H \'Content-Type: application/json\' -d
 
 ## Catalogue size
 
-This registry has **93** operations (90 served over MCP/HTTP; Flutter-only ones stay CLI-only).
+This registry has **99** operations (96 served over MCP/HTTP; Flutter-only ones stay CLI-only).
 
 ''',
 
@@ -3719,7 +5756,9 @@ world.destroy(e);
 world.addSystem(MySystem());                   // order = phase, then registration order
 world.step(1 / 60);                            // run all systems, flush events
 world.systemOrder;                             // [\'orders\', \'turn\', …]
-world.toJson();  world.applyPatch(json);       // read / write everything
+world.toJson();                                // inspect serialized state
+world.checkPatch(json);                        // validate without applying
+world.applyPatch(json, strict: true);           // update existing entities
 world.save();    world.load(data);             // whole world incl. the random stream
 ```
 

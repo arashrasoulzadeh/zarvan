@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - 'packages/zarvan_core/**'
+      - 'docs/**'
       - '.github/workflows/zarvan_core.yml'
   pull_request:
     paths:
       - 'packages/zarvan_core/**'
+      - 'docs/**'
       - '.github/workflows/zarvan_core.yml'
 
 jobs:

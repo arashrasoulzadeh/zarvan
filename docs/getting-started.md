@@ -42,6 +42,14 @@ prints a warning).
     A player, solid ground, patrol enemy, coin, health bar, keyboard and
     on-screen controls. Continue with [Tutorial 1](tutorials/01-hello-world.md).
 
+=== "Top-down"
+
+    ```bash
+    zarvan create my_topdown --template topdown_game
+    ```
+
+    Four-direction movement and pickups. Continue with [Tutorial 7](tutorials/07-top-down-game.md).
+
 === "Turn-based strategy"
 
     ```bash
@@ -63,10 +71,12 @@ prints a warning).
     catch-up — the economy is one JSON file. Continue with
     [Tutorial 5](tutorials/05-idle-game.md).
 
-Then:
+For quiz content there is no dedicated starter yet; use [Tutorial 8](tutorials/08-quiz-game.md) and `zarvan_quiz`.
+
+Then, for a generated starter:
 
 ```bash
-cd my_game          # or my_war / bakery
+cd my_game          # or my_topdown / my_war / bakery
 flutter run         # pick a device, or: flutter run -d chrome
 ```
 
@@ -135,14 +145,14 @@ zarvan upgrade --ref main                     # move the engine pin forward
 zarvan lint assets/levels/main.level.json     # validate a level (add --playable)
 zarvan idle validate assets/idle_game.json    # idle definition check
 zarvan strategy simulate-turns assets/levels/skirmish.level.json --turns 4
-zarvan project open .                         # then project.problems / level.* / idle.*
+zarvan project problems --json               # from your game project
 zarvan pack-assets --input art --output-image assets/packed/atlas.png
 ```
 
 See the [CLI reference](reference/cli.md) and [transports](reference/transports.md) for MCP/REST.
 
 Published docs (when `engine.docs` has no local `docs/`):
-<https://meetarash.ir/agentic-game-engine/> (`engine.capabilities` → `docsUrl`).
+<https://meetarash.ir/zarvan/> (`engine.capabilities` → `docsUrl`).
 
 ## Why a git dependency?
 

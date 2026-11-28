@@ -11,7 +11,9 @@ import '../param.dart';
 import '../project/studio_project.dart';
 import '../result.dart';
 
-const _path = Param('path', ParamType.path, required: true, positional: true);
+const _path = Param('path', ParamType.path, required: true, positional: true,
+  description: 'Project-relative graph JSON file.',
+);
 
 /// A graph file as the studio saves it: `{type?, graph: {nodes, edges, variables?, entryNodeId?}, layout?}`.
 class _GraphFile {
@@ -114,10 +116,18 @@ OpOutcome _write(_GraphFile f, Object? data) {
 
 const _edgeParams = [
   _path,
-  Param('from', ParamType.string, required: true),
-  Param('fromPort', ParamType.string, required: true),
-  Param('to', ParamType.string, required: true),
-  Param('toPort', ParamType.string, required: true),
+  Param('from', ParamType.string, required: true,
+    description: 'Source node ID.',
+  ),
+  Param('fromPort', ParamType.string, required: true,
+    description: 'Output port on the source node.',
+  ),
+  Param('to', ParamType.string, required: true,
+    description: 'Destination node ID.',
+  ),
+  Param('toPort', ParamType.string, required: true,
+    description: 'Input port on the destination node.',
+  ),
 ];
 
 /// `graph.*`: visual-scripting graphs (`graphs/*.json`): dialogue, behavior trees and state machines.
@@ -175,6 +185,7 @@ List<Operation> graphOperations() => [
         options: ['dialogue', 'behaviorTree', 'stateMachine'],
         defaultValue: 'dialogue',
         positional: true,
+        description: 'Graph type determining the available node kinds and validation rules.',
       ),
     ],
     handler: (ctx, a) => OpOutcome.data([
@@ -228,8 +239,12 @@ List<Operation> graphOperations() => [
     scope: OperationScope.project,
     params: const [
       _path,
-      Param('output', ParamType.path),
-      Param('id', ParamType.string, defaultValue: 'fsm'),
+      Param('output', ParamType.path,
+        description: 'Optional project-relative path for the compiled JSON.',
+      ),
+      Param('id', ParamType.string, defaultValue: 'fsm',
+        description: 'Identifier assigned to the compiled state machine.',
+      ),
     ],
     errors: {
       ErrorCode.validationFailed:
@@ -291,6 +306,7 @@ List<Operation> graphOperations() => [
         ParamType.enumeration,
         options: ['dialogue', 'behaviorTree', 'stateMachine'],
         defaultValue: 'dialogue',
+        description: 'Graph type determining the available node kinds and validation rules.',
       ),
     ],
     errors: {ErrorCode.conflict: 'The file already exists.'},
@@ -326,11 +342,21 @@ List<Operation> graphOperations() => [
     scope: OperationScope.project,
     params: const [
       _path,
-      Param('kind', ParamType.string, required: true),
-      Param('id', ParamType.string),
-      Param('params', ParamType.object),
-      Param('x', ParamType.number, defaultValue: 0),
-      Param('y', ParamType.number, defaultValue: 0),
+      Param('kind', ParamType.string, required: true,
+        description: 'Node kind from graph.node_kinds.',
+      ),
+      Param('id', ParamType.string,
+        description: 'Optional ID for the new node; defaults to a generated ID.',
+      ),
+      Param('params', ParamType.object,
+        description: 'Node parameter values overriding the kind defaults.',
+      ),
+      Param('x', ParamType.number, defaultValue: 0,
+        description: 'Horizontal canvas position of the node.',
+      ),
+      Param('y', ParamType.number, defaultValue: 0,
+        description: 'Vertical canvas position of the node.',
+      ),
     ],
     handler: (ctx, a) {
       final f = _load(ctx, a['path']! as String);
@@ -377,7 +403,9 @@ List<Operation> graphOperations() => [
         'Destructive: previews first. Clears the entry node if it was this one.',
     kind: OperationKind.destructive,
     scope: OperationScope.project,
-    params: const [_path, Param('id', ParamType.string, required: true)],
+    params: const [_path, Param('id', ParamType.string, required: true,
+      description: 'ID of the node to remove.',
+    )],
     handler: (ctx, a) {
       final f = _load(ctx, a['path']! as String);
       final id = a['id']! as String;
@@ -479,9 +507,15 @@ List<Operation> graphOperations() => [
     idempotent: true,
     params: const [
       _path,
-      Param('node', ParamType.string, required: true),
-      Param('param', ParamType.string, required: true),
-      Param('value', ParamType.json, required: true),
+      Param('node', ParamType.string, required: true,
+        description: 'ID of the node to edit.',
+      ),
+      Param('param', ParamType.string, required: true,
+        description: 'Name of the node parameter.',
+      ),
+      Param('value', ParamType.json, required: true,
+        description: 'JSON value to store for the parameter.',
+      ),
     ],
     handler: (ctx, a) {
       final f = _load(ctx, a['path']! as String);

@@ -15,7 +15,9 @@ import '../param.dart';
 import '../result.dart';
 import 'level_ops.dart';
 
-const _path = Param('path', ParamType.path, required: true, positional: true);
+const _path = Param('path', ParamType.path, required: true, positional: true,
+  description: 'Project-relative level JSON file.',
+);
 
 /// Loads the level at `a['path']`, lets [edit] mutate the document through an [EditCommand], and proposes the validated result.
 ///
@@ -143,7 +145,9 @@ List<Operation> levelWriteOperations() => [
     idempotent: true,
     params: const [
       _path,
-      Param('force', ParamType.boolean, defaultValue: false),
+      Param('force', ParamType.boolean, defaultValue: false,
+        description: 'Allow breaking a live lock owned by another session.',
+      ),
     ],
     errors: {ErrorCode.locked: 'Someone else holds a live lock.'},
     handler: (ctx, a) {
@@ -168,7 +172,9 @@ List<Operation> levelWriteOperations() => [
     kind: OperationKind.write,
     scope: OperationScope.project,
     idempotent: true,
-    params: const [Param('paths', ParamType.array, items: Param.string())],
+    params: const [Param('paths', ParamType.array, items: Param.string(),
+      description: 'Optional list of level paths; omit to process all levels.',
+    )],
     handler: (ctx, a) {
       final rels =
           (a['paths'] as List?)?.cast<String>() ??
@@ -213,10 +219,18 @@ List<Operation> levelWriteOperations() => [
     kind: OperationKind.write,
     scope: OperationScope.project,
     params: const [
-      Param('base', ParamType.path, required: true),
-      Param('ours', ParamType.path, required: true),
-      Param('theirs', ParamType.path, required: true),
-      Param('output', ParamType.path),
+      Param('base', ParamType.path, required: true,
+        description: 'Project-relative common ancestor level file.',
+      ),
+      Param('ours', ParamType.path, required: true,
+        description: 'Project-relative level containing our edits.',
+      ),
+      Param('theirs', ParamType.path, required: true,
+        description: 'Project-relative level containing the other edits.',
+      ),
+      Param('output', ParamType.path,
+        description: 'Optional project-relative destination for the merged level.',
+      ),
     ],
     errors: {
       ErrorCode.conflict: 'Both sides changed the same thing differently.',
@@ -269,10 +283,18 @@ List<Operation> levelWriteOperations() => [
     scope: OperationScope.project,
     params: const [
       _path,
-      Param('name', ParamType.string),
-      Param('components', ParamType.array, items: Param.string()),
-      Param('index', ParamType.integer, min: 0),
-      Param('values', ParamType.object),
+      Param('name', ParamType.string,
+        description: 'Optional name for the new entity.',
+      ),
+      Param('components', ParamType.array, items: Param.string(),
+        description: 'Registered component names to attach at schema defaults.',
+      ),
+      Param('index', ParamType.integer, min: 0,
+        description: 'Zero-based insertion index in the level entity list.',
+      ),
+      Param('values', ParamType.object,
+        description: 'Map of component names to field overrides.',
+      ),
     ],
     handler: (ctx, a) => editLevel(ctx, a, (doc, _) {
       final components = <String, Map<String, dynamic>>{
@@ -310,7 +332,9 @@ List<Operation> levelWriteOperations() => [
         'Destructive: previews first and needs `apply` plus the confirmation token.',
     kind: OperationKind.destructive,
     scope: OperationScope.project,
-    params: const [_path, Param('name', ParamType.string, required: true)],
+    params: const [_path, Param('name', ParamType.string, required: true,
+      description: 'Name of the existing entity.',
+    )],
     handler: (ctx, a) => editLevel(ctx, a, (doc, _) {
       final e = _entity(doc, a['name']! as String);
       _apply(RemoveEntityCommand(e), doc);
@@ -326,9 +350,15 @@ List<Operation> levelWriteOperations() => [
     idempotent: true,
     params: const [
       _path,
-      Param('name', ParamType.string, required: true),
-      Param('x', ParamType.number, required: true),
-      Param('y', ParamType.number, required: true),
+      Param('name', ParamType.string, required: true,
+        description: 'Name of the existing entity.',
+      ),
+      Param('x', ParamType.number, required: true,
+        description: 'Horizontal world-space position.',
+      ),
+      Param('y', ParamType.number, required: true,
+        description: 'Vertical world-space position.',
+      ),
     ],
     handler: (ctx, a) => editLevel(ctx, a, (doc, _) {
       final e = _entity(doc, a['name']! as String);
@@ -353,10 +383,18 @@ List<Operation> levelWriteOperations() => [
     idempotent: true,
     params: const [
       _path,
-      Param('entity', ParamType.string, required: true),
-      Param('component', ParamType.string, required: true),
-      Param('field', ParamType.string, required: true),
-      Param('value', ParamType.json, required: true),
+      Param('entity', ParamType.string, required: true,
+        description: 'Name of the entity to edit.',
+      ),
+      Param('component', ParamType.string, required: true,
+        description: 'Registered component name.',
+      ),
+      Param('field', ParamType.string, required: true,
+        description: 'Name of the component field to set.',
+      ),
+      Param('value', ParamType.json, required: true,
+        description: 'New JSON value for the field.',
+      ),
     ],
     handler: (ctx, a) => editLevel(ctx, a, (doc, _) {
       final e = _entity(doc, a['entity']! as String);
@@ -384,9 +422,15 @@ List<Operation> levelWriteOperations() => [
     idempotent: true,
     params: const [
       _path,
-      Param('entity', ParamType.string, required: true),
-      Param('component', ParamType.string, required: true),
-      Param('z', ParamType.integer, required: true),
+      Param('entity', ParamType.string, required: true,
+        description: 'Name of the entity to edit.',
+      ),
+      Param('component', ParamType.string, required: true,
+        description: 'Registered component name.',
+      ),
+      Param('z', ParamType.integer, required: true,
+        description: 'Draw order to assign to the component.',
+      ),
     ],
     handler: (ctx, a) => editLevel(ctx, a, (doc, _) {
       final e = _entity(doc, a['entity']! as String);
@@ -418,9 +462,15 @@ List<Operation> levelWriteOperations() => [
     scope: OperationScope.project,
     params: const [
       _path,
-      Param('entity', ParamType.string, required: true),
-      Param('component', ParamType.string, required: true),
-      Param('values', ParamType.object),
+      Param('entity', ParamType.string, required: true,
+        description: 'Name of the entity to edit.',
+      ),
+      Param('component', ParamType.string, required: true,
+        description: 'Registered component name.',
+      ),
+      Param('values', ParamType.object,
+        description: 'Map of fields to override on the new component.',
+      ),
     ],
     errors: {ErrorCode.conflict: 'The entity already has the component.'},
     handler: (ctx, a) => editLevel(ctx, a, (doc, _) {
@@ -447,8 +497,12 @@ List<Operation> levelWriteOperations() => [
     scope: OperationScope.project,
     params: const [
       _path,
-      Param('entity', ParamType.string, required: true),
-      Param('component', ParamType.string, required: true),
+      Param('entity', ParamType.string, required: true,
+        description: 'Name of the entity to edit.',
+      ),
+      Param('component', ParamType.string, required: true,
+        description: 'Registered component name.',
+      ),
     ],
     handler: (ctx, a) => editLevel(ctx, a, (doc, _) {
       final e = _entity(doc, a['entity']! as String);
@@ -472,10 +526,18 @@ List<Operation> levelWriteOperations() => [
     idempotent: true,
     params: const [
       _path,
-      Param('entity', ParamType.string, required: true),
-      Param('col', ParamType.integer, required: true, min: 0),
-      Param('row', ParamType.integer, required: true, min: 0),
-      Param('tileId', ParamType.integer, required: true, min: 0),
+      Param('entity', ParamType.string, required: true,
+        description: 'Name of the entity to edit.',
+      ),
+      Param('col', ParamType.integer, required: true, min: 0,
+        description: 'Zero-based tile column.',
+      ),
+      Param('row', ParamType.integer, required: true, min: 0,
+        description: 'Zero-based tile row.',
+      ),
+      Param('tileId', ParamType.integer, required: true, min: 0,
+        description: 'Tile ID to write; 0 erases the tile.',
+      ),
     ],
     handler: (ctx, a) => editLevel(ctx, a, (doc, _) {
       final e = _tileEntity(doc, a);
@@ -502,10 +564,18 @@ List<Operation> levelWriteOperations() => [
     idempotent: true,
     params: const [
       _path,
-      Param('entity', ParamType.string, required: true),
-      Param('col', ParamType.integer, required: true, min: 0),
-      Param('row', ParamType.integer, required: true, min: 0),
-      Param('tileId', ParamType.integer, required: true, min: 0),
+      Param('entity', ParamType.string, required: true,
+        description: 'Name of the entity to edit.',
+      ),
+      Param('col', ParamType.integer, required: true, min: 0,
+        description: 'Zero-based tile column.',
+      ),
+      Param('row', ParamType.integer, required: true, min: 0,
+        description: 'Zero-based tile row.',
+      ),
+      Param('tileId', ParamType.integer, required: true, min: 0,
+        description: 'Tile ID to write; 0 erases the tile.',
+      ),
     ],
     handler: (ctx, a) => editLevel(ctx, a, (doc, _) {
       final e = _tileEntity(doc, a);

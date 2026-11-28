@@ -3,16 +3,15 @@ import 'entity.dart';
 import 'world_view.dart';
 
 /// The runtime-agent/NPC hook: implement [decide] to control an entity.
-/// Only ever receives a read-only [WorldView] — it cannot mutate the
-/// World directly, only propose an [Action] for `AISystem` to apply.
-/// This is what lets an LLM-backed or rule-based agent drive a game
-/// entity without any risk of it corrupting simulation state.
+/// Receives a live [WorldView] and should propose an [Action] rather
+/// than mutate the world directly. Trusted Dart code can access mutable
+/// state through the view, so this is not an isolation boundary.
 abstract class Behavior {
   Action decide(WorldView view, EntityId self);
 }
 
 /// A [Behavior] from a plain function, for trivial cases that don't earn a
-/// class: `FunctionBehavior((view, self) => NoOpAction())`. Same sandbox as any
+/// class: `FunctionBehavior((view, self) => NoOpAction())`. Same convention as any
 /// behavior: it only sees a [WorldView] and proposes an [Action].
 class FunctionBehavior implements Behavior {
   final Action Function(WorldView view, EntityId self) _decide;

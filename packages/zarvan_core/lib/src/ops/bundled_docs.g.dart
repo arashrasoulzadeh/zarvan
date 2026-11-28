@@ -3,6 +3,1382 @@
 
 /// Curated markdown bodies for [kRemoteDocsPages] (engine.docs offline).
 const kBundledDocs = <String, String>{
+  'agents.md': '''---
+title: Agent hub
+description: Entry points, permission boundaries and verified control loops for agents working with ZARVAN.
+---
+
+# Agent hub
+
+Choose the role before choosing an API. A repository coding agent, a game-content operator and a runtime NPC have different permissions and interfaces.
+
+| Role | Start here | Contract |
+|---|---|---|
+| Coding agent modifying the engine | [Repository AGENTS.md](../AGENTS.md) | Public Dart exports, source, tests and package manifests |
+| Project author/operator | [Tutorial 6](tutorials/06-agent-api.md) | Operation registry over MCP, REST, JSON-RPC or CLI |
+| External strategy player | [Tutorial 3](tutorials/03-agent-driven-game.md) | Filtered observations and validated orders |
+| Trusted runtime behavior | [Runtime agent API](concepts/agent-api.md) | `Behavior.decide(WorldView, EntityId)` returns an `Action` |
+
+## Discover the contract
+
+Before invoking a tool, call `engine.capabilities` to discover restrictions and registry version, `engine.operations` to enumerate available operations, and `engine.operation` with `{"name":"level.list"}` (or the operation you need) to obtain its input schema, errors and examples. Use `engine.docs` for available Markdown documentation.
+
+```bash
+zarvan engine capabilities --json
+zarvan engine operations --json
+zarvan engine operation level.list --json
+```
+
+See [operations](reference/operations.md), [components](reference/components.md), [events](reference/events.md), and [transports](reference/transports.md). Published discovery index: [llms.txt](https://meetarash.ir/zarvan/llms.txt). See [API reference](api-reference.md) for public Dart libraries.
+
+## Observe, validate, act, observe again
+
+1. Inspect project or world state before editing.
+2. Validate content with `level.validate`, `level.lint` or `project.problems`; inspect the returned result, not only the transport status.
+3. Preview project writes where supported; destructive operations require confirmation. For `world.patch`, pass `dryRun: true` to validate and `strict: true` when applying.
+4. Inspect the resulting diff, warnings and state. Undo journalled file edits if necessary; in-memory world operations are not file undo entries.
+
+In trusted Dart code, use the actual behavior signature:
+
+```dart
+import \'package:zarvan_core/zarvan_core.dart\';
+
+class IdleBehavior implements Behavior {
+  @override
+  Action decide(WorldView view, EntityId self) {
+    return const NoOpAction();
+  }
+}
+```
+
+Register the behavior in a `BehaviorRegistry`, attach `AIState` to an entity and install `AISystem`. The system calls `decide` and applies each action immediately. See the [custom behavior recipe](examples/custom-behavior.md).
+
+## Permission and safety boundaries
+
+- `--read-only` protects against operations classified as file writes or destructive operations; some operations classified as reads change session or sandbox-world state. Use an explicit allowlist when observation must not change that state.
+- `WorldView` is a cooperative interface, not a security sandbox: it exposes the underlying world and may return mutable component objects. Never execute arbitrary untrusted Dart as an NPC.
+- Filter observations for external strategy agents before sending them. Fog-aware order validation does not make a full world snapshot private.
+- The API can perform file edits; use least privilege, previews, validation and confirmation. Never expose the bearer token to an untrusted agent.
+- Use public exports, fixed simulation steps and seeded randomness. Verify changes with tests.
+
+For a linear workflow, see [For AI agents](guides/for-ai-agents.md).
+''',
+
+  'guides/for-ai-agents.md': '''# For AI agents
+
+Use this guide if you are building an agent that reads, changes or plays a ZARVAN world. If you are modifying the engine repository itself, read [AGENTS.md](../../AGENTS.md) instead.
+
+## Choose a role
+
+| Role | Observes | Acts through |
+|---|---|---|
+| Trusted runtime NPC | `WorldView` | `Behavior.decide(view, self)`, returning an `Action` |
+| External strategy player | A team-filtered observation | Validated orders |
+| Author/operator | Project files, schemas, sandbox-world snapshots | Operation registry (MCP, CLI, REST or JSON-RPC) |
+
+The runtime Dart interface is cooperative, not process isolation. A custom behavior can access mutable state; never execute arbitrary untrusted Dart as a behavior. See [runtime agent API](../concepts/agent-api.md).
+
+## Discover before calling
+
+1. Call `engine.capabilities` to check availability and restrictions.
+2. Call `engine.operations` to enumerate visible operations.
+3. Call `engine.operation` with `{"name":"level.list"}` (or the desired operation) to obtain its exact input schema, errors and examples.
+4. Call `engine.docs` for available Markdown pages or read the [published index](https://meetarash.ir/zarvan/llms.txt).
+
+Use the [operations reference](../reference/operations.md), [component shapes](../reference/components.md), [events](../reference/events.md) and [transport quick start](../reference/transports.md).
+
+## Validate before applying
+
+Dart patches use a two-step pattern:
+
+```dart
+final problems = world.checkPatch(patch);
+if (problems.isEmpty) {
+  world.applyPatch(patch, strict: true);
+}
+```
+
+The `world.patch` registry operation separately accepts `dryRun: true` to return problems without applying a patch. Inspect both the result envelope and validation data. Use `strict: true` for actual application.
+
+For project content, inspect `project.problems`, `level.validate` or `level.lint`; preview file writes and inspect the resulting diff. Destructive edits require a confirmation token. Journalled file writes can be undone; sandbox-world changes are not file undo entries.
+
+## Rules and limits
+
+- Treat `--read-only` as a restriction on operation kinds, not immutable simulation state. Some read-classified operations change session or in-memory worlds. Restrict the allowlist if observation must be side-effect free.
+- Treat full snapshots as privileged: filter them before sharing with an external player. Order validation does not prevent information leaks.
+- Use `world.random` and fixed timesteps for deterministic simulation.
+- Register components before expecting them to appear in serialization. See [FAQ](../faq.md#my-component-isnt-saved-or-loaded).
+- Do not guess missing parameters, enum values, imports or result shapes. Inspect live schemas and public exports.
+
+Continue with [agent hub](../agents.md), [external strategy player tutorial](../tutorials/03-agent-driven-game.md) or [operator tutorial](../tutorials/06-agent-api.md).
+''',
+
+  'concepts/agent-api.md': '''# The agent-facing API: `Behavior` + `WorldView` + `AISystem`
+
+This is the engine\'s other AI-agent-friendly pillar (alongside
+[content-as-data.md](content-as-data.md)): a sandbox for a runtime
+agent/NPC to *drive an entity during simulation* — whether that agent
+is a hand-written state machine, a rule-based patrol AI, or an
+LLM-backed decision-maker — using a cooperative separation between observation and action. This is not a security boundary for untrusted Dart.
+
+## Why separate observation from action
+
+A behavior that could freely mutate `World` could, by a bug or a bad
+LLM tool call, break invariants another system depends on (move an
+entity outside the map, delete a component another system reads
+unconditionally, etc.). The intended pattern is to inspect a `WorldView`, then return an `Action` for `AISystem` to apply. A custom Dart behavior is trusted code: `WorldView.world` exposes the underlying `World`, and component queries can return mutable objects. Do not treat this interface as process isolation or execute arbitrary untrusted code.
+
+```
+Behavior.decide(WorldView, EntityId self) -> Action
+                                                 |
+                                                 v
+                                    AISystem: action.apply(world)
+```
+
+## `WorldView`: observation queries
+
+`packages/zarvan_core/lib/src/ecs/world_view.dart`. Wraps a `World` and
+provides query helpers. The returned components are not necessarily immutable:
+
+```dart
+class MyBehavior implements Behavior {
+  @override
+  Action decide(WorldView view, EntityId self) {
+    final myPos = view.component<Position>(self);
+    if (myPos == null) return const NoOpAction();
+
+    for (final other in view.entitiesWith<Position>()) {
+      if (other == self) continue;
+      // Inspect other entities; do not mutate their components here.
+    }
+
+    return const NoOpAction();
+  }
+}
+```
+
+Useful queries: `component<T>(id)`, `hasComponent<T>(id)`,
+`entitiesWith<T>()`, `entitiesWithAll<A, B>()`, and a closest-entity
+helper — see the full list in `world_view.dart` or
+`packages/zarvan_core/README.md`\'s agent-API section.
+
+## `Action`: the intended way to cause a change
+
+```dart
+abstract class Action {
+  void apply(World world);
+}
+```
+
+The engine ships generic actions (e.g. `NoOpAction`,
+`SetVelocityAction` in `packages/zarvan_core/lib/src/ai/set_velocity_action.dart`)
+plus whatever your game defines itself — a game-specific `Action`
+subclass is how you extend this without the engine needing to know
+about your domain logic:
+
+```dart
+class TakeDamageAction implements Action {
+  TakeDamageAction(this.target, this.amount);
+  final EntityId target;
+  final double amount;
+
+  @override
+  void apply(World world) {
+    // Apply domain-specific validation before mutating World.
+    final health = world.componentsOf<Health>().get(target);
+    // ...
+  }
+}
+```
+
+## `Behavior` + `BehaviorRegistry`
+
+```dart
+abstract class Behavior {
+  Action decide(WorldView view, EntityId self);
+}
+```
+
+Behaviors carry logic (closures, state machines) so — unlike plain-data
+components — they\'re registered under a string id rather than embedded
+in JSON, and `AIState.behaviorId` references that id:
+
+```dart
+final behaviors = BehaviorRegistry();
+behaviors.register(\'patrol\', PatrolBehavior(waypoints: [...]));
+world.addSystem(AISystem(behaviors));
+
+final enemy = world.spawn();
+world.componentsOf<AIState>().set(enemy, AIState(\'patrol\'));
+```
+
+`AIState.memory` is a free-form JSON-serializable blackboard (a
+waypoint index, a cooldown timer) a behavior can carry state in between
+ticks without needing its own component type — mutate it directly on
+the `AIState` you read via `view.component<AIState>(self)` inside
+`decide`, as a documented convention for trusted behaviors. Other component mutation should be expressed through actions.
+
+## `AISystem`
+
+Runs every `AIState`-tagged entity once per tick: resolves its
+`behaviorId` via the registry, calls `decide`, applies the returned
+`Action`. Builds one `WorldView` per tick, then calls and applies each behavior in sequence. It is a live view, not an immutable snapshot: earlier actions can affect later observations. `AISystem` does not independently validate arbitrary custom `Action.apply` implementations.
+
+## `zarvan_platformer`\'s ready-made behaviors
+
+`PatrolBehavior`, `FollowBehavior`, `AvoidanceBehavior`,
+`PathFollowBehavior` (`packages/zarvan_platformer/lib/src/ai/`) are
+concrete `Behavior` implementations for common enemy AI — read one of
+these as a worked example of writing your own.
+
+## See also
+
+- [ecs.md](ecs.md) — `World`/`ComponentStore`/`System` underneath all of this.
+- [content-as-data.md](content-as-data.md) — the other read/write path (patching from outside simulation, vs. deciding during it).
+- [examples/custom-behavior.md](../examples/custom-behavior.md) — a focused, minimal worked example.
+- [`packages/zarvan_core/README.md`](../../packages/zarvan_core/README.md)\'s "The agent-facing API" section.
+
+## Two doors, one idea: real-time and turn-based
+
+The cooperative principle — *an agent proposes, the engine applies* — has two
+shapes in this engine:
+
+| | Real-time (platformer) | Turn-based (strategy) |
+|---|---|---|
+| Agent type | `Behavior` | `TurnAI` (or any external program) |
+| Reads | `WorldView` (live observation) | `World.toJson()` snapshot, or the typed stores |
+| Proposes | an `Action` returned from `decide` | `Order`s passed to `submitOrder` |
+| Applied by | `AISystem` | `OrderSystem` |
+| Refused when | the action implementation rejects it | not that team\'s turn, game over, or the order is illegal |
+| Cadence | every tick | once per team turn |
+
+For untrusted external agents, expose a validated protocol with filtered observations, not the mutable Dart world. `TurnAI.playTurn` receives `World` and is also trusted code; built-in strategies follow order and fog rules by convention.
+
+For a complete turn-based agent that sees only JSON, see
+[Tutorial 3](../tutorials/03-agent-driven-game.md); for a hand-written
+opponent, the [custom TurnAI recipe](../examples/custom-turn-ai.md).
+''',
+
+  'reference/components.md': '''# Component reference
+
+<!-- Generated by packages/zarvan_schema/tool/gen_component_docs.dart. Do not edit. -->
+
+Every built-in component and the exact JSON shape it serializes to — what you see in `World.toJson()` and what `applyPatch` / `Level.loadInto` accept. This page is generated from `zarvan_schema`, the same schemas the studio and `zarvan lint` validate against, so it is always current.
+
+**106 components** across 4 packages. Jump to: [zarvan_core](#zarvan_core) · [zarvan_flutter](#zarvan_flutter) · [zarvan_platformer](#zarvan_platformer) · [zarvan_idle](#zarvan_idle)
+
+## zarvan_core
+
+Genre-general data. Registered by `registerCoreComponents`.
+
+### `position`
+
+| Field | Type | Notes |
+|---|---|---|
+| `x` | `double` | required; default `0` |
+| `y` | `double` | required; default `0` |
+
+### `velocity`
+
+| Field | Type | Notes |
+|---|---|---|
+| `x` | `double` | required; default `0` |
+| `y` | `double` | required; default `0` |
+
+### `collider`
+
+| Field | Type | Notes |
+|---|---|---|
+| `radius` | `double` | required; 0 to ∞ |
+| `blocksLight` | `bool` | default `false` |
+| `pushable` | `bool` | default `true` |
+| `collisionGroup` | `int` | default `1` |
+| `collisionMask` | `int` | default `-1` |
+
+### `aiState`
+
+| Field | Type | Notes |
+|---|---|---|
+| `behaviorId` | `string` | required |
+| `memory` | `object` | may be null |
+
+### `button`
+
+| Field | Type | Notes |
+|---|---|---|
+| `actionId` | `string` | required |
+
+### `buttonHitBox`
+
+| Field | Type | Notes |
+|---|---|---|
+| `width` | `double` | required; 0 to ∞ |
+| `height` | `double` | required; 0 to ∞ |
+
+### `roomExit`
+
+| Field | Type | Notes |
+|---|---|---|
+| `targetSceneId` | `string` | required |
+| `spawnPoint` | `string` | required |
+
+### `tileMap`
+
+| Field | Type | Notes |
+|---|---|---|
+| `cols` | `int` | required; 1 to ∞ |
+| `rows` | `int` | required; 1 to ∞ |
+| `tileWidth` | `double` | required; 0 to ∞ |
+| `tileHeight` | `double` | required; 0 to ∞ |
+| `tiles` | `list` | required |
+| `solidTileIds` | `list` |  |
+| `oneWayTileIds` | `list` |  |
+| `slopeUpRightTileIds` | `list` |  |
+| `slopeUpLeftTileIds` | `list` |  |
+| `ladderTileIds` | `list` |  |
+| `conveyorSpeedByTileId` | `object` |  |
+| `frictionByTileId` | `object` |  |
+| `atlasId` | `string` | may be null |
+| `regionByTileId` | `object` |  |
+| `zIndex` | `int` | default `0` |
+| `backgroundTiles` | `list` | may be null |
+| `foregroundTiles` | `list` | may be null |
+| `tileAnimations` | `object` | may be null |
+| `tileAnimationFps` | `double` | 0 to ∞; default `6` |
+| `collisionGroups` | `object` | may be null |
+
+### `particle`
+
+| Field | Type | Notes |
+|---|---|---|
+| `age` | `double` | 0 to ∞ |
+| `lifetime` | `double` | required; 0 to ∞ |
+| `startScale` | `double` | 0 to ∞ |
+| `endScale` | `double` | 0 to ∞ |
+| `startAlpha` | `double` | 0 to 1 |
+| `endAlpha` | `double` | 0 to 1 |
+| `colorArgb` | `int` |  |
+| `zIndex` | `int` |  |
+| `followEmitter` | `bool` |  |
+| `emitterEntityId` | `int` | may be null |
+
+### `particleEmitter`
+
+| Field | Type | Notes |
+|---|---|---|
+| `rate` | `double` | 0 to ∞ |
+| `burstCount` | `int` | 0 to ∞ |
+| `speedMin` | `double` | 0 to ∞ |
+| `speedMax` | `double` | 0 to ∞ |
+| `angleMin` | `double` |  |
+| `angleMax` | `double` |  |
+| `lifetimeMin` | `double` | 0 to ∞ |
+| `lifetimeMax` | `double` | 0 to ∞ |
+| `startScale` | `double` | 0 to ∞ |
+| `endScale` | `double` | 0 to ∞ |
+| `startAlpha` | `double` | 0 to 1 |
+| `endAlpha` | `double` | 0 to 1 |
+| `colorArgb` | `int` |  |
+| `zIndex` | `int` |  |
+| `emissionShape` | `enumeration` | one of `point`, `circle`, `rect`, `edge`; default `point` |
+| `emissionRadius` | `double` | 0 to ∞ |
+| `emissionHalfWidth` | `double` | 0 to ∞ |
+| `emissionHalfHeight` | `double` | 0 to ∞ |
+| `edgeStartX` | `double` |  |
+| `edgeStartY` | `double` |  |
+| `edgeEndX` | `double` |  |
+| `edgeEndY` | `double` |  |
+| `followEmitter` | `bool` |  |
+| `accumulator` | `double` | 0 to ∞ |
+
+### `tween`
+
+| Field | Type | Notes |
+|---|---|---|
+| `from` | `double` | required |
+| `to` | `double` | required |
+| `duration` | `double` | required; 0 to ∞ |
+| `elapsed` | `double` | 0 to ∞ |
+| `loop` | `bool` |  |
+| `pingPong` | `bool` |  |
+| `easing` | `enumeration` | one of `linear`, `easeInQuad`, `easeOutQuad`, `easeInOutQuad`; default `linear` |
+| `reversed` | `bool` |  |
+
+### `triggerZone`
+
+| Field | Type | Notes |
+|---|---|---|
+| `triggerId` | `string` | required |
+| `data` | `object` | may be null |
+
+### `pushable`
+
+| Field | Type | Notes |
+|---|---|---|
+| `pushSpeed` | `double` | 0 to ∞ |
+
+### `dialogueGraph`
+
+| Field | Type | Notes |
+|---|---|---|
+| `nodes` | `object` | required |
+| `startNodeId` | `string` | required |
+| `metadata` | `object` | may be null |
+
+### `gameState`
+
+| Field | Type | Notes |
+|---|---|---|
+| `data` | `object` |  |
+| `migrationVersion` | `int` | 1 to ∞; default `1` |
+
+### `inventory`
+
+| Field | Type | Notes |
+|---|---|---|
+| `items` | `object` |  |
+
+### `particleForces`
+
+| Field | Type | Notes |
+|---|---|---|
+| `radius` | `double` | 0 to ∞; default `100` |
+| `strength` | `double` | default `500` |
+| `isWind` | `bool` | default `false` |
+| `windDirection` | `double` | default `0` |
+| `falloffExponent` | `double` | 0 to ∞; default `2` |
+
+### `hearing`
+
+| Field | Type | Notes |
+|---|---|---|
+| `range` | `double` | required; 0 to ∞ |
+
+### `soundEvent`
+
+| Field | Type | Notes |
+|---|---|---|
+| `x` | `double` | required |
+| `y` | `double` | required |
+| `loudness` | `double` | required; 0 to ∞ |
+| `tag` | `string` | may be null |
+| `data` | `object` | may be null |
+
+### `team`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+
+### `actionPoints`
+
+| Field | Type | Notes |
+|---|---|---|
+| `max` | `int` | required; 0 to ∞ |
+| `current` | `int` | 0 to ∞ |
+
+### `turnState`
+
+| Field | Type | Notes |
+|---|---|---|
+| `order` | `list` | required |
+| `activeIndex` | `int` | 0 to ∞ |
+| `round` | `int` | 1 to ∞ |
+| `eliminated` | `list` |  |
+| `winner` | `string` | may be null |
+
+### `gridPosition`
+
+| Field | Type | Notes |
+|---|---|---|
+| `col` | `int` | required |
+| `row` | `int` | required |
+
+### `gridFootprint`
+
+| Field | Type | Notes |
+|---|---|---|
+| `size` | `int` | 1 to ∞ |
+
+### `orderQueue`
+
+| Field | Type | Notes |
+|---|---|---|
+| `orders` | `list` |  |
+
+### `selected`
+
+A marker: present or absent, no fields.
+
+### `countdownTimer`
+
+| Field | Type | Notes |
+|---|---|---|
+| `name` | `string` | required |
+| `remaining` | `double` | required; 0 to ∞ |
+| `interval` | `double` | may be null; 0 to ∞ |
+
+### `tags`
+
+| Field | Type | Notes |
+|---|---|---|
+| `tags` | `list` | required |
+
+### `prefabRef`
+
+| Field | Type | Notes |
+|---|---|---|
+| `name` | `string` | required |
+
+### `name`
+
+| Field | Type | Notes |
+|---|---|---|
+| `value` | `string` | required |
+
+### `parent`
+
+| Field | Type | Notes |
+|---|---|---|
+| `entity` | `int` | required; 0 to ∞ |
+
+### `unitStats`
+
+| Field | Type | Notes |
+|---|---|---|
+| `maxHp` | `int` | required; 1 to ∞ |
+| `hp` | `int` | 0 to ∞ |
+| `attack` | `int` | 0 to ∞; default `1` |
+| `defense` | `int` | 0 to ∞; default `0` |
+
+### `vision`
+
+| Field | Type | Notes |
+|---|---|---|
+| `range` | `int` | required; 0 to ∞ |
+
+### `fogOfWar`
+
+| Field | Type | Notes |
+|---|---|---|
+| `cols` | `int` | required; 1 to ∞ |
+| `rows` | `int` | required; 1 to ∞ |
+| `visible` | `object` |  |
+| `explored` | `object` |  |
+
+### `attackProfile`
+
+| Field | Type | Notes |
+|---|---|---|
+| `range` | `int` | 1 to ∞; default `1` |
+| `cost` | `int` | 0 to ∞; default `1` |
+
+### `statusEffects`
+
+| Field | Type | Notes |
+|---|---|---|
+| `effects` | `list` |  |
+
+### `objective`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+| `col` | `int` | required |
+| `row` | `int` | required |
+| `owner` | `string` | may be null |
+
+### `objectiveRules`
+
+| Field | Type | Notes |
+|---|---|---|
+| `holdTurnsToWin` | `int` | required; 1 to ∞ |
+| `holds` | `object` |  |
+
+### `realtimeStats`
+
+| Field | Type | Notes |
+|---|---|---|
+| `speed` | `double` | 0 to ∞; default `2` |
+| `attackInterval` | `double` | 0 to ∞; default `1` |
+| `moveProgress` | `double` | 0 to ∞ |
+| `cooldown` | `double` | 0 to ∞ |
+
+### `vip`
+
+A marker: present or absent, no fields.
+
+### `flag`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+| `homeTeam` | `string` | required |
+| `homeCol` | `int` | required |
+| `homeRow` | `int` | required |
+| `col` | `int` |  |
+| `row` | `int` |  |
+| `carrier` | `int` | may be null |
+
+### `deliveryZone`
+
+| Field | Type | Notes |
+|---|---|---|
+| `team` | `string` | required |
+| `col` | `int` | required |
+| `row` | `int` | required |
+
+### `flagRules`
+
+| Field | Type | Notes |
+|---|---|---|
+| `capturesToWin` | `int` | required; 1 to ∞ |
+| `captures` | `object` |  |
+
+### `treasury`
+
+| Field | Type | Notes |
+|---|---|---|
+| `team` | `string` | required |
+| `amounts` | `object` |  |
+| `incomePerSecond` | `object` |  |
+| `carry` | `object` |  |
+
+### `producer`
+
+| Field | Type | Notes |
+|---|---|---|
+| `cost` | `object` |  |
+| `seconds` | `double` | required; 0 to ∞ |
+| `template` | `object` |  |
+| `queued` | `int` | 0 to ∞ |
+| `progress` | `double` | 0 to ∞ |
+| `paid` | `bool` |  |
+| `requires` | `list` |  |
+
+### `resourceNode`
+
+| Field | Type | Notes |
+|---|---|---|
+| `resource` | `string` | required |
+| `amount` | `int` | required; 0 to ∞ |
+
+### `depot`
+
+| Field | Type | Notes |
+|---|---|---|
+| `accepts` | `list` |  |
+
+### `gatherer`
+
+| Field | Type | Notes |
+|---|---|---|
+| `capacity` | `int` | 1 to ∞ |
+| `secondsPerUnit` | `double` | 0 to ∞ |
+| `node` | `int` | may be null |
+| `phase` | `enumeration` | one of `idle`, `toNode`, `harvesting`, `toDepot` |
+| `carrying` | `string` | may be null |
+| `carried` | `int` | 0 to ∞ |
+| `progress` | `double` | 0 to ∞ |
+
+### `construction`
+
+| Field | Type | Notes |
+|---|---|---|
+| `remaining` | `double` | required; 0 to ∞ |
+| `needsBuilder` | `bool` |  |
+
+### `builder`
+
+| Field | Type | Notes |
+|---|---|---|
+| `site` | `int` | may be null |
+
+### `techState`
+
+| Field | Type | Notes |
+|---|---|---|
+| `team` | `string` | required |
+| `researched` | `list` |  |
+
+### `provides`
+
+| Field | Type | Notes |
+|---|---|---|
+| `tech` | `list` |  |
+
+### `bigTreasury`
+
+| Field | Type | Notes |
+|---|---|---|
+| `amounts` | `object` |  |
+| `incomePerSecond` | `object` |  |
+
+### `spawner`
+
+| Field | Type | Notes |
+|---|---|---|
+| `prefab` | `string` | required |
+| `every` | `double` | 0 to ∞; default `1` |
+| `count` | `int` | 1 to ∞; default `1` |
+| `maxAlive` | `int` | 0 to ∞; default `0` |
+| `total` | `int` | 0 to ∞; default `0` |
+| `delay` | `double` | 0 to ∞; default `0` |
+| `radius` | `double` | 0 to ∞; default `0` |
+| `active` | `bool` | default `true` |
+| `waves` | `list` |  |
+| `elapsed` | `double` | 0 to ∞; default `0` |
+| `spawned` | `int` | 0 to ∞; default `0` |
+| `cycles` | `int` | 0 to ∞; default `0` |
+| `waveIndex` | `int` | 0 to ∞; default `0` |
+
+### `spawnedBy`
+
+| Field | Type | Notes |
+|---|---|---|
+| `spawner` | `int` | required |
+
+### `joint`
+
+| Field | Type | Notes |
+|---|---|---|
+| `kind` | `enumeration` | one of `spring`, `rope`, `rod`; default `spring` |
+| `other` | `int` | may be null |
+| `anchorX` | `double` | default `0` |
+| `anchorY` | `double` | default `0` |
+| `length` | `double` | 0 to ∞; default `50` |
+| `stiffness` | `double` | 0 to ∞; default `40` |
+| `damping` | `double` | 0 to ∞; default `4` |
+| `breakDistance` | `double` | 0 to ∞; default `0` |
+
+### `conveyorZone`
+
+| Field | Type | Notes |
+|---|---|---|
+| `width` | `double` | 0 to ∞; default `64` |
+| `height` | `double` | 0 to ∞; default `16` |
+| `speedX` | `double` | default `60` |
+| `speedY` | `double` | default `0` |
+
+### `teleporter`
+
+| Field | Type | Notes |
+|---|---|---|
+| `width` | `double` | 0 to ∞; default `32` |
+| `height` | `double` | 0 to ∞; default `32` |
+| `targetX` | `double` | default `0` |
+| `targetY` | `double` | default `0` |
+| `targetEntity` | `int` | may be null |
+| `cooldown` | `double` | 0 to ∞; default `0.5` |
+
+## zarvan_flutter
+
+Rendering and input data. Registered by `registerFlutterComponents` (called for you by `GameRunner`).
+
+### `sprite`
+
+| Field | Type | Notes |
+|---|---|---|
+| `atlasId` | `string` | required |
+| `region` | `string` | required |
+| `rotation` | `double` | default `0` |
+| `scaleX` | `double` | default `1` |
+| `scaleY` | `double` | default `1` |
+| `screenSpace` | `bool` | default `false` |
+| `offsetX` | `double` | default `0` |
+| `offsetY` | `double` | default `0` |
+| `zIndex` | `int` | default `0` |
+| `normalAtlasId` | `string` | may be null |
+| `tintArgb` | `int` | may be null |
+
+### `hitFlash`
+
+| Field | Type | Notes |
+|---|---|---|
+| `remaining` | `double` | 0 to ∞; default `0` |
+| `tintArgb` | `int` | default `4294914867` |
+
+### `animationState`
+
+| Field | Type | Notes |
+|---|---|---|
+| `clip` | `object` | required |
+| `frameIndex` | `int` | 0 to ∞; default `0` |
+| `elapsed` | `double` | 0 to ∞; default `0` |
+| `playing` | `bool` | default `true` |
+| `crossfadeSeconds` | `double` | 0 to ∞; default `0` |
+
+### `spriteStates`
+
+| Field | Type | Notes |
+|---|---|---|
+| `clips` | `object` | required |
+| `current` | `string` | default `idle` |
+| `restState` | `string` | default `idle` |
+| `holdStates` | `list` |  |
+
+### `oneShotFx`
+
+A marker: present or absent, no fields.
+
+### `inputState`
+
+| Field | Type | Notes |
+|---|---|---|
+| `pressed` | `list` |  |
+| `axes` | `object` |  |
+
+### `parallaxLayer`
+
+| Field | Type | Notes |
+|---|---|---|
+| `atlasId` | `string` | required |
+| `region` | `string` | required |
+| `scrollFactorX` | `double` | default `0.5` |
+| `scrollFactorY` | `double` | default `0` |
+| `tileX` | `bool` | default `true` |
+| `tileY` | `bool` | default `false` |
+| `fitHeight` | `bool` | default `false` |
+| `zIndex` | `int` | default `0` |
+
+### `text`
+
+| Field | Type | Notes |
+|---|---|---|
+| `text` | `string` | required |
+| `fontSize` | `double` | 1 to ∞; default `16` |
+| `colorArgb` | `int` | default `4294967295` |
+| `align` | `enumeration` | one of `left`, `center`, `right`; default `center` |
+| `screenSpace` | `bool` | default `false` |
+| `zIndex` | `int` | default `0` |
+| `maxWidth` | `double` | may be null; 0 to ∞ |
+| `textScale` | `double` | 0 to ∞; default `1` |
+| `alpha` | `double` | 0 to 1; default `1` |
+| `rtl` | `bool` | may be null |
+| `fontFamily` | `string` | may be null |
+| `shadowArgb` | `int` | may be null |
+
+### `hudBar`
+
+| Field | Type | Notes |
+|---|---|---|
+| `value` | `double` | required; 0 to ∞ |
+| `maxValue` | `double` | required; 0 to ∞ |
+| `width` | `double` | 0 to ∞; default `100` |
+| `height` | `double` | 0 to ∞; default `12` |
+| `fillColorArgb` | `int` | default `4283300428` |
+| `backgroundColorArgb` | `int` | default `2147483648` |
+| `screenSpace` | `bool` | default `true` |
+| `zIndex` | `int` | default `0` |
+
+### `shape`
+
+| Field | Type | Notes |
+|---|---|---|
+| `kind` | `enumeration` | one of `circle`, `roundedRect`, `ring`; default `circle` |
+| `width` | `double` | 0 to ∞; default `40` |
+| `height` | `double` | 0 to ∞; default `40` |
+| `cornerRadius` | `double` | 0 to ∞; default `0` |
+| `strokeWidth` | `double` | 0 to ∞; default `0` |
+| `colorArgb` | `int` | default `4294967295` |
+| `dashLength` | `double` | 0 to ∞; default `0` |
+| `gapLength` | `double` | 0 to ∞; default `0` |
+| `screenSpace` | `bool` | default `false` |
+| `alpha` | `double` | 0 to 1; default `1` |
+| `zIndex` | `int` | default `0` |
+
+### `nineSliceSprite`
+
+| Field | Type | Notes |
+|---|---|---|
+| `atlasId` | `string` | required |
+| `region` | `string` | required |
+| `width` | `double` | required; 0 to ∞ |
+| `height` | `double` | required; 0 to ∞ |
+| `insetLeft` | `double` | required; 0 to ∞ |
+| `insetTop` | `double` | required; 0 to ∞ |
+| `insetRight` | `double` | required; 0 to ∞ |
+| `insetBottom` | `double` | required; 0 to ∞ |
+| `zIndex` | `int` | default `0` |
+
+### `animationTransition`
+
+| Field | Type | Notes |
+|---|---|---|
+| `atlasId` | `string` | required |
+| `region` | `string` | required |
+| `scaleX` | `double` | default `1` |
+| `scaleY` | `double` | default `1` |
+| `rotation` | `double` | default `0` |
+| `zIndex` | `int` | default `0` |
+| `remainingSeconds` | `double` | required; 0 to ∞ |
+| `totalSeconds` | `double` | required; 0 to ∞ |
+
+### `light2d`
+
+| Field | Type | Notes |
+|---|---|---|
+| `radius` | `double` | 0 to ∞; default `100` |
+| `intensity` | `double` | 0 to ∞; default `1` |
+| `colorArgb` | `int` | default `16777215` |
+| `coneAngle` | `double` | may be null; 0 to ∞ |
+| `coneDirection` | `double` | default `0` |
+| `castsShadows` | `bool` | default `false` |
+| `blockOneWayPlatforms` | `bool` | default `false` |
+| `flickerSpeed` | `double` | 0 to ∞; default `0` |
+| `flickerAmount` | `double` | 0 to ∞; default `0.3` |
+| `flickerAffectsRadius` | `bool` | default `true` |
+| `baseIntensity` | `double` | may be null; 0 to ∞ |
+| `baseRadius` | `double` | may be null; 0 to ∞ |
+| `flickerElapsed` | `double` | 0 to ∞; default `0` |
+| `shadowRayCount` | `int` | 1 to ∞; default `48` |
+| `shadowSmoothingSeconds` | `double` | 0 to ∞; default `0` |
+| `shadowEdgeSoftness` | `double` | 0 to ∞; default `8` |
+| `minZIndex` | `int` | may be null |
+| `maxZIndex` | `int` | may be null |
+| `cacheShadowGeometry` | `bool` | default `false` |
+| `overbrightIntensity` | `double` | 0 to ∞; default `0` |
+| `openAirFalloffScale` | `double` | 0 to ∞; default `1` |
+| `useGpuShadows` | `bool` | default `false` |
+
+### `backdropBlur`
+
+| Field | Type | Notes |
+|---|---|---|
+| `sigma` | `double` | 0 to ∞; default `0` |
+| `belowZIndex` | `int` | required |
+
+### `shaderEffect`
+
+| Field | Type | Notes |
+|---|---|---|
+| `kind` | `enumeration` | one of `portal`, `glow`, `shine`; default `portal` |
+| `width` | `double` | required; 0 to ∞ |
+| `height` | `double` | required; 0 to ∞ |
+| `zIndex` | `int` | default `0` |
+| `speed` | `double` | 0 to ∞; default `1` |
+| `images` | `list` |  |
+| `blur` | `double` | 0 to ∞; default `0.03` |
+| `detail` | `double` | 1 to ∞; default `30` |
+| `rimGlow` | `double` | 0 to ∞; default `1` |
+| `saturation` | `double` | 0 to ∞; default `1` |
+| `border` | `double` | 0 to ∞; default `0` |
+| `intensity` | `double` | 0 to ∞; default `0.5` |
+| `period` | `double` | 0 to ∞; default `5` |
+| `rimArgb` | `int` | default `4290068492` |
+| `armArgb` | `int` | default `4294952253` |
+| `coreArgb` | `int` | default `4294963640` |
+| `params` | `list` |  |
+
+### `screenTint`
+
+| Field | Type | Notes |
+|---|---|---|
+| `colorArgb` | `int` | required |
+
+### `clipShape`
+
+| Field | Type | Notes |
+|---|---|---|
+| `isCircle` | `bool` | default `true` |
+| `radius` | `double` | 0 to ∞; default `100` |
+| `width` | `double` | 0 to ∞; default `200` |
+| `height` | `double` | 0 to ∞; default `200` |
+| `mode` | `enumeration` | one of `reveal`, `cutout`; default `reveal` |
+| `softness` | `double` | 0 to ∞; default `0` |
+
+### `playerOptions`
+
+| Field | Type | Notes |
+|---|---|---|
+| `masterVolume` | `double` | 0 to 1 |
+| `musicVolume` | `double` | 0 to 1 |
+| `sfxVolume` | `double` | 0 to 1 |
+| `controlScheme` | `string` |  |
+| `keyboardBindings` | `object` |  |
+| `gamepadBindings` | `object` |  |
+| `touchBindings` | `object` |  |
+| `textScale` | `double` | 0 to ∞ |
+| `highContrast` | `bool` |  |
+| `colorblindMode` | `string` |  |
+| `reduceMotion` | `bool` |  |
+| `screenShakeIntensity` | `double` | 0 to ∞ |
+| `dialogueSpeed` | `double` | 0 to ∞ |
+| `locale` | `string` |  |
+| `showFpsOverlay` | `bool` |  |
+| `custom` | `object` |  |
+
+### `sceneTransition`
+
+| Field | Type | Notes |
+|---|---|---|
+| `config` | `object` | required |
+| `covering` | `bool` |  |
+| `progress` | `double` | 0 to 1 |
+| `isRunning` | `bool` |  |
+| `isComplete` | `bool` |  |
+
+### `selectionMarker`
+
+| Field | Type | Notes |
+|---|---|---|
+| `owner` | `int` | required; 0 to ∞ |
+
+## zarvan_platformer
+
+Platformer gameplay data. Registered by `registerPlatformerComponents`.
+
+### `gravity`
+
+| Field | Type | Notes |
+|---|---|---|
+| `scale` | `double` | 0 to ∞; default `1` |
+| `fallMultiplier` | `double` | 0 to ∞; default `1` |
+
+### `platformBody`
+
+| Field | Type | Notes |
+|---|---|---|
+| `width` | `double` | required; 0 to ∞ |
+| `height` | `double` | required; 0 to ∞ |
+| `oneWay` | `bool` | default `false` |
+
+### `platformerController`
+
+| Field | Type | Notes |
+|---|---|---|
+| `grounded` | `bool` | default `false` |
+| `jumpSpeed` | `double` | 0 to ∞; default `300` |
+| `jumpRequested` | `bool` |  |
+| `coyoteTimeSeconds` | `double` | 0 to ∞ |
+| `jumpBufferSeconds` | `double` | 0 to ∞ |
+| `maxAirJumps` | `int` | 0 to ∞ |
+| `wallJumpPushSpeed` | `double` | 0 to ∞ |
+| `wallSlideMaxFallSpeed` | `double` | may be null; 0 to ∞ |
+| `dashSpeed` | `double` | 0 to ∞ |
+| `dashDurationSeconds` | `double` | 0 to ∞ |
+| `jumpCutMultiplier` | `double` | 0 to ∞ |
+| `timeSinceGrounded` | `double` | 0 to ∞ |
+| `timeSinceJumpPressed` | `double` | 0 to ∞ |
+| `airJumpsUsed` | `int` | 0 to ∞ |
+| `touchingWallLeft` | `bool` |  |
+| `touchingWallRight` | `bool` |  |
+| `dashRequested` | `bool` |  |
+| `dashTimeRemaining` | `double` | 0 to ∞ |
+| `dashUsed` | `bool` |  |
+| `jumpHeldLastTick` | `bool` |  |
+| `hitstunSeconds` | `double` | 0 to ∞ |
+| `facingSign` | `double` |  |
+| `climbSpeed` | `double` | 0 to ∞ |
+| `onLadder` | `bool` |  |
+| `groundFriction` | `double` | 0 to ∞ |
+| `ledgeGrabEnabled` | `bool` |  |
+| `ledgeGrabbing` | `bool` |  |
+| `ledgeMantleTargetX` | `double` |  |
+| `ledgeMantleTargetY` | `double` |  |
+| `inWater` | `bool` |  |
+
+### `movementAnimationSet`
+
+| Field | Type | Notes |
+|---|---|---|
+| `idle` | `object` | required |
+| `walk` | `object` | required |
+| `jump` | `object` | may be null |
+| `moveThreshold` | `double` | 0 to ∞ |
+
+### `jumpAnimationSet`
+
+| Field | Type | Notes |
+|---|---|---|
+| `start` | `object` | required |
+| `rising` | `object` | required |
+| `peak` | `object` | required |
+| `falling` | `object` | required |
+| `landing` | `object` | required |
+| `completed` | `object` | required |
+| `peakVelocityThreshold` | `double` | 0 to ∞ |
+| `startHoldSeconds` | `double` | 0 to ∞ |
+| `landingHoldSeconds` | `double` | 0 to ∞ |
+| `completedHoldSeconds` | `double` | 0 to ∞ |
+| `moveInterruptThreshold` | `double` | 0 to ∞ |
+
+### `jumpAnimationPhaseState`
+
+| Field | Type | Notes |
+|---|---|---|
+| `elapsed` | `double` | 0 to ∞ |
+
+### `health`
+
+| Field | Type | Notes |
+|---|---|---|
+| `current` | `double` | required; 0 to ∞ |
+| `max` | `double` | required; 1 to ∞ |
+| `invincibleSeconds` | `double` | 0 to ∞ |
+| `isGuarding` | `bool` | default `false` |
+| `guardDamageReduction` | `double` | 0 to 1; default `1` |
+| `stability` | `double` | 0 to ∞ |
+| `maxStability` | `double` | 0 to ∞ |
+| `guardBreakStunSeconds` | `double` | 0 to ∞ |
+| `guardBreakTimer` | `double` | 0 to ∞ |
+| `stabilityRegenPerSecond` | `double` | 0 to ∞ |
+
+### `checkpoint`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+| `activated` | `bool` | default `false` |
+
+### `lastCheckpoint`
+
+| Field | Type | Notes |
+|---|---|---|
+| `x` | `double` | required |
+| `y` | `double` | required |
+
+### `projectile`
+
+| Field | Type | Notes |
+|---|---|---|
+| `damage` | `double` | required; 0 to ∞ |
+| `lifetimeSeconds` | `double` | 0 to ∞ |
+| `elapsed` | `double` | 0 to ∞ |
+| `owner` | `int` | may be null |
+
+### `healthHudLink`
+
+| Field | Type | Notes |
+|---|---|---|
+| `source` | `int` | required |
+
+### `waterZone`
+
+| Field | Type | Notes |
+|---|---|---|
+| `width` | `double` | required; 0 to ∞ |
+| `height` | `double` | required; 0 to ∞ |
+| `maxFallSpeed` | `double` | 0 to ∞ |
+| `swimUpSpeed` | `double` | 0 to ∞ |
+
+### `weapon`
+
+| Field | Type | Notes |
+|---|---|---|
+| `kind` | `enumeration` | one of `melee`, `ranged`; default `melee` |
+| `damage` | `double` | 0 to ∞ |
+| `cooldownSeconds` | `double` | 0 to ∞ |
+| `cooldownRemaining` | `double` | 0 to ∞ |
+| `meleeRange` | `double` | 0 to ∞ |
+| `meleeRadius` | `double` | 0 to ∞ |
+| `meleeDurationSeconds` | `double` | 0 to ∞ |
+| `meleeHitboxFromAnimation` | `bool` | default `false` |
+| `projectileSpeed` | `double` | 0 to ∞ |
+| `projectileRadius` | `double` | 0 to ∞ |
+| `projectileLifetimeSeconds` | `double` | 0 to ∞ |
+| `comboCount` | `int` | 0 to ∞ |
+| `comboWindowSeconds` | `double` | 0 to ∞ |
+| `comboTimer` | `double` | 0 to ∞ |
+| `currentComboStep` | `int` | 0 to ∞ |
+| `comboDamageMultipliers` | `list` | may be null |
+| `comboCooldowns` | `list` | may be null |
+| `comboMeleeRanges` | `list` | may be null |
+| `comboMeleeRadii` | `list` | may be null |
+| `comboMeleeDurations` | `list` | may be null |
+| `atlasId` | `string` | may be null |
+| `spriteRegion` | `string` | may be null |
+
+### `enemyCombat`
+
+| Field | Type | Notes |
+|---|---|---|
+| `state` | `enumeration` | one of `idle`, `patrol`, `alert`, `approach`, `telegraph`, `attack`, `recovery`, `reposition`, `stagger`, `guard`, `retreat` |
+| `stateTimer` | `double` | 0 to ∞ |
+| `target` | `int` | may be null |
+| `detectionRange` | `double` | 0 to ∞ |
+| `engageRange` | `double` | 0 to ∞ |
+| `attackRange` | `double` | 0 to ∞ |
+| `telegraphDuration` | `double` | 0 to ∞ |
+| `attackDuration` | `double` | 0 to ∞ |
+| `recoveryDuration` | `double` | 0 to ∞ |
+| `repositionDuration` | `double` | 0 to ∞ |
+| `staggerDuration` | `double` | 0 to ∞ |
+| `guardDuration` | `double` | 0 to ∞ |
+| `retreatHealthFraction` | `double` | 0 to 1 |
+| `approachSpeed` | `double` | 0 to ∞ |
+| `repositionSpeed` | `double` | 0 to ∞ |
+| `retreatSpeed` | `double` | 0 to ∞ |
+| `patrolSpeed` | `double` | 0 to ∞ |
+| `patrolMinX` | `double` | may be null |
+| `patrolMaxX` | `double` | may be null |
+
+### `parry`
+
+| Field | Type | Notes |
+|---|---|---|
+| `parryTimer` | `double` | 0 to ∞ |
+| `parryCooldownTimer` | `double` | 0 to ∞ |
+| `parryWindowSeconds` | `double` | 0 to ∞ |
+| `parryStunSeconds` | `double` | 0 to ∞ |
+| `parryCooldownSeconds` | `double` | 0 to ∞ |
+
+## zarvan_idle
+
+Idle-game data. Registered by `registerIdleComponents`.
+
+### `generator`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+| `name` | `string` | may be null |
+| `nameKey` | `string` | may be null |
+| `owned` | `int` | 0 to ∞ |
+| `maxOwned` | `int` | may be null; 1 to ∞ |
+| `costResource` | `string` |  |
+| `cost` | `object` | required |
+| `output` | `object` |  |
+| `requires` | `list` |  |
+| `milestones` | `list` |  |
+
+### `upgrade`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+| `name` | `string` | may be null |
+| `nameKey` | `string` | may be null |
+| `cost` | `object` |  |
+| `target` | `string` |  |
+| `multiplier` | `string` |  |
+| `bonusPerOwned` | `string` | may be null |
+| `synergyOf` | `string` | may be null |
+| `purchased` | `bool` |  |
+| `requires` | `list` |  |
+
+### `idleModifiers`
+
+| Field | Type | Notes |
+|---|---|---|
+| `additive` | `object` |  |
+| `multiplicative` | `object` |  |
+
+### `idleStats`
+
+| Field | Type | Notes |
+|---|---|---|
+| `runEarned` | `object` |  |
+| `lifetimeEarned` | `object` |  |
+| `prestigeCount` | `int` | 0 to ∞ |
+| `taps` | `int` | 0 to ∞ |
+| `secondsPlayed` | `double` | 0 to ∞ |
+| `eventCounts` | `object` |  |
+
+### `prestigeRule`
+
+| Field | Type | Notes |
+|---|---|---|
+| `currency` | `string` | required |
+| `basedOn` | `string` | required |
+| `divisor` | `string` |  |
+| `exponent` | `double` | 0 to ∞ |
+| `bonusPerUnit` | `double` | 0 to ∞ |
+| `startingAmounts` | `object` |  |
+| `keepUpgrades` | `bool` |  |
+| `keepGenerators` | `list` |  |
+| `id` | `string` |  |
+| `resetsCurrencies` | `list` |  |
+
+### `achievement`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+| `name` | `string` | may be null |
+| `nameKey` | `string` | may be null |
+| `stat` | `string` | required |
+| `atLeast` | `string` | required |
+| `reward` | `string` |  |
+| `unlocked` | `bool` |  |
+
+### `researchNode`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+| `name` | `string` | may be null |
+| `nameKey` | `string` | may be null |
+| `cost` | `object` |  |
+| `requires` | `list` |  |
+| `unlocks` | `list` |  |
+| `purchased` | `bool` |  |
+
+### `timeWarpOffer`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+| `name` | `string` | may be null |
+| `nameKey` | `string` | may be null |
+| `seconds` | `int` | required; 1 to ∞ |
+| `cost` | `object` |  |
+
+### `seasonPass`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+| `name` | `string` | may be null |
+| `nameKey` | `string` | may be null |
+| `xpStat` | `string` | required |
+| `tiers` | `list` |  |
+| `claimed` | `int` | 0 to ∞ |
+
+### `boost`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+| `multiplier` | `string` | required |
+| `remaining` | `double` | required; 0 to ∞ |
+
+### `goldenEvents`
+
+| Field | Type | Notes |
+|---|---|---|
+| `meanInterval` | `double` | required; 1 to ∞ |
+| `lifetime` | `double` | required; 0 to ∞ |
+| `rewards` | `list` | required |
+| `countdown` | `double` |  |
+| `offered` | `int` | may be null; 0 to ∞ |
+| `offerRemaining` | `double` | 0 to ∞ |
+
+### `autoBuyer`
+
+| Field | Type | Notes |
+|---|---|---|
+| `enabled` | `bool` |  |
+| `intervalSeconds` | `double` | 0.01 to ∞ |
+| `mainResource` | `string` |  |
+| `maxPerRun` | `int` | 1 to ∞ |
+| `elapsed` | `double` | 0 to ∞ |
+
+### `challenge`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | required |
+| `name` | `string` | may be null |
+| `rules` | `list` |  |
+| `goalStat` | `string` | required |
+| `goalAtLeast` | `string` | required |
+| `reward` | `string` |  |
+| `active` | `bool` |  |
+| `completed` | `bool` |  |
+
+''',
+
   'getting-started.md': '''# Getting started
 
 From nothing to a running game in about five minutes.
@@ -47,6 +1423,14 @@ prints a warning).
     A player, solid ground, patrol enemy, coin, health bar, keyboard and
     on-screen controls. Continue with [Tutorial 1](tutorials/01-hello-world.md).
 
+=== "Top-down"
+
+    ```bash
+    zarvan create my_topdown --template topdown_game
+    ```
+
+    Four-direction movement and pickups. See [the developer guide](guides/for-developers.md).
+
 === "Turn-based strategy"
 
     ```bash
@@ -71,7 +1455,7 @@ prints a warning).
 Then:
 
 ```bash
-cd my_game          # or my_war / bakery
+cd my_game          # or my_topdown / my_war / bakery
 flutter run         # pick a device, or: flutter run -d chrome
 ```
 
@@ -140,14 +1524,14 @@ zarvan upgrade --ref main                     # move the engine pin forward
 zarvan lint assets/levels/main.level.json     # validate a level (add --playable)
 zarvan idle validate assets/idle_game.json    # idle definition check
 zarvan strategy simulate-turns assets/levels/skirmish.level.json --turns 4
-zarvan project open .                         # then project.problems / level.* / idle.*
+zarvan project problems --json               # from your game project
 zarvan pack-assets --input art --output-image assets/packed/atlas.png
 ```
 
 See the [CLI reference](reference/cli.md) and [transports](reference/transports.md) for MCP/REST.
 
 Published docs (when `engine.docs` has no local `docs/`):
-<https://meetarash.ir/agentic-game-engine/> (`engine.capabilities` → `docsUrl`).
+<https://meetarash.ir/zarvan/> (`engine.capabilities` → `docsUrl`).
 
 ## Why a git dependency?
 
@@ -697,9 +2081,11 @@ server list:
 }
 ```
 
-Useful flags: `--read-only` (agent can look but not touch), `--deny \'release.*\'`, `--allow \'level.*\'`.
+Useful server flags: `--read-only` (blocks non-read operation kinds, not in-memory world changes), `--deny \'release.*\'`, `--allow \'level.*\'`.
 
 ## 2. What an agent does
+
+Start with `engine.capabilities`, `engine.operations`, and `engine.operation` to discover exact schemas and permissions. Keep a single MCP/HTTP server process for stateful world operations; separate CLI invocations do not share in-memory worlds.
 
 A typical session, as tool calls:
 
@@ -707,7 +2093,7 @@ A typical session, as tool calls:
 2. `level.create`, `level.add_entity`, `level.move_entity`, `level.paint_tile` - build.
 3. `level.validate` / `level.lint` with `playable: true` / `project.problems` - check it. Fix what they report.
 4. `world.build` then `world.step` and `world.query` - run the level headlessly and look at the result. Nothing is written.
-5. `undo.undo` - take back the last change. Every write is journalled in `.studio/undo/` (the last 100).
+5. `undo.undo` - take back the last change. Journalled file edits are recorded in `.studio/undo/` (the last 100).
 
 Removing things (`level.remove_entity`, `graph.remove_node`, ...) is **destructive**: the first call returns a preview and
 a `confirmation` token, the second call with that token applies it. Tokens are tied to the server process and expire
@@ -722,8 +2108,8 @@ zarvan undo undo
 zarvan --read-only level list --json     # the exact result envelope
 ```
 
-Every command takes `--json` (print the envelope), `--stdin` or `--args \'{...}\'` (parameters as JSON), and writes take
-`--dry-run` to preview.
+Registry-backed commands take `--json` (print the envelope), `--stdin` or `--args \'{...}\'` (parameters as JSON), and file writes take
+`--dry-run` to preview. The `world.patch` operation instead takes `dryRun: true` in its JSON parameters.
 
 ## 4. Over HTTP
 
@@ -734,7 +2120,7 @@ curl -H "Authorization: Bearer \$TOKEN" -X POST localhost:7421/v1/level/list
 curl -H "Authorization: Bearer \$TOKEN" localhost:7421/v1/openapi.json
 ```
 
-The server listens on localhost only, needs the token for everything except `GET /v1/health`, limits request and result
+The server listens on localhost by default, needs the token for everything except `GET /v1/health`, limits request and result
 sizes and rate, and logs each call (no arguments, no results) to `.studio/api-requests.jsonl`. Send an
 `Idempotency-Key` header with a write to make retries safe. Configuration can live in `zarvan_api.yaml` in the project.
 
@@ -1390,7 +2776,9 @@ expose and leave the others out of your menu.
 
 <!-- Generated by `dart run tool/gen_api_docs.dart` in packages/zarvan_api. Do not edit. -->
 
-Every operation is a CLI command, an MCP tool, a REST route and a JSON-RPC method. Reads change nothing; writes apply immediately and can be undone with `undo.undo`; destructive writes return a preview and a confirmation token first. Results are `{ok, data, warnings, diff?, undoId?, durationMs}` or `{ok:false, error:{code, message, hint?}}`.
+Non-Flutter operations are available on CLI, MCP, REST and JSON-RPC; Flutter-dependent operations are CLI-only. Read-classified operations do not write project content but can change session or sandbox-world state. Journalled file writes can be undone with `undo.undo`; destructive writes require preview and confirmation. Results are `{ok, data, warnings, diff?, undoId?, durationMs}` or `{ok:false, error:{code, message, hint?}}`.
+
+CLI blocks show command syntax, not complete runnable examples. For registry-backed commands, supply missing parameters via `--args` (JSON object) or `--stdin`, and request `--json` for the result envelope. Discover schemas and examples with `engine.operation`; for legacy or CLI-only commands use `zarvan help`. Stateful `world.*` workflows need a persistent MCP/HTTP process; separate CLI invocations do not share worlds.
 
 ## animation
 
@@ -2660,7 +4048,7 @@ Implemented by `zarvan create` because it runs `flutter create` and `pub get`; s
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
 ```bash
-zarvan project create <name>
+zarvan create <name>
 ```
 
 ### `project.doctor`
@@ -2848,7 +4236,7 @@ Implemented by `zarvan upgrade` because it runs `flutter pub upgrade`.
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
 ```bash
-zarvan project upgrade
+zarvan upgrade
 ```
 
 ### `project.validate`
@@ -2886,9 +4274,9 @@ Give the same bank and mode as quiz.start and the `run` it returned. With `hint`
 | `stopwords` | path | Stop-word file (`{"words": [...]}`). |
 | `stopWords` | array | Stop words inline. |
 | `mode` | json; required | stage, endless, race, daily, or a mode object such as {"type": "endless", "lives": 5}. |
-| `run` | json; required | |
-| `choice` | integer; required; 0 to 3 | |
-| `hint` | boolean; default `false` | |
+| `run` | json; required | Run JSON returned by quiz.start or the previous quiz.answer. |
+| `choice` | integer; required; 0 to 3 | Zero-based index of the selected option. |
+| `hint` | boolean; default `false` | Use a hint before answering, if available. |
 
 Errors: `invalid_params`, `conflict`.
 
@@ -2912,9 +4300,9 @@ Same as the game: the same bank, stop words, item, tier and seed always give the
 | `json` | json | The bank inline, instead of a file. |
 | `stopwords` | path | Stop-word file (`{"words": [...]}`). |
 | `stopWords` | array | Stop words inline. |
-| `itemId` | string; required | |
-| `tier` | enumeration; one of `easy`, `medium`, `hard`, `literary` | |
-| `seed` | integer; default `0` | |
+| `itemId` | string; required | ID of an item in the bank. |
+| `tier` | enumeration; one of `easy`, `medium`, `hard`, `literary` | Question difficulty; defaults to the item tier. |
+| `seed` | integer; default `0` | Deterministic seed for question generation. |
 
 Errors: `not_found`, `validation_failed`.
 
@@ -2944,10 +4332,10 @@ Play many rounds with a fixed policy and report the score, stars and pass rate.
 | `attempt` | integer; 1 to ∞ | Stage: attempt number; it changes which word is hidden. |
 | `date` | string | Daily: the local date, YYYY-MM-DD. |
 | `seedBase` | string | Endless and race: text the question seeds come from. |
-| `policy` | string; default `"always_correct"` | |
-| `runs` | integer; default `100`; 1 to 10000 | |
-| `seed` | integer; default `1` | |
-| `secondsPerQuestion` | integer; default `4`; 0 to ∞ | |
+| `policy` | string; default `"always_correct"` | Scripted answer policy: always_correct, random or accuracy:<p>. |
+| `runs` | integer; default `100`; 1 to 10000 | Number of rounds to simulate. |
+| `seed` | integer; default `1` | Deterministic seed for the simulated answer policy. |
+| `secondsPerQuestion` | integer; default `4`; 0 to ∞ | Simulated time per question in race mode. |
 
 ```bash
 zarvan quiz simulate
@@ -2999,7 +4387,7 @@ Reads the bank, mode and run; changes nothing.
 | `stopwords` | path | Stop-word file (`{"words": [...]}`). |
 | `stopWords` | array | Stop words inline. |
 | `mode` | json; required | stage, endless, race, daily, or a mode object such as {"type": "endless", "lives": 5}. |
-| `run` | json; required | |
+| `run` | json; required | Run JSON returned by quiz.start or the previous quiz.answer. |
 
 ```bash
 zarvan quiz state
@@ -3045,7 +4433,7 @@ Runs `flutter build`. Implemented by `zarvan build-release` because it needs the
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
 ```bash
-zarvan release build
+zarvan build-release
 ```
 
 ### `release.plan`
@@ -3345,8 +4733,8 @@ Give `path` (a project level) or inline `json`. `systems` chooses what runs on e
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path | |
-| `json` | json | |
+| `path` | path | Project-relative level file; alternatively provide json. |
+| `json` | json | Inline level JSON instead of path. |
 | `systems` | array | Subset of: movement, collision, pushable, tileAnimation, tween, particles. |
 
 Errors: `rate_limited`, `validation_failed`.
@@ -3367,7 +4755,7 @@ The data form of the world summary: tick, seed, size, entity count, each compone
 
 | Parameter | Type | Description |
 |---|---|---|
-| `worldId` | string; required | |
+| `worldId` | string; required | ID returned by world.build in the same server process. |
 
 ```bash
 zarvan world describe <worldId>
@@ -3385,7 +4773,7 @@ Frees a slot; unknown ids are `not_found`.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `worldId` | string; required | |
+| `worldId` | string; required | ID returned by world.build in the same server process. |
 
 ```bash
 zarvan world discard <worldId>
@@ -3403,10 +4791,10 @@ The same patch `World.applyPatch` takes: `{entities: [{id, components: {name: js
 
 | Parameter | Type | Description |
 |---|---|---|
-| `worldId` | string; required | |
-| `patch` | json; required | |
-| `strict` | boolean; default `false` | |
-| `dryRun` | boolean; default `false` | |
+| `worldId` | string; required | ID returned by world.build in the same server process. |
+| `patch` | json; required | Snapshot-shaped JSON with an entities list and component maps. |
+| `strict` | boolean; default `false` | Reject invalid patches before applying any changes. |
+| `dryRun` | boolean; default `false` | Validate without applying; inspect data.ok and data.problems. |
 
 ```bash
 zarvan world patch <worldId>
@@ -3424,9 +4812,9 @@ Entities that have a component, optionally matching field values.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `worldId` | string; required | |
-| `component` | string; required | |
-| `where` | object | |
+| `worldId` | string; required | ID returned by world.build in the same server process. |
+| `component` | string; required | Registered component name, e.g. position. |
+| `where` | object | Optional component field/value equality filters. |
 
 ```bash
 zarvan world query <worldId>
@@ -3444,8 +4832,8 @@ The world as plain JSON (tick, entities and their components).
 
 | Parameter | Type | Description |
 |---|---|---|
-| `worldId` | string; required | |
-| `entities` | array | |
+| `worldId` | string; required | ID returned by world.build in the same server process. |
+| `entities` | array | Optional entity IDs to include in the snapshot. |
 
 ```bash
 zarvan world snapshot <worldId>
@@ -3463,9 +4851,9 @@ Each step is `dt` seconds (default 1/60). Returns the new tick and per-component
 
 | Parameter | Type | Description |
 |---|---|---|
-| `worldId` | string; required | |
-| `ticks` | integer; default `1`; 1 to 100000 | |
-| `dt` | number; default `0.016666666666666666`; 0.0001 to 1 | |
+| `worldId` | string; required | ID returned by world.build in the same server process. |
+| `ticks` | integer; default `1`; 1 to 100000 | Number of fixed simulation steps to run. |
+| `dt` | number; default `0.016666666666666666`; 0.0001 to 1 | Seconds per simulation step. |
 
 ```bash
 zarvan world step <worldId>
@@ -3697,7 +5085,7 @@ curl -H "Authorization: Bearer \$TOKEN" -H \'Content-Type: application/json\' -d
 
 ## Catalogue size
 
-This registry has **93** operations (90 served over MCP/HTTP; Flutter-only ones stay CLI-only).
+This registry has **99** operations (96 served over MCP/HTTP; Flutter-only ones stay CLI-only).
 
 ''',
 

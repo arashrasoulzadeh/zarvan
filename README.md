@@ -80,16 +80,20 @@ ZARVAN با الهام از این ایده، یک **موتور بازی عام�
 
 | Package | What it is |
 |---|---|
+| [`packages/zarvan_schema`](packages/zarvan_schema/README.md) | Pure-Dart component schemas and validation shared by engine and authoring tools. |
 | [`packages/zarvan_core`](packages/zarvan_core/README.md) | The genre-general engine: ECS, `Position`/`Velocity`/`Collider`, spatial-hash collision, `TileMap` data, the content DSL, and the agent-facing `WorldView`/`Behavior` API. Pure Dart, zero Flutter imports. |
 | [`packages/zarvan_flutter`](packages/zarvan_flutter/README.md) | The Flutter shell: `Game`/`GameRunner` app framework, sprite rendering, camera, input, audio, save/load. No gameplay logic. |
 | [`packages/zarvan_platformer`](packages/zarvan_platformer/README.md) | 2D-platformer-genre gameplay: gravity, jump, tile/platform collision, player/enemy spawn helpers, patrol/follow AI behaviors, facing + movement-driven animation. Kept separate from `zarvan_core` so a non-platformer 2D game isn't forced to depend on gravity/jump concepts. |
 | [`packages/zarvan_idle`](packages/zarvan_idle/README.md) | Idle / incremental-game layer: a whole game as one JSON file (generators, upgrades, prestige, achievements, offline progress, golden events), the widgets, saving/cloud/web stores and the `idle_game` starter. The Flutter-free rules live in `zarvan_core` (`zarvan_core_idle.dart`); `zarvan idle simulate` balances a definition. |
-| [`packages/zarvan_quiz`](packages/zarvan_quiz/README.md) | Quiz / fill-in-the-blank layer: `QuizSession` and the question card, options, feedback and HUD widgets. The Flutter-free rules (question factory, stage/endless/race/daily rounds, scoring, progress, bank validation, simulation) live in `zarvan_core` (`zarvan_core_quiz.dart`) and the `quiz.*` operations. |
+| [`packages/zarvan_quiz`](packages/zarvan_quiz/README.md) | Quiz / fill-in-the-blank layer: `QuizSession`, `QuizKit` and engine-drawn quiz scenes. The Flutter-free rules (question factory, stage/endless/race/daily rounds, scoring, progress, bank validation, simulation) live in `zarvan_core` (`zarvan_core_quiz.dart`) and the `quiz.*` operations. |
 | [`packages/zarvan_strategy`](packages/zarvan_strategy/README.md) | Turn-based strategy assembly: `installStrategySystems`, `spawnStrategyUnit`, plus the `strategy_game` starter. The rules themselves (turn clock, orders, grid navigation, combat, fog of war, AI turns) live in `zarvan_core/lib/src/turn/`. |
+| [`packages/zarvan_ads`](packages/zarvan_ads/README.md) | Optional mobile ads integration. |
+| [`packages/zarvan_eye`](packages/zarvan_eye/README.md) | Pure-Dart analytics and error-reporting client. |
+| [`packages/zarvan_studio`](docs/packages/zarvan_studio.md) | Desktop authoring application for levels, graphs and assets. |
 | [`packages/zarvan_api`](packages/zarvan_api/README.md) | MCP server and HTTP / JSON-RPC API over one operation registry (`zarvan_core`); every operation is also a `zarvan` command. Spec in [engine_mcp.md](engine_mcp.md), walkthrough in [tutorial 6](docs/tutorials/06-agent-api.md). |
 | [`packages/zarvan_cli`](packages/zarvan_cli/README.md) | The `zarvan` CLI — scaffolds new Flutter games wired to the engine, updates their pinned version, lints content files. |
 
-This repo is the **engine library**, not a game — there's no sample app
+This repo is the **engine library**, not a consumer game — there is no standalone sample consumer app
 checked in (see [CLAUDE.md](CLAUDE.md) for why, and how `test_game/` is
 used locally instead). Use the CLI (below) to generate one.
 
@@ -287,8 +291,7 @@ selection + tap input, AI turn driver (`TurnAI`), `zarvan_strategy`, and a
 
 **Tooling** — `zarvan` CLI (`create`/`upgrade`/`lint --render`/
 `lint --playable`/`pack-assets` with MaxRects bin-packing + multi-
-resolution `--scales`), a performance benchmark suite, 100% test
-coverage across every package.
+resolution `--scales`), a performance benchmark suite, package-specific tests and coverage checks.
 
 ### Not done / in progress
 

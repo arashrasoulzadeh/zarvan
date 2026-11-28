@@ -1,10 +1,9 @@
 # zarvan_api
 
-**Runtime:** pure Dart · **Audience:** agents, operators · **Depends on:** `zarvan_core`
+**Runtime:** pure Dart · **Audience:** agents, operators · **Depends on:** `zarvan_core`, `zarvan_schema`
 
 An MCP server and an HTTP / JSON-RPC API over the operation registry in
-`zarvan_core`. Every operation is declared once and is available as a
-`zarvan <group> <verb>` command, an MCP tool, a REST route and a JSON-RPC method.
+`zarvan_core`. Every operation is declared once. Non-Flutter operations are available on CLI, MCP, REST and JSON-RPC; Flutter-dependent operations are CLI-only.
 
 ## Surfaces
 
@@ -27,7 +26,8 @@ Flags: `--read-only`, `--allow <glob>`, `--deny <glob>`, `--log`, `--port`,
 
 ## Behavior
 
-- Reads change nothing. Writes are validated, applied immediately and undoable with `undo.undo`.
+- Read-classified operations do not write project content, but `world.build`, `world.step`, `world.patch` and `world.discard` change in-memory state. `--read-only` does not block them. Use a server allowlist for stricter observation-only access.
+- Journalled file writes are validated and undoable with `undo.undo`.
 - Destructive writes return a preview and a confirmation token.
 - One result envelope: `{ok, data, warnings, diff?, undoId?, durationMs}` or `{ok:false, error:{code, message, hint?}}`.
 - Loopback only by default, bearer token, Host-header check, size and rate limits.

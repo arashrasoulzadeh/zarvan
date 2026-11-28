@@ -21,10 +21,14 @@ String _docsRel(String abs, String root) =>
     p.normalize(p.relative(abs, from: root)).replaceAll('\\', '/');
 
 /// Published site root (agents without a local `docs/` checkout).
-const kEngineDocsUrl = 'https://meetarash.ir/agentic-game-engine/';
+const kEngineDocsUrl = 'https://meetarash.ir/zarvan/';
 
-/// Curated pages listed when [OpContext.docsRoot] is unset (no markdown body).
+/// Curated pages listed when [OpContext.docsRoot] is unset (with bundled Markdown bodies).
 const kRemoteDocsPages = <String>[
+  'agents.md',
+  'guides/for-ai-agents.md',
+  'concepts/agent-api.md',
+  'reference/components.md',
   'getting-started.md',
   'tutorials/01-hello-world.md',
   'tutorials/02-turn-based-strategy.md',

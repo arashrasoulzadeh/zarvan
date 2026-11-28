@@ -1,7 +1,6 @@
 # Packages
 
-ZARVAN is a set of small Dart/Flutter packages on a **one-way dependency
-chain**: a package may use anything to its left, never anything to its right.
+ZARVAN is a set of small Dart/Flutter packages on a **directed acyclic dependency graph**: packages may depend only on upstream packages. The diagram shows primary paths, not every direct manifest edge.
 
 ```mermaid
 flowchart LR
@@ -15,7 +14,7 @@ flowchart LR
     flutter --> quiz[zarvan_quiz]
     ads[zarvan_ads]
     eye[zarvan_eye]
-    core --> studio[zarvan_studio]
+    platformer --> studio[zarvan_studio]
 ```
 
 | Package | Audience | What it gives you | Runtime |

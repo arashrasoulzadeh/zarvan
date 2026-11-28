@@ -4,8 +4,7 @@ Focused, copy-pasteable recipes. Each solves one problem and says what to
 watch out for.
 
 **How these are verified:** the *turn-based* recipes are executed by
-`packages/zarvan_strategy/test/doc_examples_test.dart`; the others are checked
-against current signatures by hand. This repo ships no runnable sample app on
+`packages/zarvan_strategy/test/doc_examples_test.dart`; the custom-component recipe and the quiz app tutorial have dedicated package tests. Other examples are checked against current signatures by hand. This repo ships no runnable sample app on
 purpose (see [CLAUDE.md](https://github.com/arashrasoulzadeh/zarvan/blob/main/CLAUDE.md)) —
 drop snippets into a `Scene.populate` in a project made by `zarvan create`.
 
@@ -31,5 +30,7 @@ drop snippets into a `Scene.populate` in a project made by `zarvan create`.
 
 | Recipe | You learn |
 |---|---|
+| [Custom component and system](custom-component-system.md) | Registration, JSON schema, validation and a headless test |
+| [Debug a deterministic replay](debug-deterministic-replay.md) | First divergent tick, input capture and snapshot limits |
 | [Save / load](save-load.md) | Slots, versioning, migration |
 | [Talk to an NPC](talk-to-npc.md) | `DialogueRunner`, `world.find`, proximity, choice events |

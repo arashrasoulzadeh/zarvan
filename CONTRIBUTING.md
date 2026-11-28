@@ -6,17 +6,20 @@ Start with [README.md](README.md) for the project overview,
 
 ## Local setup
 
-Use a Flutter SDK that includes Dart compatible with `^3.9.0`, as required
-by all four package manifests. There is no root `pubspec.yaml`; resolve
+Use a Flutter SDK that includes Dart compatible with the affected package manifests. Core and CLI require Dart `^3.9.0`; Studio requires `^3.10.8`. There is no root `pubspec.yaml`; resolve
 dependencies and run tools inside each package.
 
 From the repository root:
 
 ```bash
-(cd packages/zarvan_core && dart pub get)
-(cd packages/zarvan_flutter && flutter pub get)
-(cd packages/zarvan_platformer && flutter pub get)
-(cd packages/zarvan_cli && dart pub get)
+# Pure Dart packages
+for pkg in zarvan_schema zarvan_core zarvan_eye zarvan_api zarvan_cli; do
+  (cd packages/$pkg && dart pub get) || exit 1
+done
+# Flutter packages
+for pkg in zarvan_flutter zarvan_platformer zarvan_strategy zarvan_idle zarvan_quiz zarvan_ads zarvan_studio; do
+  (cd packages/$pkg && flutter pub get) || exit 1
+done
 ```
 
 The checked-in `pubspec_overrides.yaml` files make the shell, platformer,
@@ -24,10 +27,7 @@ and CLI use sibling packages during local development. Preserve the Git
 dependencies in `pubspec.yaml`: consumers need consistent repository refs.
 Local overrides do not validate external Git dependency resolution.
 
-The manifests currently use `v0.1.0` for the shell/platformer engine
-dependencies and `main` for the CLI's core dependency. Check these files
-before testing a generated game against a particular ref; do not assume
-the older `main` examples describe every package's pin.
+Inspect each manifest before testing a generated game against a particular ref. Internal Git dependencies and the generated project's engine ref must agree.
 
 ## Validation
 
@@ -35,10 +35,16 @@ Run these from the repository root for the packages affected by a change,
 including downstream packages when a shared API changes:
 
 ```bash
-(cd packages/zarvan_core && dart analyze --fatal-infos && dart test)
-(cd packages/zarvan_flutter && flutter analyze --fatal-infos && flutter test)
-(cd packages/zarvan_platformer && flutter analyze --fatal-infos && flutter test)
-(cd packages/zarvan_cli && dart analyze --fatal-infos && dart test)
+# Run only affected packages and their downstream dependents, or all:
+for pkg in zarvan_schema zarvan_core zarvan_eye zarvan_api zarvan_cli; do
+  (cd packages/$pkg && dart analyze --fatal-infos && dart test) || exit 1
+done
+for pkg in zarvan_flutter zarvan_platformer zarvan_strategy zarvan_idle zarvan_quiz zarvan_ads zarvan_studio; do
+  (cd packages/$pkg && flutter analyze --fatal-infos && flutter test) || exit 1
+done
+# Documentation
+python -m pip install -r docs/requirements.txt
+mkdocs build --strict
 ```
 
 Format changed Dart files with `dart format`. Add regression tests for bug

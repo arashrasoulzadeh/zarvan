@@ -98,6 +98,7 @@ nav:
       - For developers: guides/for-developers.md
       - For AI agents: guides/for-ai-agents.md
       - Agent hub: agents.md
+      - Extend the operation registry: guides/extending-operations.md
   - Packages:
       - Overview: packages.md
       - zarvan_core: packages/zarvan_core.md
@@ -137,6 +138,7 @@ nav:
       - "6 · Drive the engine from an agent": tutorials/06-agent-api.md
       - "7 · A top-down collection game": tutorials/07-top-down-game.md
       - "8 · Build and test a quiz bank": tutorials/08-quiz-game.md
+      - "9 · Build a Flutter quiz app": tutorials/09-flutter-quiz-app.md
   - Studio:
       - User guide: studio/user-guide.md
       - Build your first level: studio/first-level.md
@@ -181,6 +183,9 @@ nav:
       - Health bar: examples/health-bar.md
       - Pickups, doors, patrols and waves: examples/pickups-doors-waves.md
       - Custom Behavior: examples/custom-behavior.md
+      - Custom component and system: examples/custom-component-system.md
+      - Debug a deterministic replay: examples/debug-deterministic-replay.md
+      - Animation frame events: examples/animation-events.md
       - Save / load: examples/save-load.md
       - Talk to an NPC: examples/talk-to-npc.md
   - Reference:

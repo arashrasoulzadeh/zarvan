@@ -31,6 +31,12 @@ zarvan engine operation level.list --json
 
 See [operations](reference/operations.md), [components](reference/components.md), [events](reference/events.md), and [transports](reference/transports.md). Published discovery resources: [llms.txt](https://meetarash.ir/zarvan/llms.txt) (index) and [llms-full.txt](https://meetarash.ir/zarvan/llms-full.txt) (complete technical Markdown). See [API reference](api-reference.md) for public Dart libraries.
 
+## Retrieve only the context you need
+
+The site publishes [agent-docs/manifest.json](https://meetarash.ir/zarvan/agent-docs/manifest.json), a versioned JSON index with source paths, canonical page URLs, Markdown URLs, language and SHA-256 hashes. The hashes identify content, not engine compatibility. The [world operation group](https://meetarash.ir/zarvan/agent-docs/operations/world.md) and other per-group Markdown references carry the common permission contract; discover their URLs in the manifest.
+
+Prefer a single relevant Markdown page or group over the full corpus. For exact parameters and permissions of the installed engine, still query the live registry. Relative links in raw Markdown refer to the original source paths.
+
 ## Observe, validate, act, observe again
 
 1. Inspect project or world state before editing.
@@ -87,6 +93,10 @@ The runtime Dart interface is cooperative, not process isolation. A custom behav
 
 Use the [operations reference](../reference/operations.md), [component shapes](../reference/components.md), [events](../reference/events.md) and [transport quick start](../reference/transports.md).
 
+## Retrieve focused context
+
+Read [the documentation manifest](https://meetarash.ir/zarvan/agent-docs/manifest.json) for raw Markdown URLs and operation-group files. Choose only the pages that match the task. Use the live registry when published docs and the installed version differ. For repository work, see [custom components](../examples/custom-component-system.md), [operation extensions](extending-operations.md) and [replay diagnosis](../examples/debug-deterministic-replay.md).
+
 ## Validate before applying
 
 Dart patches use a two-step pattern:
@@ -111,6 +121,216 @@ For project content, inspect `project.problems`, `level.validate` or `level.lint
 - Do not guess missing parameters, enum values, imports or result shapes. Inspect live schemas and public exports.
 
 Continue with [agent hub](../agents.md), [external strategy player tutorial](../tutorials/03-agent-driven-game.md) or [operator tutorial](../tutorials/06-agent-api.md).
+''',
+
+  'guides/extending-operations.md': '''# Extend the operation registry
+
+**Audience:** engine contributors. The registry is the common contract for agent discovery, CLI, MCP, REST and JSON-RPC.
+
+## Locate the correct layer
+
+- Operation declarations: `packages/zarvan_core/lib/src/ops/groups/`.
+- Registry assembly: [all_operations.dart](../../packages/zarvan_core/lib/src/ops/all_operations.dart).
+- Parameter and result types: [param.dart](../../packages/zarvan_core/lib/src/ops/param.dart), [result.dart](../../packages/zarvan_core/lib/src/ops/result.dart).
+- Transport adapters: `zarvan_api` and `zarvan_cli`.
+
+## Example: a pure read
+
+This is an illustrative operation declaration, not an installed ZARVAN operation. Add it only if the feature is needed.
+
+```dart
+Operation(
+  name: \'example.echo\',
+  summary: \'Return the supplied text unchanged.\',
+  description: \'Returns the supplied text without changing state.\',
+  kind: OperationKind.read,
+  scope: OperationScope.pure,
+  idempotent: true,
+  params: const [
+    Param(\'text\', ParamType.string,
+      required: true, description: \'Text to return unchanged.\'),
+  ],
+  handler: (ctx, args) => OpOutcome.data({\'text\': args[\'text\']}),
+  examples: const [
+    Example(\'Echo text\', {\'text\': \'hello\'}, expect: {\'text\': \'hello\'}),
+  ],
+)
+```
+
+Import `package:zarvan_core/zarvan_core_ops.dart` when using public operation types. When adding a built-in operation inside core, follow the sibling source imports and register it in the appropriate group.
+
+## Contract checklist
+
+Choose the operation kind according to actual effects. A read-classified operation may still mutate an in-memory session; disclose those effects and never use this classification to bypass file-write policy. Project content writes should return an `OpOutcome.proposal` with a `Proposal` of `FileChange` records for the safety pipeline. Do not write project content directly from the handler. Destructive edits require preview and confirmation.
+
+Describe every parameter, default, unit and constraint. Return stable error codes with useful paths and hints. Keep secrets out of examples, logs and outputs. Add examples, tests for invalid input and permissions, and output schema where practical.
+
+## Validate and regenerate
+
+```bash
+(cd packages/zarvan_core && dart analyze --fatal-infos && dart test)
+(cd packages/zarvan_api && dart run tool/gen_api_docs.dart > ../../docs/reference/operations.md)
+(cd packages/zarvan_api && dart run tool/gen_api_docs.dart --transports > ../../docs/reference/transports.md)
+(cd packages/zarvan_core && dart run tool/gen_bundled_docs.dart)
+(cd packages/zarvan_api && dart test)
+mkdocs build --strict
+```
+
+Verify the operation is discoverable via `engine.operation`, that its declared example works and that applicable transports return the same envelope. See [documentation conventions](../contributing-docs.md).
+''',
+
+  'examples/custom-component-system.md': '''# Recipe: a custom component and system
+
+**Audience:** Dart game developers and coding agents. **Runtime:** pure Dart. Use this pattern for gameplay data that must serialize, validate and step without Flutter.
+
+## Define the data, schema and system
+
+The example stores energy, consumes one unit per second, and clamps at zero. Put it in a Dart file in a project that depends on `zarvan_core`.
+
+```dart
+import \'package:zarvan_core/zarvan_core.dart\';
+
+class Energy {
+  Energy(this.amount);
+  double amount;
+
+  Map<String, dynamic> toJson() => {\'amount\': amount};
+
+  factory Energy.fromJson(Map<String, dynamic> json) {
+    final amount = (json[\'amount\'] as num).toDouble();
+    if (!amount.isFinite || amount < 0) {
+      throw FormatException(\'Energy must be finite and non-negative.\');
+    }
+    return Energy(amount);
+  }
+}
+
+const energySchema = ComponentSchema(\'energy\', [
+  FieldSchema(\'amount\', FieldType.double, min: 0, required: true),
+]);
+
+void registerEnergy(World world) {
+  world.components.register<Energy>(
+    \'energy\',
+    (energy) => energy.toJson(),
+    Energy.fromJson,
+    schema: energySchema,
+  );
+}
+
+World makeEnergyWorld() {
+  final world = World(width: 320, height: 240);
+  registerEnergy(world);
+  world.addSystemFn(\'energy-drain\', (world, dt) {
+    final store = world.componentsOf<Energy>();
+    for (var i = 0; i < store.length; i++) {
+      final energy = store.denseAt(i);
+      final next = energy.amount - dt;
+      energy.amount = next < 0 ? 0 : next;
+    }
+  });
+  return world;
+}
+```
+
+Registration binds the stable JSON name to the Dart type and serializers. Register once per world, before spawning the component or loading a level. The schema describes the JSON contract; constructor/deserializer checks still matter because callers can enter through different APIs.
+
+## Exercise it
+
+```dart
+final world = makeEnergyWorld();
+final id = world.spawnWith([Energy(5)]);
+world.step(0.5);
+assert(world.getComponent<Energy>(id)!.amount == 4.5);
+
+final patch = <String, dynamic>{
+  \'entities\': [
+    {
+      \'id\': id,
+      \'components\': {
+        \'energy\': {\'amount\': 2},
+      },
+    },
+  ],
+};
+final problems = world.checkPatch(patch);
+if (problems.isEmpty) world.applyPatch(patch, strict: true);
+```
+
+This updates an existing entity. It does not create missing entities or merge individual fields into the old component automatically.
+
+## Agent and Studio integration
+
+A game-local registration makes the component available in that world. It does **not** automatically add the schema to the engine-wide `allComponentSchemas` used by the stock CLI, MCP server and Studio. A reusable engine component requires an exported schema in `zarvan_schema`, registration in the correct runtime package, and regenerated component documentation. For a game-specific tool, supply the game\'s schemas explicitly to its validator.
+
+Do not put a game-specific component into core solely to make the stock tools accept it.
+
+## Verification
+
+The example has a regression test in [custom_component_docs_test.dart](../../packages/zarvan_core/test/custom_component_docs_test.dart):
+
+```bash
+cd packages/zarvan_core
+dart test test/custom_component_docs_test.dart
+```
+
+Related: [ECS](../concepts/ecs.md), [component reference](../reference/components.md), [content as data](../concepts/content-as-data.md).
+''',
+
+  'examples/debug-deterministic-replay.md': '''# Recipe: diagnose a divergent replay
+
+**Audience:** developers and agents investigating reproducibility. **Runtime:** pure Dart.
+
+The goal is to find the first differing tick, not to compare only the final world.
+
+## Capture the inputs
+
+Record the engine Git ref, initial level/content version, world seed, system order, fixed timestep, and all external input or agent orders by tick. Copy mutable input maps before recording them with `ReplayRecorder`. The recorder stores arbitrary input data and timing; it does not automatically capture every simulation decision.
+
+## Reproduce with two worlds
+
+```dart
+import \'package:zarvan_core/zarvan_core.dart\';
+
+World makeWorld() {
+  final world = World(width: 320, height: 240, seed: 42);
+  registerCoreComponents(world);
+  world.addSystem(MovementSystem());
+  world.spawnWith([Position(0, 0), Velocity(10, 0)]);
+  return world;
+}
+
+void main() {
+  final a = makeWorld();
+  final b = makeWorld();
+  for (var tick = 0; tick < 60; tick++) {
+    a.step(1 / 60);
+    b.step(1 / 60);
+    // Compare canonicalized snapshot JSON at this tick in a test.
+  }
+}
+```
+
+In a regression test, compare `WorldSnapshot.capture(a).toJson()` with the equivalent snapshot from `b` after every step. Dart\'s test `equals` matcher compares nested maps and lists structurally. If a mismatch appears, report the tick, entity ID, component name, expected value and actual value. Keep the seed and inputs fixed while reducing the reproduction.
+
+## Diagnose the first differing tick
+
+| Symptom | Inspect |
+|---|---|
+| Different random choice | World seed and `world.random.state`; find unseeded random generators |
+| Different position or timer | Exact step duration, number of steps, system phase/order |
+| Different entity IDs | Spawn/destruction order, deferred commands and initialization |
+| Different agent decision | Observations, behavior memory, order of actions |
+| Snapshot missing data | Component registration and serializers |
+| Replay diverges after restore | System-owned mutable state, queued callbacks, timers or external side effects |
+
+## Choose the right state API
+
+`World.toJson()` is the inspection format. `applyPatch` updates existing entities. `WorldSnapshot.capture(world)` captures registered entity components, tick and random state; `snapshot.restoreInto(world)` restores that data into a configured world. It does not serialize arbitrary Dart callbacks, installed systems or external resources. Rebuild the same systems and include game-specific state needed by the simulation.
+
+A fixed timestep and seed are necessary for reproducibility, not a guarantee of it. Keep real-time UI, audio and network arrival timing outside deterministic game rules.
+
+See [ECS](../concepts/ecs.md), [networking](../concepts/networking.md) and [save/load](save-load.md).
 ''',
 
   'concepts/agent-api.md': '''# The agent-facing API: `Behavior` + `WorldView` + `AISystem`
@@ -2181,6 +2401,373 @@ Operations that need the Flutter SDK (`project.create`, `project.upgrade`, `rele
 (`zarvan create`, `upgrade`, `build-release`); `engine.capabilities` lists them as unsupported.
 ''',
 
+  'tutorials/07-top-down-game.md': '''# 7 · A top-down collection game
+
+**You will build:** a top-down game with four-direction movement and collectible coins. The starter uses `zarvan_core` and `zarvan_flutter`, not platformer gravity or jump systems.
+
+## 1. Create and run
+
+Follow [Getting started](../getting-started.md) to install the CLI.
+
+```bash
+zarvan create my_topdown --template topdown_game
+cd my_topdown
+flutter run
+```
+
+Move the player with the arrow keys or the on-screen joystick. Touch the coins to remove them. The generated game draws its own simple sprite atlas.
+
+## 2. Understand the starter
+
+Open `lib/main.dart`. The scene spawns a player with position, velocity, collider and sprite components, then five tagged coins. The input system runs in `SystemPhase.prePhysics` and the movement system advances the position. The coin pickup system uses a proximity query and deferred destruction.
+
+The following extract is from the starter (inside `MainScene.populate`, where `world`, `input` and `_player` already exist):
+
+```dart
+SystemPresets.core(world);
+world.addSystemFn(\'topdown-input\', (world, dt) {
+  final s = input.state;
+  final v = world.getComponent<Velocity>(_player)!;
+  v.x = ((s.isPressed(\'right\') ? 1 : 0) -
+      (s.isPressed(\'left\') ? 1 : 0)) * 160.0 + s.axis(\'moveX\') * 160;
+  v.y = ((s.isPressed(\'down\') ? 1 : 0) -
+      (s.isPressed(\'up\') ? 1 : 0)) * 160.0 + s.axis(\'moveY\') * 160;
+}, phase: SystemPhase.prePhysics);
+
+world.addSystemFn(\'coin-pickup\', (world, dt) {
+  final p = world.getComponent<Position>(_player)!;
+  for (final id in world.findNear(p.x, p.y, 22, exclude: _player)) {
+    if (world.hasTag(id, \'coin\')) world.commands.destroy(id);
+  }
+});
+```
+
+See the [canonical template source](../../packages/zarvan_cli/templates/topdown_game/lib/main.dart.tmpl). This is an extract, not a standalone program.
+
+## 3. Make a change
+
+Change the movement speed from 160 to 100 in both axes; rerun and confirm movement is slower. Add another coin with a unique position. Use deferred `world.commands.destroy` when removing entities during queries.
+
+The starter creates its world in Dart, so there is no authored level file for an agent to edit yet. To make the layout data-driven, move entity definitions into level JSON and load them through `Level.loadInto`; see [Content as data](../concepts/content-as-data.md).
+
+## 4. Validate
+
+```bash
+flutter analyze
+flutter test
+```
+
+Manually check movement in every direction and collection of each coin. For more complex games, add headless tests using [GameTester](../concepts/authoring.md).
+
+Next: [pickups and waves](../examples/pickups-doors-waves.md), [ECS](../concepts/ecs.md), [rendering](../concepts/rendering.md).
+''',
+
+  'tutorials/08-quiz-game.md': '''# 8 · Build and test a quiz bank
+
+**You will build:** a small quiz content bank, generate deterministic questions, run a round and simulate its difficulty with the CLI. This is a headless workflow; a Flutter game can use the same bank and rules through `zarvan_quiz`. There is no dedicated quiz starter in the current CLI.
+
+## 1. Create a bank
+
+Install the CLI using [Getting started](../getting-started.md). In a game project, save this as `assets/bank.json`:
+
+```json
+{
+  "version": 1,
+  "authors": [{"id": "a", "name": "A"}],
+  "items": [
+    {"id": "x", "author": "a", "tier": "easy", "fame": 1, "lines": ["الف بب", "جج دد"]},
+    {"id": "y", "author": "a", "tier": "easy", "fame": 1, "lines": ["ابر باد", "ماه شب"]}
+  ]
+}
+```
+
+The example is intentionally tiny and follows the registry\'s documented bank shape. Real banks need enough distinct items and distractors to fill the selected round.
+
+## 2. Validate and generate
+
+Run the registry-backed CLI from the project directory (or pass the global `--project /path/to/game`).
+
+```bash
+zarvan quiz validate-bank --args \'{"bank":"assets/bank.json","stageSize":2}\' --json
+zarvan quiz generate --args \'{"bank":"assets/bank.json","itemId":"x","seed":42}\' --json
+```
+
+Inspect the outer `ok` and the validation report\'s `data.ok`, errors and warnings. Generating a question with the same bank, stop words, tier and seed gives the same question. If the bank is too small, add items and rerun validation.
+
+## 3. Start and answer a round
+
+Discover the exact mode schema with `zarvan engine operation quiz.start --json`. A stage takes a bank, mode, author and tier; a daily also needs its date. An endless or race round can take a seed base.
+
+```bash
+zarvan quiz start --args \'{"bank":"assets/bank.json","mode":"endless","seedBase":"demo"}\' --json
+```
+
+Keep the returned `data.run`. Invoke `quiz.answer` with the same bank and mode, the returned run object and a zero-based choice index. Replace the run with the new `data.run` on each answer. `quiz.state` summarizes the run without advancing it. Unlike `world.*`, these operations are stateless: the run travels in the request and response.
+
+For an untrusted player, do not expose internal run JSON containing question-answer information; provide a filtered player-facing view instead.
+
+## 4. Tune difficulty
+
+With a representative bank, simulate multiple rounds. For example:
+
+```bash
+zarvan quiz simulate --args \'{"bank":"assets/bank.json","mode":"endless","runs":10,"policy":"accuracy:0.7","seed":1}\' --json
+```
+
+Use a realistic bank for meaningful balance results. The engine\'s fixed-seed policies are reproducible, not a prediction of actual human performance.
+
+## 5. Integrate with a game
+
+Continue with [Tutorial 9: Build a Flutter quiz app](09-flutter-quiz-app.md) for a complete application entry point and integration smoke test.
+
+Use [zarvan_quiz](../packages/zarvan_quiz.md) for the session, content repository, `QuizKit` and engine-drawn screens. A game supplies its bank, stop words, localized strings, themes, settings and persistence. See the [package README](../../packages/zarvan_quiz/README.md) for its screen integration contract and [Quiz games](../concepts/quiz-games.md) for modes and rules.
+
+## Checkpoint
+
+The bank validates, repeated generation with the same seed is consistent, and you can pass the returned run into the next call without relying on process state. For exact parameters and error codes, use [Operations](../reference/operations.md#quiz).
+''',
+
+  'tutorials/09-flutter-quiz-app.md': '''# 9 · Build a Flutter quiz app
+
+**You will build:** a small portrait quiz with engine-drawn screens, deterministic questions and persistent player progress. Start with [Tutorial 8](08-quiz-game.md) if you want to understand the rules or validate a production question bank before integrating the UI.
+
+## 1. Create a consumer project
+
+Create a Flutter application (outside the engine repository):
+
+```bash
+flutter create word_garden
+cd word_garden
+```
+
+Add the three engine dependencies under the existing `dependencies:` section of `pubspec.yaml`. Keep the Flutter SDK dependency. These Git refs must agree with the engine\'s own sibling dependency refs; the example uses the current main-ref layout.
+
+```yaml
+  zarvan_core:
+    git:
+      url: https://github.com/arashrasoulzadeh/zarvan.git
+      path: packages/zarvan_core
+      ref: main
+  zarvan_flutter:
+    git:
+      url: https://github.com/arashrasoulzadeh/zarvan.git
+      path: packages/zarvan_flutter
+      ref: main
+  zarvan_quiz:
+    git:
+      url: https://github.com/arashrasoulzadeh/zarvan.git
+      path: packages/zarvan_quiz
+      ref: main
+```
+
+## 2. Add the application
+
+Replace `lib/main.dart` with the following complete demo. The bank contains short original English sentences rather than external copyrighted content. Each tier has two items; the stage is deliberately shortened to two questions. The UI strings and themes are game-owned configuration, not hidden defaults. Production games should supply a larger bank, fonts suitable for their language, and their own content and branding.
+
+```dart
+import \'package:flutter/widgets.dart\' show WidgetsFlutterBinding;
+import \'package:zarvan_core/zarvan_core.dart\' show KeyValueStore;
+import \'package:zarvan_flutter/zarvan_flutter.dart\';
+import \'package:zarvan_quiz/zarvan_quiz.dart\';
+
+Future<QuizKit> createKit(KeyValueStore store) async {
+  final bank = QuizBank.fromJson({
+    \'version\': 1,
+    \'authors\': [
+      {\'id\': \'garden\', \'name\': \'Word Garden\'},
+    ],
+    \'items\': [
+      for (final (tier, sentences) in [
+        (\'easy\', [
+          \'bright flowers grow beside rivers\',
+          \'gentle birds sing above trees\',
+        ]),
+        (\'medium\', [
+          \'silver moonlight covers quiet valleys\',
+          \'autumn leaves drift across meadows\',
+        ]),
+        (\'hard\', [
+          \'distant thunder echoes through mountains\',
+          \'morning mist surrounds ancient forests\',
+        ]),
+        (\'literary\', [
+          \'amber twilight softens silent horizons\',
+          \'patient tides polish weathered stones\',
+        ]),
+      ])
+        for (var i = 0; i < sentences.length; i++)
+          {
+            \'id\': \'\$tier-\$i\',
+            \'author\': \'garden\',
+            \'tier\': tier,
+            \'fame\': 10 - i,
+            \'lines\': [sentences[i]],
+          },
+    ],
+  });
+  return QuizKit(
+    session: await QuizSession.open(store),
+    factory: QuestionFactory(bank, const {}),
+    strings: strings,
+    themes: themes,
+    settings: await QuizSettings.load(store),
+    stageMode: const StageMode(
+      questionCount: 2,
+      passAt: 1,
+      starAt: [1, 2],
+    ),
+    transitions: false,
+  );
+}
+
+class WordGarden extends Game {
+  WordGarden(this.kit);
+  final QuizKit kit;
+
+  @override
+  GameConfig get config => const GameConfig(
+    title: \'Word Garden\',
+    worldWidth: QuizScreen.worldWidth,
+    worldHeight: QuizScreen.worldHeight,
+    orientation: GameOrientation.portrait,
+    onScreenControls: OnScreenControlsMode.off,
+    fixedTimestepSeconds: 1 / 60,
+  );
+
+  @override
+  ViewportConfig get viewportConfig => const ViewportConfig.fittingWorld(
+    QuizScreen.worldWidth, QuizScreen.worldHeight,
+  );
+
+  @override
+  Scene createInitialScene() =>
+      kit.session.progress.flags[\'tutorialDone\'] == true
+          ? QuizHomeScreen(kit)
+          : QuizTutorialScreen(kit);
+}
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final store = await PreferencesKeyValueStore.open();
+  runGame(WordGarden(await createKit(store)));
+}
+
+const strings = QuizStrings(
+  appName: \'Word Garden\',
+  coins: \'coins\',
+  settings: \'Settings\',
+  about: \'About\',
+  dailyChallenge: \'Daily\',
+  dailyDone: \'Done\',
+  dailyTodayPlay: \'Five new questions\',
+  chapters: \'Chapters\',
+  wallTitle: \'Collections\',
+  chaptersDone: \'complete\',
+  outOf: \'of\',
+  continueGame: \'Continue\',
+  endless: \'Endless\',
+  race: \'Race\',
+  stageLockedHint: \'Pass the previous stage\',
+  stars: \'stars\',
+  stage: \'Stage\',
+  next: \'Next\',
+  hint: \'Hint\',
+  lives: \'Lives\',
+  clock: \'Time\',
+  score: \'Score\',
+  streak: \'Streak\',
+  result: \'Result\',
+  stageResultPassed: \'Passed\',
+  stageResultFailed: \'Try again\',
+  newRecord: \'New record\',
+  coinsEarned: \'Coins earned\',
+  backToMenu: \'Menu\',
+  playAgain: \'Again\',
+  share: \'Share\',
+  copied: \'Copied\',
+  shareFailed: \'Could not share\',
+  continueWithAd: \'Continue with an ad\',
+  continueQuestion: \'Out of lives. One more for an ad?\',
+  noThanks: \'No, finish\',
+  tutorialTitle: \'Find the word\',
+  tutorialBody: \'One word is missing\',
+  tutorialDone: \'Start\',
+  tutorialTip: \'A hint costs 20 coins\',
+  theme: \'Theme\',
+  themeSystem: \'System\',
+  themeLight: \'Light\',
+  themeDark: \'Dark\',
+  sound: \'Sound\',
+  haptics: \'Haptics\',
+  aboutSource: \'Original demo sentences\',
+  aboutVersion: \'Version\',
+  aboutLicenseNote: \'Demo content\',
+  difficulty: \'Difficulty\',
+  notEnoughCoins: \'Not enough coins\',
+  loadError: \'Save not read\',
+  rewardAd: \'15 coins for an ad\',
+  tierNames: [\'Easy\', \'Medium\', \'Hard\', \'Literary\'],
+  number: _plain,
+);
+String _plain(int n) => \'\$n\';
+
+const themes = QuizThemes(
+  light: QuizTheme(
+    background: 0xFFFFFFFF,
+    ink: 0xFF111111,
+    soft: 0xFF888888,
+    surface: 0xFFEEEEEE,
+    accent: 0xFF1F6F6B,
+    onAccent: 0xFFFFFFFF,
+    correct: 0xFF2E7D32,
+    wrong: 0xFFC62828,
+  ),
+  dark: QuizTheme(
+    background: 0xFF101010,
+    ink: 0xFFEEEEEE,
+    soft: 0xFF999999,
+    surface: 0xFF222222,
+    accent: 0xFF6FC2BC,
+    onAccent: 0xFF101010,
+    correct: 0xFF66BB6A,
+    wrong: 0xFFEF5350,
+    isDark: true,
+  ),
+);
+```
+
+## 3. Run and check
+
+```bash
+flutter pub get
+flutter analyze
+flutter run
+```
+
+Complete the tutorial, open the chapter, play a short stage, and return to the menu. Restart the app and check that progress is retained. The demo does not wire ads, sharing, sound or haptic hooks. It uses a tiny bank for integration, not meaningful balance testing. Expand the bank before relying on long endless/race sessions.
+
+Flutter\'s generated counter widget test no longer applies after replacing the app entry point; replace it with a game-specific test rather than retaining the original counter assertions.
+
+## 4. Understand the responsibilities
+
+| Layer | Responsibility |
+|---|---|
+| `QuizBank`, `QuestionFactory`, `QuizRound` | Portable content and deterministic rules |
+| `QuizSession` | Current run, feedback, score, rewards and progress |
+| `QuizKit` | Session, content factory, strings, themes, settings and optional hooks |
+| `QuizScreen` and subclasses | Engine-drawn screens and transitions |
+| `Game`, `runGame` | Flutter lifecycle, rendering, viewport and scene management |
+| `PreferencesKeyValueStore` | Platform-backed persistence; use `MemoryKeyValueStore` for tests |
+
+For a real asset-backed game, declare bank and stop-word files under `flutter.assets` and call `QuizContentRepository.load(bankAsset: ..., stopWordsAsset: ...)` instead of embedding the bank. Supply its `factory` to the kit. Use a game-specific `QuizStrings` and `QuizThemes`; select `rtl: true` and a font with the appropriate glyphs when necessary.
+
+## Verification
+
+The exact demo is also checked by a package-level smoke test (see [tutorial_app_docs_test.dart](../../packages/zarvan_quiz/test/tutorial_app_docs_test.dart)). It constructs the kit with an in-memory store and starts a short stage, without launching a device or testing platform persistence. Run `flutter test test/tutorial_app_docs_test.dart` from `packages/zarvan_quiz`.
+
+Related: [Quiz package](../packages/zarvan_quiz.md), [quiz rules](../concepts/quiz-games.md), [agent operations](../reference/operations.md#quiz).
+''',
+
   'concepts/ecs.md': '''# The ECS: World, Entity, Component, System
 
 `zarvan_core`\'s simulation model, in `packages/zarvan_core/lib/src/ecs/`.
@@ -2334,6 +2921,17 @@ Samples are executed by `packages/zarvan_core/test/doc_examples_idle_test.dart` 
 `packages/zarvan_idle/test/doc_examples_test.dart`. Remaining idle work (device bench,
 cloud-save walkthrough, localisation, research UI, …) lives under Idle polish in
 [`TODO.md`](https://github.com/arashrasoulzadeh/zarvan/blob/main/TODO.md).
+
+## Find the part you need
+
+| Goal | Section |
+|---|---|
+| Create a game or choose the genre layer | [Creating a new idle game](#creating-a-new-idle-game) |
+| Represent huge values and multiple currencies | [Numbers](#numbers-that-do-not-overflow), [BigTreasury](#resources-bigtreasury) |
+| Design data-driven economy and progression | [Describing a whole game as data](#describing-a-whole-game-as-data), [More rules](#more-rules-all-data) |
+| Handle persistence and offline progress | [Offline progress](#offline-progress), [Saving and returning](#saving-and-returning), [Storage choices](#storage-choices), [Trust](#trust-the-clock-and-the-save) |
+| Build menus and battle UI | [The screens](#the-screens), [Wave combat](#wave-combat-portrait-auto-fighter) |
+| Balance a game with an agent | [Tuning without playing](#tuning-without-playing), [idle operations](../reference/operations.md#idle) |
 
 ## Creating a new idle game
 

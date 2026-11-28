@@ -16,7 +16,9 @@ world.destroy(e);
 world.addSystem(MySystem());                   // order = phase, then registration order
 world.step(1 / 60);                            // run all systems, flush events
 world.systemOrder;                             // ['orders', 'turn', …]
-world.toJson();  world.applyPatch(json);       // read / write everything
+world.toJson();                                // inspect serialized state
+world.checkPatch(json);                        // validate without applying
+world.applyPatch(json, strict: true);           // update existing entities
 world.save();    world.load(data);             // whole world incl. the random stream
 ```
 

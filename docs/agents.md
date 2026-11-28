@@ -1,97 +1,59 @@
 ---
 title: Agent hub
-description: Machine-readable entry points, safe control loops, and examples for agents working with ZARVAN.
+description: Entry points, permission boundaries and verified control loops for agents working with ZARVAN.
 ---
 
 # Agent hub
 
-ZARVAN is designed so an agent can inspect a world, propose a change, validate
-it, and observe the result without reaching around the simulation's rules.
-This page is the shortest route into the agent-facing surface.
+Choose the role before choosing an API. A repository coding agent, a game-content operator and a runtime NPC have different permissions and interfaces.
 
-## Choose an integration
+| Role | Start here | Contract |
+|---|---|---|
+| Coding agent modifying the engine | [Repository AGENTS.md](../AGENTS.md) | Public Dart exports, source, tests and package manifests |
+| Project author/operator | [Tutorial 6](tutorials/06-agent-api.md) | Operation registry over MCP, REST, JSON-RPC or CLI |
+| External strategy player | [Tutorial 3](tutorials/03-agent-driven-game.md) | Filtered observations and validated orders |
+| Trusted runtime behavior | [Runtime agent API](concepts/agent-api.md) | `Behavior.decide(WorldView, EntityId)` returns an `Action` |
 
-<div class="zv-agent-grid" markdown>
+## Discover the contract
 
-<div class="zv-agent-card" markdown>
+Before invoking a tool, call `engine.capabilities` to discover restrictions and registry version, `engine.operations` to enumerate available operations, and `engine.operation` with `{"name":"level.list"}` (or the operation you need) to obtain its input schema, errors and examples. Use `engine.docs` for available Markdown documentation.
 
-### Runtime behavior
-
-Give an entity a read-only `WorldView` and return an `Action`. The engine owns
-mutation, collision, timing, and validation.
-
-[:octicons-arrow-right-24: Agent API](concepts/agent-api.md)
-
-</div>
-
-<div class="zv-agent-card" markdown>
-
-### Turn-based player
-
-Read a JSON snapshot, choose an `Order`, and submit it. Fog of war and the
-turn system keep the agent's view and authority explicit.
-
-[:octicons-arrow-right-24: Agent-driven tutorial](tutorials/03-agent-driven-game.md)
-
-</div>
-
-<div class="zv-agent-card" markdown>
-
-### Authoring operator
-
-Use the same operation names through MCP, REST, JSON-RPC, or the `zarvan`
-CLI to create, edit, validate, and undo content.
-
-[:octicons-arrow-right-24: Operations](reference/operations.md)
-
-</div>
-
-</div>
-
-## The canonical loop
-
-```mermaid
-flowchart LR
-  O[Observe\nWorldView · world.describe] --> D[Decide]
-  D --> V[Validate\ndry-run · lint]
-  V --> A[Act\nAction · Order · operation]
-  A --> O
+```bash
+zarvan engine capabilities --json
+zarvan engine operations --json
+zarvan engine operation level.list --json
 ```
+
+See [operations](reference/operations.md), [components](reference/components.md), [events](reference/events.md), and [transports](reference/transports.md). Published discovery index: [llms.txt](https://meetarash.ir/zarvan/llms.txt). See [API reference](api-reference.md) for public Dart libraries.
+
+## Observe, validate, act, observe again
+
+1. Inspect project or world state before editing.
+2. Validate content with `level.validate`, `level.lint` or `project.problems`; inspect the returned result, not only the transport status.
+3. Preview project writes where supported; destructive operations require confirmation. For `world.patch`, pass `dryRun: true` to validate and `strict: true` when applying.
+4. Inspect the resulting diff, warnings and state. Undo journalled file edits if necessary; in-memory world operations are not file undo entries.
+
+In trusted Dart code, use the actual behavior signature:
 
 ```dart
-final view = world.viewFor(agentEntity);
-final proposal = behavior.decide(view);
+import 'package:zarvan_core/zarvan_core.dart';
 
-// The engine validates and applies the proposal at the correct simulation
-// phase. The behavior never receives a mutable component store.
-world.actions.enqueue(agentEntity, proposal);
+class IdleBehavior implements Behavior {
+  @override
+  Action decide(WorldView view, EntityId self) {
+    return const NoOpAction();
+  }
+}
 ```
 
-!!! tip "Read before writing"
-    Start with `world.describe` or `World.toJson()`, validate patches with
-    `dryRun: true`, and use `--read-only` whenever the task is observational.
+Register the behavior in a `BehaviorRegistry`, attach `AIState` to an entity and install `AISystem`. The system calls `decide` and applies each action immediately. See the [custom behavior recipe](examples/custom-behavior.md).
 
-## Machine-readable resources
+## Permission and safety boundaries
 
-| Resource | Purpose |
-|---|---|
-| [`/llms.txt`](../llms.txt) | Compact index of every documentation page |
-| [Operations](reference/operations.md) | One registry shared by CLI, MCP, REST, and JSON-RPC |
-| [Components](reference/components.md) | Exact JSON shape of registered components |
-| [Events](reference/events.md) | Simulation events and ordering |
-| [Transports](reference/transports.md) | Connection and authentication quick start |
+- `--read-only` protects against operations classified as file writes or destructive operations; some operations classified as reads change session or sandbox-world state. Use an explicit allowlist when observation must not change that state.
+- `WorldView` is a cooperative interface, not a security sandbox: it exposes the underlying world and may return mutable component objects. Never execute arbitrary untrusted Dart as an NPC.
+- Filter observations for external strategy agents before sending them. Fog-aware order validation does not make a full world snapshot private.
+- The API can perform file edits; use least privilege, previews, validation and confirmation. Never expose the bearer token to an untrusted agent.
+- Use public exports, fixed simulation steps and seeded randomness. Verify changes with tests.
 
-The generated API docs live under [`/api/`](../api/). For source-level truth,
-inspect the public symbols in `packages/*/lib/src/`.
-
-## Agent checklist
-
-- Keep simulation code deterministic: fixed timestep, `world.random`, no wall-clock reads.
-- Propose changes through `Action`, `Order`, a checked patch, or an operation.
-- Validate content before running it: `zarvan lint` and `project.problems`.
-- Expect unregistered components to be absent from serialization.
-- Restrict permissions with `--read-only`, `--allow`, and `--deny`.
-
-!!! note "For humans building agents"
-    The [AI-agent guide](guides/for-ai-agents.md) explains the same contract
-    in a linear format; this page is the map and the quick reference.
+For a linear workflow, see [For AI agents](guides/for-ai-agents.md).

@@ -48,7 +48,7 @@ prints a warning).
     zarvan create my_topdown --template topdown_game
     ```
 
-    Four-direction movement and pickups. See [the developer guide](guides/for-developers.md).
+    Four-direction movement and pickups. Continue with [Tutorial 7](tutorials/07-top-down-game.md).
 
 === "Turn-based strategy"
 
@@ -71,7 +71,9 @@ prints a warning).
     catch-up — the economy is one JSON file. Continue with
     [Tutorial 5](tutorials/05-idle-game.md).
 
-Then:
+For quiz content there is no dedicated starter yet; use [Tutorial 8](tutorials/08-quiz-game.md) and `zarvan_quiz`.
+
+Then, for a generated starter:
 
 ```bash
 cd my_game          # or my_topdown / my_war / bakery

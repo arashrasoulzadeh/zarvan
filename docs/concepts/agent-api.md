@@ -1,7 +1,7 @@
 # The agent-facing API: `Behavior` + `WorldView` + `AISystem`
 
 This is the engine's other AI-agent-friendly pillar (alongside
-[content-as-data.md](content-as-data.md)): a sandbox for a runtime
+[content-as-data.md](content-as-data.md)): an interface for a runtime
 agent/NPC to *drive an entity during simulation* — whether that agent
 is a hand-written state machine, a rule-based patrol AI, or an
 LLM-backed decision-maker — using a cooperative separation between observation and action. This is not a security boundary for untrusted Dart.

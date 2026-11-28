@@ -22,7 +22,7 @@ See [Packages](../packages.md). Dependencies run one way:
 
 | I want to… | Read |
 |---|---|
-| Add a kind of data to entities | [The ECS](../concepts/ecs.md), [Cheat sheet](../reference/cheatsheet.md) |
+| Add a kind of data to entities | [Custom component and system](../examples/custom-component-system.md), [ECS](../concepts/ecs.md) |
 | Add a rule that runs every tick | [The ECS](../concepts/ecs.md) (system order) |
 | React to something that happened | [Events](../reference/events.md) |
 | Make an NPC decide things | [AI trees and state machines](../concepts/ai.md), [Custom Behavior](../examples/custom-behavior.md) |
@@ -30,6 +30,8 @@ See [Packages](../packages.md). Dependencies run one way:
 | Test headless | `GameTester` in [Writing games with less code](../concepts/authoring.md) |
 | Network a game | [Networking](../concepts/networking.md) |
 | Tune performance | [Performance](../concepts/performance.md) |
+| Diagnose nondeterminism | [Debug a deterministic replay](../examples/debug-deterministic-replay.md) |
+| Add an agent-accessible engine operation | [Extend the operation registry](extending-operations.md) |
 
 ## Working on the engine
 

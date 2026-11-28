@@ -175,11 +175,7 @@ Orders are submitted for a specific unit id; both arguments are plain data.
 
 ## Making it fair: fog of war
 
-If the agent should see what a human would, give it
-`FogOfWar` data instead of the full snapshot — `visible` for the agent's team
-is already in `toJson()`. The built-in AI uses `canSee` for the same
-reason. Attack orders against unseen units fail either way, so a cheating
-agent gains nothing from peeking.
+For an external player, construct a team-filtered observation before calling its policy: include its own units, currently visible enemies and allowed terrain information. Do not send the full `World.toJson()` snapshot or assume that including fog data hides other components. The built-in AI uses `canSee` and attack orders against unseen units fail, but order validation is not a confidentiality boundary.
 
 ## Making it reproducible
 
@@ -191,7 +187,7 @@ agent gains nothing from peeking.
 ## Beyond turn-based: real-time agents
 
 For real-time games (platformers) the same idea applies with a different door:
-a `Behavior` receives a read-only `WorldView` and returns an `Action`. See
+a `Behavior` receives a live `WorldView` (trusted Dart code) and returns an `Action`. See
 [the agent API](../concepts/agent-api.md) and the
 [custom Behavior recipe](../examples/custom-behavior.md).
 

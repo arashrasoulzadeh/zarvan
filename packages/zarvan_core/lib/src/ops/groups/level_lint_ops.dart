@@ -28,9 +28,15 @@ List<Operation> levelLintOperations() => [
     scope: OperationScope.project,
     idempotent: true,
     params: const [
-      Param('path', ParamType.path, positional: true),
-      Param('json', ParamType.json, cliFlag: 'inline-json'),
-      Param('playable', ParamType.boolean, defaultValue: false),
+      Param('path', ParamType.path, positional: true,
+        description: 'Project-relative level JSON file; alternatively provide json.',
+      ),
+      Param('json', ParamType.json, cliFlag: 'inline-json',
+        description: 'Inline level JSON instead of path.',
+      ),
+      Param('playable', ParamType.boolean, defaultValue: false,
+        description: 'Run the tile-connectivity reachability heuristic in addition to structural checks.',
+      ),
       Param(
         'includeRender',
         ParamType.boolean,

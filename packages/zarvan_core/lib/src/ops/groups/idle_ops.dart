@@ -50,7 +50,9 @@ List<Operation> idleOperations() => [
     scope: OperationScope.pure,
     idempotent: true,
     params: const [
-      Param('path', ParamType.path, positional: true),
+      Param('path', ParamType.path, positional: true,
+        description: 'Project-relative idle game definition file; alternatively provide json.',
+      ),
       Param(
         'json',
         ParamType.json,
@@ -91,9 +93,15 @@ List<Operation> idleOperations() => [
     scope: OperationScope.pure,
     idempotent: true,
     params: const [
-      Param('path', ParamType.path, positional: true),
-      Param('json', ParamType.json, cliFlag: 'inline-json'),
-      Param('days', ParamType.number, min: 0.01, max: 3650, defaultValue: 3),
+      Param('path', ParamType.path, positional: true,
+        description: 'Project-relative idle game definition file; alternatively provide json.',
+      ),
+      Param('json', ParamType.json, cliFlag: 'inline-json',
+        description: 'Inline idle game definition instead of path.',
+      ),
+      Param('days', ParamType.number, min: 0.01, max: 3650, defaultValue: 3,
+        description: 'Number of in-game days to simulate.',
+      ),
       Param(
         'prestigeAt',
         ParamType.number,
@@ -108,7 +116,9 @@ List<Operation> idleOperations() => [
         description:
             'Start and complete incomplete challenges in definition order.',
       ),
-      Param('mainResource', ParamType.string, defaultValue: 'coins'),
+      Param('mainResource', ParamType.string, defaultValue: 'coins',
+        description: 'Resource ID used for income and balance reporting.',
+      ),
     ],
     errors: {
       ErrorCode.validationFailed:
@@ -187,14 +197,19 @@ List<Operation> idleOperations() => [
     scope: OperationScope.pure,
     idempotent: true,
     params: const [
-      Param('value', ParamType.string, required: true, positional: true),
+      Param('value', ParamType.string, required: true, positional: true,
+        description: 'Big-number decimal or scientific-notation string.',
+      ),
       Param(
         'style',
         ParamType.enumeration,
         options: ['suffix', 'scientific', 'engineering', 'grouped'],
         defaultValue: 'suffix',
+        description: 'Number display notation.',
       ),
-      Param('decimals', ParamType.integer, min: 0, max: 10, defaultValue: 2),
+      Param('decimals', ParamType.integer, min: 0, max: 10, defaultValue: 2,
+        description: 'Number of decimal places to show.',
+      ),
     ],
     handler: (ctx, a) {
       final BigNumber n;
@@ -230,16 +245,23 @@ List<Operation> idleOperations() => [
     scope: OperationScope.pure,
     idempotent: true,
     params: const [
-      Param('path', ParamType.path, positional: true),
-      Param('json', ParamType.json, cliFlag: 'inline-json'),
+      Param('path', ParamType.path, positional: true,
+        description: 'Project-relative idle game definition file; alternatively provide json.',
+      ),
+      Param('json', ParamType.json, cliFlag: 'inline-json',
+        description: 'Inline idle game definition instead of path.',
+      ),
       Param(
         'afterSeconds',
         ParamType.integer,
         min: 0,
         max: 31536000,
         defaultValue: 0,
+        description: 'Number of simulated seconds before reading state.',
       ),
-      Param('mainResource', ParamType.string, defaultValue: 'coins'),
+      Param('mainResource', ParamType.string, defaultValue: 'coins',
+        description: 'Resource ID used for income and balance reporting.',
+      ),
     ],
     errors: {
       ErrorCode.validationFailed:
@@ -298,14 +320,20 @@ List<Operation> idleOperations() => [
     scope: OperationScope.pure,
     idempotent: true,
     params: const [
-      Param('path', ParamType.path, positional: true),
-      Param('json', ParamType.json, cliFlag: 'inline-json'),
+      Param('path', ParamType.path, positional: true,
+        description: 'Project-relative idle game definition file; alternatively provide json.',
+      ),
+      Param('json', ParamType.json, cliFlag: 'inline-json',
+        description: 'Inline idle game definition instead of path.',
+      ),
       Param(
         'owned',
         ParamType.object,
         description: 'Generator id -> copies already owned.',
       ),
-      Param('mainResource', ParamType.string, defaultValue: 'coins'),
+      Param('mainResource', ParamType.string, defaultValue: 'coins',
+        description: 'Resource ID used for income and balance reporting.',
+      ),
     ],
     errors: {
       ErrorCode.validationFailed:

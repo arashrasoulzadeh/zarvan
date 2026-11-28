@@ -80,7 +80,9 @@ List<Operation> levelReadOperations() => [
     scope: OperationScope.project,
     idempotent: true,
     params: const [
-      Param('path', ParamType.path, required: true, positional: true),
+      Param('path', ParamType.path, required: true, positional: true,
+        description: 'Project-relative level JSON file.',
+      ),
       Param(
         'entity',
         ParamType.string,
@@ -92,13 +94,16 @@ List<Operation> levelReadOperations() => [
         items: Param.string(),
         description: 'Only these components.',
       ),
-      Param('entityOffset', ParamType.integer, min: 0, defaultValue: 0),
+      Param('entityOffset', ParamType.integer, min: 0, defaultValue: 0,
+        description: 'Zero-based offset into the filtered entity list.',
+      ),
       Param(
         'entityLimit',
         ParamType.integer,
         min: 1,
         max: 5000,
         defaultValue: 1000,
+        description: 'Maximum entities returned in this page.',
       ),
     ],
     errors: {
@@ -157,7 +162,9 @@ List<Operation> levelReadOperations() => [
     scope: OperationScope.pure,
     idempotent: true,
     params: const [
-      Param('path', ParamType.path, positional: true),
+      Param('path', ParamType.path, positional: true,
+        description: 'Project-relative level JSON file.',
+      ),
       Param(
         'json',
         ParamType.json,
@@ -187,10 +194,18 @@ List<Operation> levelReadOperations() => [
     scope: OperationScope.pure,
     idempotent: true,
     params: const [
-      Param('a', ParamType.path, positional: true),
-      Param('b', ParamType.path, positional: true),
-      Param('aJson', ParamType.json),
-      Param('bJson', ParamType.json),
+      Param('a', ParamType.path, positional: true,
+        description: 'Project-relative path of the first level.',
+      ),
+      Param('b', ParamType.path, positional: true,
+        description: 'Project-relative path of the second level.',
+      ),
+      Param('aJson', ParamType.json,
+        description: 'Inline JSON for the first level instead of a.',
+      ),
+      Param('bJson', ParamType.json,
+        description: 'Inline JSON for the second level instead of b.',
+      ),
     ],
     handler: (ctx, a) {
       final before = parseLevel(
@@ -232,7 +247,9 @@ List<Operation> levelReadOperations() => [
     scope: OperationScope.project,
     idempotent: true,
     params: const [
-      Param('path', ParamType.path, required: true, positional: true),
+      Param('path', ParamType.path, required: true, positional: true,
+        description: 'Project-relative level JSON file.',
+      ),
     ],
     handler: (ctx, a) => OpOutcome.data(_lockJson(ctx, a['path']! as String)),
   ),

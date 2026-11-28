@@ -16,7 +16,7 @@ Read: [Concept](../concepts/concept.md) → [Architecture](../concepts/architect
 ## Which package do I depend on?
 
 See [Packages](../packages.md). Dependencies run one way:
-`zarvan_schema` → `zarvan_core` → `zarvan_flutter` → `zarvan_platformer` / `zarvan_strategy` / `zarvan_idle`.
+`zarvan_schema` → `zarvan_core` → `zarvan_flutter` → `zarvan_platformer` / `zarvan_strategy` / `zarvan_idle` / `zarvan_quiz`. See manifests and the package map for the full graph.
 
 ## Everyday recipes
 
@@ -38,6 +38,8 @@ git clone https://github.com/arashrasoulzadeh/zarvan.git && cd zarvan
 (cd packages/zarvan_core && dart test && dart analyze --fatal-infos)
 (cd packages/zarvan_flutter && flutter test && flutter analyze --fatal-infos)
 ```
+
+For the complete per-package validation matrix, read [CONTRIBUTING](../../CONTRIBUTING.md). Use public library exports, not internal `lib/src/` imports, when writing a game.
 
 Rules that bite: a new component must be registered or it will not serialize;
 shared logic goes in one shared file; every public symbol gets a doc comment

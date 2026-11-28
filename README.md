@@ -23,15 +23,15 @@
 > (see [API stability](#api-stability) and [releasing the engine](docs/engine-releasing.md)); pub.dev version badges
 > replace these once the packages are published.
 
-> **📖 Documentation: <https://meetarash.ir/agentic-game-engine/>** — tutorials, concepts, recipes and reference.
+> **📖 Documentation: <https://meetarash.ir/zarvan/>** — tutorials, concepts, recipes and reference.
 
 ZARVAN is a pure-Dart 2D game engine for building platformers, turn-based and real-time strategy games and idle/incremental games (ECS, fixed-timestep
 simulation, spatial-hash collision, tile-based and entity-based
 platformer physics, patrol/follow AI, movement-driven animation) built
 to be **AI-agent-friendly**: world state is plain, serializable data an
-agent can read and patch, content is authored as data, and a sandboxed
-`Behavior`/`WorldView` API lets an agent drive an entity at runtime
-without any path to corrupting simulation state. Flutter is used only
+agent can read and patch, content is authored as data, and a cooperative
+`Behavior`/`WorldView` API lets trusted Dart code drive an entity at runtime.
+It is not a security sandbox for untrusted code. Flutter is used only
 as the cross-platform shell (rendering, input, audio, packaging) for
 Android/iOS/Web — the simulation core has no Flutter dependency at all.
 
@@ -147,9 +147,8 @@ This engine exists for a specific thesis those don't optimize for:
 **agent-drivable by design**. World state is plain JSON an agent can
 read/patch (`World.toJson()`/`applyPatch()`), content is authored as
 data rather than code (`Level`), and runtime NPC/agent logic is
-sandboxed behind a read-only `WorldView` so a `Behavior` — hand-written
-or LLM-backed — can never corrupt simulation state, only propose an
-`Action` for the engine to apply. Flame is a fine general-purpose
+organized around `WorldView` and a `Behavior` returning an
+`Action` for the engine to apply. This is a cooperative contract, not isolation of untrusted Dart code. Flame is a fine general-purpose
 Flutter game engine but doesn't share this design goal; Unity/Godot
 aren't Dart/Flutter-native and don't run in this repo's
 pure-simulation-core-plus-thin-shell shape. See
@@ -254,7 +253,7 @@ conveyors, per-tile friction, multi-layer/animated tiles, auto-tiling),
 raycasting (tile + entity), A* pathfinding (binary-heap), deterministic
 RNG + replay/record, content DSL (`Level`) + hot-reload
 (`LevelHandle`), localization (`StringTable`), the agent-facing
-`WorldView`/`Behavior`/`AISystem` sandbox, particle system, tweening,
+`WorldView`/`Behavior`/`AISystem` interface, particle system, tweening,
 triggers/pushables.
 
 **Rendering (`zarvan_flutter`)** — sprite atlases + `Canvas.drawAtlas`

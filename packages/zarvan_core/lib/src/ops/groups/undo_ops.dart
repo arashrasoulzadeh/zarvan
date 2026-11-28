@@ -95,7 +95,9 @@ List<Operation> undoOperations() => [
     scope: OperationScope.project,
     idempotent: true,
     params: const [
-      Param('limit', ParamType.integer, min: 1, max: 100, defaultValue: 20),
+      Param('limit', ParamType.integer, min: 1, max: 100, defaultValue: 20,
+        description: 'Maximum journal entries returned, newest first.',
+      ),
     ],
     handler: (ctx, a) => OpOutcome.data([
       for (final e in ctx.undoLog().list(limit: a['limit']! as int))
@@ -121,7 +123,9 @@ List<Operation> undoOperations() => [
         description:
             'Entry id from undo.list; default the newest not yet undone.',
       ),
-      Param('force', ParamType.boolean, defaultValue: false),
+      Param('force', ParamType.boolean, defaultValue: false,
+        description: 'Allow restoring a journal entry despite conflicting file changes.',
+      ),
     ],
     errors: {
       ErrorCode.notFound: 'There is nothing to undo, or the id is unknown.',
@@ -143,7 +147,9 @@ List<Operation> undoOperations() => [
         ParamType.string,
         description: 'Entry id from undo.list; default the newest undone.',
       ),
-      Param('force', ParamType.boolean, defaultValue: false),
+      Param('force', ParamType.boolean, defaultValue: false,
+        description: 'Allow restoring a journal entry despite conflicting file changes.',
+      ),
     ],
     errors: {
       ErrorCode.notFound: 'There is nothing to redo, or the id is unknown.',

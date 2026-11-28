@@ -42,6 +42,8 @@ The `quiz.start`, `quiz.answer`, `quiz.state` and `quiz.simulate` operations req
 
 ## The Flutter layer
 
+For a complete consumer application using the engine-drawn screens, see [Tutorial 9](../tutorials/09-flutter-quiz-app.md).
+
 ```dart
 final session = await QuizSession.open(store); // any KeyValueStore
 session.begin(QuizRound.stage(factory, const StageMode(),

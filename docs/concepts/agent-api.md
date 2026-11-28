@@ -62,16 +62,16 @@ subclass is how you extend this without the engine needing to know
 about your domain logic:
 
 ```dart
-class TakeDamageAction implements Action {
-  TakeDamageAction(this.target, this.amount);
+class StopAction implements Action {
+  StopAction(this.target);
   final EntityId target;
-  final double amount;
 
   @override
   void apply(World world) {
-    // Apply domain-specific validation before mutating World.
-    final health = world.componentsOf<Health>().get(target);
-    // ...
+    final velocity = world.getComponent<Velocity>(target);
+    if (velocity == null) return;
+    velocity.x = 0;
+    velocity.y = 0;
   }
 }
 ```
@@ -89,12 +89,20 @@ components — they're registered under a string id rather than embedded
 in JSON, and `AIState.behaviorId` references that id:
 
 ```dart
-final behaviors = BehaviorRegistry();
-behaviors.register('patrol', PatrolBehavior(waypoints: [...]));
-world.addSystem(AISystem(behaviors));
+import 'package:zarvan_core/zarvan_core.dart';
 
-final enemy = world.spawn();
-world.componentsOf<AIState>().set(enemy, AIState('patrol'));
+void main() {
+  final world = World(width: 320, height: 240);
+  registerCoreComponents(world);
+
+  final behaviors = BehaviorRegistry();
+  behaviors.registerFn('idle', (view, self) => const NoOpAction());
+  world.addSystem(AISystem(behaviors));
+
+  final entity = world.spawn();
+  world.setComponent(entity, AIState('idle'));
+  world.step(1 / 60);
+}
 ```
 
 `AIState.memory` is a free-form JSON-serializable blackboard (a

@@ -27,7 +27,7 @@ flowchart LR
 | [`zarvan_idle`](packages/zarvan_idle.md) | Developers, game makers | Idle/incremental games: widgets, controller, session, saving. | Flutter |
 | [`zarvan_api`](packages/zarvan_api.md) | Agents, operators | MCP server and HTTP / JSON-RPC API over the operation registry. | Pure Dart |
 | [`zarvan_eye`](packages/zarvan_eye.md) | Game makers | Dart client for Eye analytics: launch sessions, installation identity, offline queues, lifecycle/game helpers, metadata and error reporting. | Pure Dart |
-| [`zarvan_quiz`](packages/zarvan_quiz.md) | Developers, game makers | Quiz / fill-in-the-blank games: session, progress, race clock and card/options/HUD widgets. Rules live in `zarvan_core`. | Flutter |
+| [`zarvan_quiz`](packages/zarvan_quiz.md) | Developers, game makers | Quiz / fill-in-the-blank games: session, progress, race clock and engine-drawn scenes. Rules live in `zarvan_core`. | Flutter |
 | [`zarvan_ads`](packages/zarvan_ads.md) | Game makers | Banner, interstitial and rewarded ads behind one `AdService`, with consent and pacing. | Flutter |
 | [`zarvan_cli`](packages/zarvan_cli.md) | Game makers, agents | The `zarvan` command: `create`, `upgrade`, `lint`, and every operation as a command. | Pure Dart |
 | [`zarvan_studio`](packages/zarvan_studio.md) | Game makers | The visual Studio for editing levels and content. | Flutter |

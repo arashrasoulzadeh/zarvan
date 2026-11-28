@@ -57,7 +57,7 @@ dart run tool/gen_api_docs.dart > ../../docs/reference/operations.md
 dart run tool/gen_api_docs.dart --transports > ../../docs/reference/transports.md
 ```
 
-`packages/zarvan_api/test/docs_test.dart` fails when the committed page is stale.
+`packages/zarvan_api/test/docs_test.dart` fails when either committed page is stale or a public operation parameter has no description.
 
 ## Agent discovery and offline documentation
 

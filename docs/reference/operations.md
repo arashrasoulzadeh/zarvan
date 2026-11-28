@@ -269,7 +269,7 @@ The catalogue. Filter by `group` or `kind`; operations hidden by the allow/deny 
 | Parameter | Type | Description |
 |---|---|---|
 | `group` | string | Only this group, e.g. level. |
-| `kind` | enumeration; one of `read`, `write`, `destructive` | |
+| `kind` | enumeration; one of `read`, `write`, `destructive` | Restrict the catalogue to the specified operation kind. |
 
 ```bash
 zarvan engine operations
@@ -541,9 +541,9 @@ Writes `assets/i18n/<locale>.json` (creates the file when missing). Keys are sor
 
 | Parameter | Type | Description |
 |---|---|---|
-| `locale` | string; required | |
-| `key` | string; required | |
-| `text` | string; required | |
+| `locale` | string; required | Locale identifier matching the catalog filename. |
+| `key` | string; required | Translation key to create or update. |
+| `text` | string; required | Localized text for the key. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -790,11 +790,11 @@ Only tiles and the four collision sets (solid, one-way, slopes) survive; ladders
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
+| `path` | path; required | Project-relative level file containing the tile map. |
 | `entity` | string | Entity holding the tileMap; default the first with one. |
-| `output` | path | |
-| `image` | string; default `"tiles.png"` | |
-| `tileset` | string; default `"tiles"` | |
+| `output` | path | Optional project-relative path of the exported TMX file. |
+| `image` | string; default `"tiles.png"` | Tileset image filename referenced by the exported map. |
+| `tileset` | string; default `"tiles"` | Name of the tileset in the exported map. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -838,9 +838,9 @@ Makes a new level whose single entity holds the imported tileMap. Fails with `co
 
 | Parameter | Type | Description |
 |---|---|---|
-| `tmx` | path; required | |
+| `tmx` | path; required | Project-relative input Tiled TMX file. |
 | `output` | path | Default: assets/levels/<tmx name>.json. |
-| `entity` | string; default `"ground"` | |
+| `entity` | string; default `"ground"` | Name for the entity holding the imported tileMap. |
 | `layer` | string | Name of the tile layer to import; required when the map has more than one. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
@@ -1182,10 +1182,10 @@ Fresh copies are added at the end of the level; entity names are made unique (`t
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `prefab` | string; required | |
-| `x` | number; default `0` | |
-| `y` | number; default `0` | |
+| `path` | path; required | Project-relative level JSON file. |
+| `prefab` | string; required | Name of the prefab to place. |
+| `x` | number; default `0` | Horizontal world-space placement coordinate. |
+| `y` | number; default `0` | Vertical world-space placement coordinate. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -1205,7 +1205,7 @@ The prefab JSON: its name and entities, positions relative to its origin.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `name` | string; required | |
+| `name` | string; required | Prefab name used to identify its saved JSON. |
 
 Errors: `not_found`.
 
@@ -1225,9 +1225,9 @@ Positions are stored relative to the group's top-left corner so the prefab can b
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `name` | string; required | |
-| `entities` | array; required | |
+| `path` | path; required | Project-relative level JSON file. |
+| `name` | string; required | Prefab name used to identify its saved JSON. |
+| `entities` | array; required | Names of level entities to capture in the prefab. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -1265,11 +1265,11 @@ Implemented by `zarvan create` because it runs `flutter create` and `pub get`; s
 
 | Parameter | Type | Description |
 |---|---|---|
-| `name` | string; required | |
-| `template` | enumeration; default `"default_game"`; one of `default_game`, `topdown_game`, `strategy_game`, `idle_game` | |
-| `org` | string; default `"com.example"` | |
-| `outputDir` | string; default `"."` | |
-| `ref` | string; default `"main"` | |
+| `name` | string; required | Name of the generated Flutter project. |
+| `template` | enumeration; default `"default_game"`; one of `default_game`, `topdown_game`, `strategy_game`, `idle_game` | Starter project to scaffold. |
+| `org` | string; default `"com.example"` | Reverse-domain identifier for application bundles. |
+| `outputDir` | string; default `"."` | Directory in which to create the generated project. |
+| `ref` | string; default `"main"` | Engine Git ref to pin; internal dependency refs must agree. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -1382,7 +1382,7 @@ Any UTF-8 text file inside the project, up to 1 MiB. Binary files are refused, a
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
+| `path` | path; required | Project-relative UTF-8 text file to read. |
 
 Errors: `not_found`, `too_large`, `forbidden`.
 
@@ -1402,8 +1402,8 @@ Case-insensitive substring search, as the studio's Find in project. Returns file
 
 | Parameter | Type | Description |
 |---|---|---|
-| `query` | string; required | |
-| `limit` | integer; default `200`; 1 to 2000 | |
+| `query` | string; required | Case-insensitive text substring to find. |
+| `limit` | integer; default `200`; 1 to 2000 | Maximum number of matching results returned. |
 
 ```bash
 zarvan project search <query>
@@ -1439,8 +1439,8 @@ The same tree the studio shows. `filter` keeps one kind of file: code, level, gr
 
 | Parameter | Type | Description |
 |---|---|---|
-| `filter` | enumeration; default `"all"`; one of `all`, `code`, `level`, `graph`, `image`, `data`, `other` | |
-| `limit` | integer; default `2000`; 1 to 20000 | |
+| `filter` | enumeration; default `"all"`; one of `all`, `code`, `level`, `graph`, `image`, `data`, `other` | File category to include in the project tree. |
+| `limit` | integer; default `2000`; 1 to 20000 | Maximum number of matching results returned. |
 
 ```bash
 zarvan project tree
@@ -1672,19 +1672,19 @@ The same planning `zarvan build-release` does: the exact `flutter build` command
 
 | Parameter | Type | Description |
 |---|---|---|
-| `platform` | enumeration; required; one of `android`, `ios` | |
-| `target` | string; default `"lib/main.dart"` | |
-| `buildName` | string; default `"1.0.0"` | |
-| `buildNumber` | string; default `"1"` | |
-| `flavor` | string | |
-| `keystorePath` | string | |
-| `keystorePassword` | string | |
-| `keyAlias` | string | |
-| `keyPassword` | string | |
+| `platform` | enumeration; required; one of `android`, `ios` | Target store platform for the release plan. |
+| `target` | string; default `"lib/main.dart"` | Flutter application entry point. |
+| `buildName` | string; default `"1.0.0"` | User-visible application version. |
+| `buildNumber` | string; default `"1"` | Store build number. |
+| `flavor` | string | Optional Flutter build flavor. |
+| `keystorePath` | string | Path to the Android signing keystore. |
+| `keystorePassword` | string | Password for the Android keystore; supply securely. |
+| `keyAlias` | string | Alias of the Android signing key. |
+| `keyPassword` | string | Password for the Android signing key; supply securely. |
 | `gradleText` | string | Contents of android/app/build.gradle(.kts); checked for key.properties. |
-| `teamId` | string | |
-| `exportOptionsPlist` | string | |
-| `noCodesign` | boolean; default `false` | |
+| `teamId` | string | Apple developer team identifier. |
+| `exportOptionsPlist` | string | Path to the iOS export options property list. |
+| `noCodesign` | boolean; default `false` | Plan an unsigned iOS build. |
 
 ```bash
 zarvan release plan <platform>
@@ -1704,7 +1704,7 @@ Fails with `validation_failed` and a player-readable message when the text is da
 
 | Parameter | Type | Description |
 |---|---|---|
-| `code` | string; required | |
+| `code` | string; required | Shareable save code to decode and verify. |
 
 Errors: `validation_failed`.
 
@@ -1724,7 +1724,7 @@ The text carries the JSON in URL-safe base64 plus a checksum, so a typo is caugh
 
 | Parameter | Type | Description |
 |---|---|---|
-| `save` | object; required | |
+| `save` | object; required | Save JSON object. |
 
 ```bash
 zarvan save encode
@@ -1742,8 +1742,8 @@ Runs the registered migrations from the save's `saveVersion` (1 when absent) up 
 
 | Parameter | Type | Description |
 |---|---|---|
-| `save` | object; required | |
-| `toVersion` | integer; required; 1 to ∞ | |
+| `save` | object; required | Save JSON object. |
+| `toVersion` | integer; required; 1 to ∞ | Target save schema version. |
 
 ```bash
 zarvan save migrate
@@ -1763,7 +1763,7 @@ Includes the default template, which is exactly what `level.add_entity` starts a
 
 | Parameter | Type | Description |
 |---|---|---|
-| `name` | string; required | |
+| `name` | string; required | Registered component name from schema.components. |
 
 Errors: `not_found`.
 
@@ -1815,7 +1815,7 @@ Start from this when building a component by hand.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `name` | string; required | |
+| `name` | string; required | Registered component name from schema.components. |
 
 ```bash
 zarvan schema template <name>
@@ -1833,8 +1833,8 @@ Runs the same validator as level validation on a one-entity level, so the answer
 
 | Parameter | Type | Description |
 |---|---|---|
-| `name` | string; required | |
-| `value` | json; required | |
+| `name` | string; required | Registered component name from schema.components. |
+| `value` | json; required | Component JSON to validate against its schema. |
 
 ```bash
 zarvan schema validate-component <name>
@@ -1868,10 +1868,10 @@ Loads a level (`path` or inline `json`) with team/grid/AP/unitStats entities, wi
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path | |
-| `json` | json | |
+| `path` | path | Project-relative level file describing the skirmish. |
+| `json` | json | Inline skirmish level JSON instead of path. |
 | `turns` | integer; default `1` | How many team-turns (TurnEndedEvent) to run before stopping. |
-| `ai` | enumeration; default `"aggressive"`; one of `aggressive`, `tactical` | |
+| `ai` | enumeration; default `"aggressive"`; one of `aggressive`, `tactical` | Built-in AI policy for simulated teams. |
 
 Errors: `validation_failed`.
 
@@ -1893,7 +1893,7 @@ Reads the journal in `.studio/undo/`. Each entry has the operation, who did it, 
 
 | Parameter | Type | Description |
 |---|---|---|
-| `limit` | integer; default `20`; 1 to 100 | |
+| `limit` | integer; default `20`; 1 to 100 | Maximum journal entries returned, newest first. |
 
 ```bash
 zarvan undo list
@@ -1912,7 +1912,7 @@ Re-applies a journal entry that was undone, if its files are still as the undo l
 | Parameter | Type | Description |
 |---|---|---|
 | `id` | string | Entry id from undo.list; default the newest undone. |
-| `force` | boolean; default `false` | |
+| `force` | boolean; default `false` | Allow restoring a journal entry despite conflicting file changes. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -1935,7 +1935,7 @@ Restores the files of a journal entry to their content before that write. It ref
 | Parameter | Type | Description |
 |---|---|---|
 | `id` | string | Entry id from undo.list; default the newest not yet undone. |
-| `force` | boolean; default `false` | |
+| `force` | boolean; default `false` | Allow restoring a journal entry despite conflicting file changes. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 

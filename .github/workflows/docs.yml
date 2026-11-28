@@ -66,6 +66,8 @@ jobs:
           mkdocs build --strict
           test -s site/llms.txt
           test -s site/llms-full.txt
+          test -s site/agent-docs/manifest.json
+          test -s site/agent-docs/operations/world.md
 
       - name: Install the standalone landing page
         run: cp landing/index.html site/index.html

@@ -12,6 +12,7 @@ Linear walkthroughs. Each ends with something that runs.
 | 6 | [Drive the engine from an agent](06-agent-api.md) | Start the MCP / REST server, let an agent build and check a level, undo it | ~15 min |
 | 7 | [A top-down collection game](07-top-down-game.md) | Four-direction movement and tagged pickups | ~20 min |
 | 8 | [Build and test a quiz bank](08-quiz-game.md) | Deterministic questions, round JSON and balance simulation | ~20 min |
+| 9 | [Build a Flutter quiz app](09-flutter-quiz-app.md) | Complete consumer app, engine-drawn quiz screens and persistence | ~30 min |
 
 **New to the engine?** Do [Getting started](../getting-started.md) first, then
 whichever genre tutorial matches your game. Do 3 if you want an AI agent, a bot or
@@ -25,6 +26,7 @@ flowchart LR
     GS --> T6[6 · Agent API]
     GS --> T7[7 · Top-down]
     GS --> T8[8 · Quiz]
+    T8 --> T9[9 · Quiz app]
     T2 --> T3[3 · Agent-driven]
     T2 --> T4[4 · Multiplayer]
     T1 -.-> T3

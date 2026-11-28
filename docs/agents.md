@@ -24,7 +24,7 @@ zarvan engine operations --json
 zarvan engine operation level.list --json
 ```
 
-See [operations](reference/operations.md), [components](reference/components.md), [events](reference/events.md), and [transports](reference/transports.md). Published discovery index: [llms.txt](https://meetarash.ir/zarvan/llms.txt). See [API reference](api-reference.md) for public Dart libraries.
+See [operations](reference/operations.md), [components](reference/components.md), [events](reference/events.md), and [transports](reference/transports.md). Published discovery resources: [llms.txt](https://meetarash.ir/zarvan/llms.txt) (index) and [llms-full.txt](https://meetarash.ir/zarvan/llms-full.txt) (complete technical Markdown). See [API reference](api-reference.md) for public Dart libraries.
 
 ## Observe, validate, act, observe again
 
@@ -50,7 +50,7 @@ Register the behavior in a `BehaviorRegistry`, attach `AIState` to an entity and
 
 ## Permission and safety boundaries
 
-- `--read-only` protects against operations classified as file writes or destructive operations; some operations classified as reads change session or sandbox-world state. Use an explicit allowlist when observation must not change that state.
+- `--read-only` protects against operations classified as file writes or destructive operations; some operations classified as reads change session or sandbox-world state. Use an explicit server allowlist when observation must not change that state. Legacy CLI commands do not all use the registry policy; do not treat the CLI flag as a filesystem sandbox.
 - `WorldView` is a cooperative interface, not a security sandbox: it exposes the underlying world and may return mutable component objects. Never execute arbitrary untrusted Dart as an NPC.
 - Filter observations for external strategy agents before sending them. Fog-aware order validation does not make a full world snapshot private.
 - The API can perform file edits; use least privilege, previews, validation and confirmation. Never expose the bearer token to an untrusted agent.

@@ -5,6 +5,16 @@ Everything under `packages/zarvan_flutter/lib/src/rendering/` and
 simulation — it draws what the `World` contains; it never contains
 gameplay logic itself.
 
+## Find the part you need
+
+| Goal | Section |
+|---|---|
+| Understand rendering and scene setup | [The pipeline](#the-pipeline-game-scene-engineview) |
+| Draw game objects | [Sprite and atlas](#sprite-data-only-resolved-against-an-atlasregistry), [Text and HUD](#text-and-hudbar) |
+| Configure framing | [Camera](#camera), [Aspect ratio and safe areas](#aspect-ratio-and-safe-areas) |
+| Add motion and effects | [Animation](#animation), [Lighting](lighting.md), [Post-processing](post-processing.md) |
+| Diagnose visual problems | [Debug overlays](#debug-overlays), [Performance](performance.md) |
+
 ## The pipeline: `Game` → `Scene` → `EngineView`
 
 - `Game` (`logic/game.dart`) — your app's entry point. Implement

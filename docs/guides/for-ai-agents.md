@@ -1,57 +1,47 @@
 # For AI agents
 
-This page is written for an AI agent (or for a developer building one) that
-needs to **read** a ZARVAN world, **change** it, or **play** in it, safely.
+Use this guide if you are building an agent that reads, changes or plays a ZARVAN world. If you are modifying the engine repository itself, read [AGENTS.md](../../AGENTS.md) instead.
 
-## Machine-readable entry points
+## Choose a role
 
-| Resource | Use |
-|---|---|
-| `/llms.txt` (site root) | Index of every documentation page with a one-line description. |
-| [Operations reference](../reference/operations.md) | Every operation, with the same name on CLI, MCP, REST and JSON-RPC. Generated from the registry, so always current. |
-| [Components reference](../reference/components.md) | The exact JSON shape of every built-in component. Generated from `zarvan_schema`. |
-| [Events](../reference/events.md) | Event types and when they fire. |
-| `packages/*/lib/src/` | Every public symbol has a doc comment that says *why*. |
+| Role | Observes | Acts through |
+|---|---|---|
+| Trusted runtime NPC | `WorldView` | `Behavior.decide(view, self)`, returning an `Action` |
+| External strategy player | A team-filtered observation | Validated orders |
+| Author/operator | Project files, schemas, sandbox-world snapshots | Operation registry (MCP, CLI, REST or JSON-RPC) |
 
-## Three ways to act, from safest to most direct
+The runtime Dart interface is cooperative, not process isolation. A custom behavior can access mutable state; never execute arbitrary untrusted Dart as a behavior. See [runtime agent API](../concepts/agent-api.md).
 
-1. **As an entity's brain (real-time).** Implement a `Behavior`: it receives a
-   read-only `WorldView` and returns an `Action`; `AISystem` applies it. You
-   cannot corrupt state. See [The agent API](../concepts/agent-api.md).
-2. **As a player (turn-based).** Read the world as JSON, submit `Order`s with
-   `submitOrder`; the engine validates and applies them (fog of war applies).
-   See [Turn-based strategy](../concepts/turn-based-strategy.md) and
-   [Tutorial 3](../tutorials/03-agent-driven-game.md).
-3. **As an author/operator.** Use operations over MCP, REST, JSON-RPC or the
-   `zarvan` CLI: create a project, open it, edit levels, validate, undo. See
-   [Tutorial 6](../tutorials/06-agent-api.md) and
-   [Transports quick start](../reference/transports.md).
+## Discover before calling
 
-## Rules to follow
+1. Call `engine.capabilities` to check availability and restrictions.
+2. Call `engine.operations` to enumerate visible operations.
+3. Call `engine.operation` with `{"name":"level.list"}` (or the desired operation) to obtain its exact input schema, errors and examples.
+4. Call `engine.docs` for available Markdown pages or read the [published index](https://meetarash.ir/zarvan/llms.txt).
 
-- **Never mutate stores from outside the system that owns the data.** Propose
-  through `Action`, `Order`, patch or operation.
-- **Read before you write:** `world.describe` / `world.query` operations,
-  `World.toJson()`, or `WorldView`.
-- **Validate before you run:** `zarvan lint`, `project.problems`,
-  `World.checkPatch`, `applyPatch(strict: true, dryRun: true)`.
-- **A component only serializes once registered.** If your data is missing from
-  `toJson` or a patch, see [FAQ](../faq.md#my-component-isnt-saved-or-loaded).
-- **Determinism:** use `world.random` and the fixed timestep; do not use
-  wall-clock time or a global `Random` inside simulation code.
-- **Use `--read-only`** on the CLI when you only need to observe.
+Use the [operations reference](../reference/operations.md), [component shapes](../reference/components.md), [events](../reference/events.md) and [transport quick start](../reference/transports.md).
 
-## A typical agent loop
+## Validate before applying
 
-```mermaid
-flowchart LR
-    O[Observe<br/>world.describe · WorldView] --> D[Decide]
-    D --> V[Validate<br/>dryRun · lint]
-    V --> A[Act<br/>Action · Order · operation]
-    A --> O
+Dart patches use a two-step pattern:
+
+```dart
+final problems = world.checkPatch(patch);
+if (problems.isEmpty) {
+  world.applyPatch(patch, strict: true);
+}
 ```
 
-## Where to go next
+The `world.patch` registry operation separately accepts `dryRun: true` to return problems without applying a patch. Inspect both the result envelope and validation data. Use `strict: true` for actual application.
 
-[The agent API](../concepts/agent-api.md) · [Operations](../reference/operations.md)
-· [Content as data](../concepts/content-as-data.md) · [Concept](../concepts/concept.md)
+For project content, inspect `project.problems`, `level.validate` or `level.lint`; preview file writes and inspect the resulting diff. Destructive edits require a confirmation token. Journalled file writes can be undone; sandbox-world changes are not file undo entries.
+
+## Rules and limits
+
+- Treat `--read-only` as a restriction on operation kinds, not immutable simulation state. Some read-classified operations change session or in-memory worlds. Restrict the allowlist if observation must be side-effect free.
+- Treat full snapshots as privileged: filter them before sharing with an external player. Order validation does not prevent information leaks.
+- Use `world.random` and fixed timesteps for deterministic simulation.
+- Register components before expecting them to appear in serialization. See [FAQ](../faq.md#my-component-isnt-saved-or-loaded).
+- Do not guess missing parameters, enum values, imports or result shapes. Inspect live schemas and public exports.
+
+Continue with [agent hub](../agents.md), [external strategy player tutorial](../tutorials/03-agent-driven-game.md) or [operator tutorial](../tutorials/06-agent-api.md).

@@ -78,6 +78,47 @@ The server listens on localhost by default, needs the token for everything excep
 sizes and rate, and logs each call (no arguments, no results) to `.studio/api-requests.jsonl`. Send an
 `Idempotency-Key` header with a write to make retries safe. Configuration can live in `zarvan_api.yaml` in the project.
 
+
+## 5. A complete sandbox-world workflow
+
+Run these commands in Bash with `curl` and `jq` installed, after starting
+the HTTP server above and setting `TOKEN`. This example creates only an
+in-memory world. Use the same server process for every call.
+
+```bash
+set -euo pipefail
+
+api() {
+  curl -fsS -H "Authorization: Bearer $TOKEN" \
+    -H 'Content-Type: application/json' \
+    -X POST "http://127.0.0.1:7421/v1/$1" -d "$2"
+}
+
+built=$(api world/build '{"json":{"entities":[{"name":"probe","components":{"position":{"x":0,"y":0},"velocity":{"x":1,"y":0}}}]},"systems":["movement"]}')
+world_id=$(jq -er 'select(.ok).data.worldId' <<< "$built")
+entity_id=$(jq -er '.data.named.probe' <<< "$built")
+
+patch=$(jq -n --arg w "$world_id" --argjson id "$entity_id" \
+  '{worldId:$w,strict:true,dryRun:true,patch:{entities:[{id:$id,components:{position:{x:10,y:20}}}]}}')
+
+# Validate the proposal without mutating state.
+api world/patch "$patch" | jq -e '.ok and .data.ok'
+
+# Apply the same checked patch and inspect the resulting component.
+api world/patch "$(jq '.dryRun = false' <<< "$patch")" | jq -e '.ok and .data.applied'
+query=$(jq -n --arg w "$world_id" '{worldId:$w,component:"position"}')
+api world/query "$query" | jq '.data'
+
+# Release the in-memory world.
+api world/discard "$(jq -n --arg w "$world_id" '{worldId:$w}')" | jq -e '.ok'
+```
+
+The position query should include the probe at `x: 10, y: 20`. The world is
+not a running Flutter game; only the headless systems chosen at build time
+are installed. These world operations do not write project content, so they
+are allowed even on a read-only server unless the allow/deny policy excludes
+them. Inspect both outer `ok` and inner validation results before applying.
+
 ## What an agent cannot do
 
 Operations that need the Flutter SDK (`project.create`, `project.upgrade`, `release.build`) exist as CLI commands only

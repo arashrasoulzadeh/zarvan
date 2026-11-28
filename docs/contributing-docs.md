@@ -62,12 +62,13 @@ dart run tool/gen_api_docs.dart --transports > ../../docs/reference/transports.m
 
 ## Agent discovery and offline documentation
 
-MkDocs generates `llms.txt` and `llms-full.txt` from navigation using the real page URLs. The standalone landing page is excluded. Test the hook from the repository root:
+MkDocs generates `llms.txt`, `llms-full.txt` and `agent-docs/manifest.json` from navigation using the real page URLs. Each technical page has a raw Markdown copy under `agent-docs/pages/`, and each generated operation group has a focused reference under `agent-docs/operations/`. The versioned manifest records source paths, canonical URLs, Markdown URLs, language and content hashes. The standalone landing page is excluded. Do not edit the generated site outputs. Test the hook from the repository root:
 
 ```bash
 python -m unittest discover -s hooks -p 'test_*.py'
 mkdocs build --strict
 test -s site/llms.txt && test -s site/llms-full.txt
+test -s site/agent-docs/manifest.json
 ```
 
 When a curated page listed in `kRemoteDocsPages` changes, regenerate the offline Markdown bundle after regenerating references:

@@ -16,6 +16,14 @@ String _paramLine(Param p) {
 }
 
 String _cli(Operation op) {
+  if (op.requiresFlutter) {
+    return switch (op.name) {
+      'project.create' => 'zarvan create <name>',
+      'project.upgrade' => 'zarvan upgrade',
+      'release.build' => 'zarvan build-release',
+      _ => 'zarvan --help',
+    };
+  }
   final group = op.cli.group ?? op.group;
   final verb = op.cli.verb ?? op.verb.replaceAll('_', '-');
   final positional = [
@@ -37,9 +45,17 @@ String renderOperationsReference(OperationRegistry registry) {
     )
     ..writeln()
     ..writeln(
-      'Every operation is a CLI command, an MCP tool, a REST route and a JSON-RPC method. Reads change nothing; writes '
-      'apply immediately and can be undone with `undo.undo`; destructive writes return a preview and a confirmation '
-      'token first. Results are `{ok, data, warnings, diff?, undoId?, durationMs}` or `{ok:false, error:{code, message, hint?}}`.',
+      'Non-Flutter operations are available on CLI, MCP, REST and JSON-RPC; Flutter-dependent operations are CLI-only. '
+      'Read-classified operations do not write project content but can change session or sandbox-world state. '
+      'Journalled file writes can be undone with `undo.undo`; destructive writes require preview and confirmation. '
+      'Results are `{ok, data, warnings, diff?, undoId?, durationMs}` or `{ok:false, error:{code, message, hint?}}`.',
+    )
+    ..writeln()
+    ..writeln(
+      'CLI blocks show command syntax, not complete runnable examples. For registry-backed commands, supply missing '
+      'parameters via `--args` (JSON object) or `--stdin`, and request `--json` for the result envelope. Discover schemas '
+      'and examples with `engine.operation`; for legacy or CLI-only commands use `zarvan help`. Stateful `world.*` '
+      'workflows need a persistent MCP/HTTP process; separate CLI invocations do not share worlds.',
     )
     ..writeln();
   final groups = <String, List<Operation>>{};

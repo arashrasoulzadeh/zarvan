@@ -56,7 +56,9 @@ List<Operation> assetOperations() => [
     scope: OperationScope.project,
     idempotent: true,
     params: const [
-      Param('atlas', ParamType.string, required: true, positional: true),
+      Param('atlas', ParamType.string, required: true, positional: true,
+        description: 'Atlas ID returned by asset.index.',
+      ),
     ],
     errors: {
       ErrorCode.notFound: 'No such atlas, or its manifest is unreadable.',
@@ -119,6 +121,7 @@ List<Operation> assetOperations() => [
         ParamType.path,
         defaultValue: 'assets/packed/atlas.png',
         cliFlag: 'output-image',
+        description: 'Project-relative path of the packed PNG.',
       ),
       Param(
         'outputManifest',
@@ -126,7 +129,9 @@ List<Operation> assetOperations() => [
         description: 'Defaults to outputImage with a .json extension.',
         cliFlag: 'output-manifest',
       ),
-      Param('padding', ParamType.integer, min: 0, max: 64, defaultValue: 2),
+      Param('padding', ParamType.integer, min: 0, max: 64, defaultValue: 2,
+        description: 'Pixel padding between packed regions.',
+      ),
       Param(
         'maxWidth',
         ParamType.integer,
@@ -134,6 +139,7 @@ List<Operation> assetOperations() => [
         max: 16384,
         defaultValue: 2048,
         cliFlag: 'max-width',
+        description: 'Requested maximum atlas width in pixels.',
       ),
       Param(
         'scales',

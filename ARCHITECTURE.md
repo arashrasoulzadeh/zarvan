@@ -12,11 +12,17 @@ It does not by itself imply an integrated hosted AI model or service.
 
 | Package | Responsibility | Internal dependencies |
 | --- | --- | --- |
-| [zarvan_core](packages/zarvan_core/README.md) | Entities, components, systems, world serialization, collision primitives, tile data, content loading, behavior API | None |
+| [zarvan_core](packages/zarvan_core/README.md) | Entities, components, systems, world serialization, collision primitives, tile data, content loading, behavior API | `zarvan_schema` |
+| [zarvan_schema](packages/zarvan_schema/README.md) | Component schema definitions and validation | None |
 | [zarvan_flutter](packages/zarvan_flutter/README.md) | Game/scene lifecycle, rendering, camera, input, audio, save/load integration | `zarvan_core` |
 | [zarvan_platformer](packages/zarvan_platformer/README.md) | Gravity, jumping, platform/tile resolution, combat, character helpers and animation | `zarvan_core`, `zarvan_flutter` |
 | [zarvan_strategy](packages/zarvan_strategy/README.md) | One-call wiring and unit spawning for turn-based strategy (rules live in `zarvan_core/lib/src/turn/`) | `zarvan_core`, `zarvan_flutter` |
-| [zarvan_cli](packages/zarvan_cli/README.md) | Game scaffolding, dependency upgrades, content validation and asset packing | `zarvan_core` |
+| [zarvan_cli](packages/zarvan_cli/README.md) | Game scaffolding, dependency upgrades, content validation and asset packing | `zarvan_core`, `zarvan_schema` |
+| [zarvan_idle](packages/zarvan_idle/README.md) | Idle game widgets and session | `zarvan_core`, `zarvan_flutter` |
+| [zarvan_quiz](packages/zarvan_quiz/README.md) | Quiz widgets and session | `zarvan_core`, `zarvan_flutter` |
+| [zarvan_ads](packages/zarvan_ads/README.md) | Optional mobile ads integration | None |
+| [zarvan_api](packages/zarvan_api/README.md) | MCP, REST and JSON-RPC over the registry | `zarvan_core`, `zarvan_schema` |
+| [zarvan_studio](docs/packages/zarvan_studio.md) | Desktop authoring application | `zarvan_core`, `zarvan_schema`, `zarvan_flutter`, `zarvan_platformer` |
 | [zarvan_eye](packages/zarvan_eye/README.md) | Dart client for the Eye analytics collector | None |
 
 Core has no Flutter dependency. The shell must not depend on platformer
@@ -64,7 +70,7 @@ files under `lib/src/` contain implementation details.
 
 ## Documentation
 
-The full site is published at <https://meetarash.ir/agentic-game-engine/> (source in `docs/`; diagrams in
+The full site is published at <https://meetarash.ir/zarvan/> (source in `docs/`; diagrams in
 [docs/concepts/architecture.md](docs/concepts/architecture.md)).
 
 ## Status and further reading

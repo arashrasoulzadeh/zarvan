@@ -34,6 +34,7 @@ mkdocs build --strict   # what CI runs: fails on broken links
   sample, change the test in the same commit (and vice versa).
 - For other samples, check the signature against the source before committing; add executable tests for new behavior-oriented examples. Do not present CLI placeholders as runnable commands.
 - Distinguish trusted Dart behaviors from external agents, file writes from in-memory changes, and public exports from implementation paths. Use the actual registry schema for operation parameters.
+- The custom-component recipe has `packages/zarvan_core/test/custom_component_docs_test.dart`; the quiz app tutorial has `packages/zarvan_quiz/test/tutorial_app_docs_test.dart`. Update each test alongside its sample.
 - Never use `const` with `Position`, `Velocity` or `Collider` — their
   constructors aren't const.
 

@@ -23,9 +23,9 @@ bool _canAct(ActionPoints? points) => points == null || points.current > 0;
 const int _realtimeRetreatCells = 4;
 
 /// Plays one team's whole turn by submitting orders -- the exact path a
-/// human tap or an external agent uses (`submitOrder`), so an AI can't
-/// do anything a player couldn't, and its decisions are plain JSON
-/// orders that show up in `World.toJson()`.
+/// human tap or an external agent uses (`submitOrder`). Built-in policies
+/// respect team visibility and order rules; custom implementations receive
+/// the mutable world and must follow that convention. Orders are JSON data.
 abstract class TurnAI {
   void playTurn(World world, String team);
 }

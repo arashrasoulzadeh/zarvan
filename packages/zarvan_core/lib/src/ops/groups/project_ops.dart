@@ -71,7 +71,9 @@ List<Operation> projectOperations() => [
     scope: OperationScope.pure,
     requiresFlutter: true,
     params: const [
-      Param('name', ParamType.string, required: true, positional: true),
+      Param('name', ParamType.string, required: true, positional: true,
+        description: 'Name of the generated Flutter project.',
+      ),
       Param(
         'template',
         ParamType.enumeration,
@@ -82,10 +84,17 @@ List<Operation> projectOperations() => [
           'idle_game',
         ],
         defaultValue: 'default_game',
+        description: 'Starter project to scaffold.',
       ),
-      Param('org', ParamType.string, defaultValue: 'com.example'),
-      Param('outputDir', ParamType.string, defaultValue: '.'),
-      Param('ref', ParamType.string, defaultValue: 'main'),
+      Param('org', ParamType.string, defaultValue: 'com.example',
+        description: 'Reverse-domain identifier for application bundles.',
+      ),
+      Param('outputDir', ParamType.string, defaultValue: '.',
+        description: 'Directory in which to create the generated project.',
+      ),
+      Param('ref', ParamType.string, defaultValue: 'main',
+        description: 'Engine Git ref to pin; internal dependency refs must agree.',
+      ),
     ],
     handler: (ctx, a) => throw OpError(
       ErrorCode.unsupported,
@@ -236,8 +245,11 @@ List<Operation> projectOperations() => [
         ParamType.enumeration,
         options: ['all', 'code', 'level', 'graph', 'image', 'data', 'other'],
         defaultValue: 'all',
+        description: 'File category to include in the project tree.',
       ),
-      Param('limit', ParamType.integer, min: 1, max: 20000, defaultValue: 2000),
+      Param('limit', ParamType.integer, min: 1, max: 20000, defaultValue: 2000,
+        description: 'Maximum number of matching results returned.',
+      ),
     ],
     handler: (ctx, a) {
       final all = listProjectTree(ctx.project!.root);
@@ -276,8 +288,12 @@ List<Operation> projectOperations() => [
     scope: OperationScope.project,
     idempotent: true,
     params: const [
-      Param('query', ParamType.string, required: true, positional: true),
-      Param('limit', ParamType.integer, min: 1, max: 2000, defaultValue: 200),
+      Param('query', ParamType.string, required: true, positional: true,
+        description: 'Case-insensitive text substring to find.',
+      ),
+      Param('limit', ParamType.integer, min: 1, max: 2000, defaultValue: 200,
+        description: 'Maximum number of matching results returned.',
+      ),
     ],
     handler: (ctx, a) {
       final root = ctx.project!.root;
@@ -349,7 +365,9 @@ List<Operation> projectOperations() => [
     scope: OperationScope.project,
     idempotent: true,
     params: const [
-      Param('path', ParamType.path, required: true, positional: true),
+      Param('path', ParamType.path, required: true, positional: true,
+        description: 'Project-relative UTF-8 text file to read.',
+      ),
     ],
     errors: {
       ErrorCode.notFound: 'No such file.',

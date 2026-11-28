@@ -1,22 +1,29 @@
-"""MkDocs hook: publish /llms.txt, an index of every page for AI agents.
+"""Publish Markdown discovery resources using MkDocs' actual navigation URLs."""
 
-Built from the nav at build time so it cannot drift from the site. Each line
-is `- [title](url): first sentence of the page`.
-"""
-
-import os
 import re
+from pathlib import Path
+from urllib.parse import urljoin
 
-SITE_NAME = "ZARVAN"
 SUMMARY = (
-    "An agent-native, simulation-first game engine built with Dart. "
-    "World state is JSON, content is data, agents act through a sandbox."
+    "An agent-native, simulation-first 2D game engine built with Dart. "
+    "Content and world state are JSON; the operation registry exposes "
+    "validated project and simulation operations."
 )
 
+_pages = []
 
-def _first_sentence(markdown: str) -> str:
-    body = re.sub(r"^---.*?---\s*", "", markdown, flags=re.S)
-    for block in re.split(r"\n\s*\n", body):
+
+def _body(markdown):
+    return re.sub(r"^---\n.*?\n---\s*", "", markdown, count=1, flags=re.S)
+
+
+def _first_sentence(markdown):
+    front = re.match(r"^---\n(.*?)\n---", markdown, flags=re.S)
+    if front:
+        desc = re.search(r"^description:\s*(.+)$", front[1], flags=re.M)
+        if desc:
+            return desc[1].strip().strip('"')[:200]
+    for block in re.split(r"\n\s*\n", _body(markdown)):
         text = block.strip()
         if not text or text.startswith(("#", "```", "|", "<", "!!!", "=", "-", ":")):
             continue
@@ -26,24 +33,46 @@ def _first_sentence(markdown: str) -> str:
     return ""
 
 
+def on_nav(nav, config, files, **kwargs):
+    # Use MkDocs' page URLs rather than guessing directory/index conventions.
+    # Reset on every rebuild (including mkdocs serve).
+    _pages.clear()
+    for page in nav.pages:
+        rel = page.file.src_uri
+        if rel == "README.md":  # standalone landing page, not technical docs
+            continue
+        path = page.file.abs_src_path
+        if not path or not rel.endswith(".md"):
+            continue
+        _pages.append((rel, page.url, page.title, Path(path)))
+    return nav
+
+
 def on_post_build(config, **kwargs):
-    site_url = (config.get("site_url") or "").rstrip("/")
-    lines = [f"# {SITE_NAME}", "", f"> {SUMMARY}", "", "## Pages", ""]
-    docs_dir = config["docs_dir"]
-    for root, _, files in sorted(os.walk(docs_dir)):
-        for name in sorted(files):
-            if not name.endswith(".md"):
-                continue
-            path = os.path.join(root, name)
-            rel = os.path.relpath(path, docs_dir).replace(os.sep, "/")
-            if rel.startswith(("proposals/", "studio/qa-level-editor")):
-                continue
-            text = open(path, encoding="utf-8").read()
-            m = re.search(r"^#\s+(.+)$", text, flags=re.M)
-            title = m.group(1).strip() if m else rel
-            url_path = rel[:-3]
-            url_path = "" if url_path in ("README", "index") else re.sub(r"/(README|index)$", "/", url_path) if url_path.endswith(("README", "index")) else url_path + "/"
-            lines.append(f"- [{title}]({site_url}/{url_path}): {_first_sentence(text)}")
-    out = os.path.join(config["site_dir"], "llms.txt")
-    with open(out, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines) + "\n")
+    base = (config.get("site_url") or "").rstrip("/") + "/"
+    lines = ["# ZARVAN", "", f"> {SUMMARY}", "",
+             "Start with the Agent hub for integration contracts. "
+             "Use the live operation registry for exact tool schemas.", "",
+             f"- [Full documentation Markdown]({urljoin(base, 'llms-full.txt')})",
+             "", "## Pages", ""]
+    full = ["# ZARVAN technical documentation", "", f"> {SUMMARY}", "",
+            "Each page is identified by its canonical URL and source path. "
+            "Relative links in the original Markdown are relative to that source page.", ""]
+    ordered = sorted(_pages, key=lambda page: (
+        {"agents.md": 0, "guides/for-ai-agents.md": 1,
+         "getting-started.md": 2, "reference/operations.md": 3,
+         "reference/components.md": 4}.get(page[0], 5),
+        page[0],
+    ))
+    for rel, url, title, path in ordered:
+        markdown = path.read_text(encoding="utf-8")
+        heading = re.search(r"^#\s+(.+)$", markdown, flags=re.M)
+        title = title or (heading[1].strip() if heading else rel)
+        canonical = urljoin(base, url)
+        desc = _first_sentence(markdown)
+        lines.append(f"- [{title}]({canonical})" + (f": {desc}" if desc else ""))
+        full.extend(["---", "", f"Source: {rel}", f"URL: {canonical}", "",
+                     _body(markdown).rstrip(), ""])
+    site = Path(config["site_dir"])
+    (site / "llms.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (site / "llms-full.txt").write_text("\n".join(full) + "\n", encoding="utf-8")

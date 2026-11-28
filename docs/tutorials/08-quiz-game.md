@@ -54,6 +54,8 @@ Use a realistic bank for meaningful balance results. The engine's fixed-seed pol
 
 ## 5. Integrate with a game
 
+Continue with [Tutorial 9: Build a Flutter quiz app](09-flutter-quiz-app.md) for a complete application entry point and integration smoke test.
+
 Use [zarvan_quiz](../packages/zarvan_quiz.md) for the session, content repository, `QuizKit` and engine-drawn screens. A game supplies its bank, stop words, localized strings, themes, settings and persistence. See the [package README](../../packages/zarvan_quiz/README.md) for its screen integration contract and [Quiz games](../concepts/quiz-games.md) for modes and rules.
 
 ## Checkpoint

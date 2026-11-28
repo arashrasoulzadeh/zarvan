@@ -35,9 +35,11 @@ server list:
 }
 ```
 
-Useful flags: `--read-only` (agent can look but not touch), `--deny 'release.*'`, `--allow 'level.*'`.
+Useful server flags: `--read-only` (blocks non-read operation kinds, not in-memory world changes), `--deny 'release.*'`, `--allow 'level.*'`.
 
 ## 2. What an agent does
+
+Start with `engine.capabilities`, `engine.operations`, and `engine.operation` to discover exact schemas and permissions. Keep a single MCP/HTTP server process for stateful world operations; separate CLI invocations do not share in-memory worlds.
 
 A typical session, as tool calls:
 
@@ -45,7 +47,7 @@ A typical session, as tool calls:
 2. `level.create`, `level.add_entity`, `level.move_entity`, `level.paint_tile` - build.
 3. `level.validate` / `level.lint` with `playable: true` / `project.problems` - check it. Fix what they report.
 4. `world.build` then `world.step` and `world.query` - run the level headlessly and look at the result. Nothing is written.
-5. `undo.undo` - take back the last change. Every write is journalled in `.studio/undo/` (the last 100).
+5. `undo.undo` - take back the last change. Journalled file edits are recorded in `.studio/undo/` (the last 100).
 
 Removing things (`level.remove_entity`, `graph.remove_node`, ...) is **destructive**: the first call returns a preview and
 a `confirmation` token, the second call with that token applies it. Tokens are tied to the server process and expire
@@ -60,8 +62,8 @@ zarvan undo undo
 zarvan --read-only level list --json     # the exact result envelope
 ```
 
-Every command takes `--json` (print the envelope), `--stdin` or `--args '{...}'` (parameters as JSON), and writes take
-`--dry-run` to preview.
+Registry-backed commands take `--json` (print the envelope), `--stdin` or `--args '{...}'` (parameters as JSON), and file writes take
+`--dry-run` to preview. The `world.patch` operation instead takes `dryRun: true` in its JSON parameters.
 
 ## 4. Over HTTP
 
@@ -72,7 +74,7 @@ curl -H "Authorization: Bearer $TOKEN" -X POST localhost:7421/v1/level/list
 curl -H "Authorization: Bearer $TOKEN" localhost:7421/v1/openapi.json
 ```
 
-The server listens on localhost only, needs the token for everything except `GET /v1/health`, limits request and result
+The server listens on localhost by default, needs the token for everything except `GET /v1/health`, limits request and result
 sizes and rate, and logs each call (no arguments, no results) to `.studio/api-requests.jsonl`. Send an
 `Idempotency-Key` header with a write to make retries safe. Configuration can live in `zarvan_api.yaml` in the project.
 

@@ -43,5 +43,4 @@ and [Settings and accessibility](../concepts/settings.md).
 ## When something breaks
 
 [FAQ & troubleshooting](../faq.md), then the [Glossary](../reference/glossary.md)
-if a word is unfamiliar. Run `zarvan project open .` and read `project.problems`
-to see content problems in one list.
+if a word is unfamiliar. From a game project, run `zarvan project problems --json` to see content problems in one list. For a stateful MCP/HTTP session, use `project.open` as needed.

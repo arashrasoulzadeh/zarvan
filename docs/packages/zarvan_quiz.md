@@ -35,6 +35,8 @@ Screens are drawn with the engine's own shapes and text, not Flutter widgets. Se
 A hint costs 20 coins and is not offered in a race. A daily already played on
 its date cannot be started again. See [Quiz games](../concepts/quiz-games.md).
 
+For a complete consumer application, see [Tutorial 9](../tutorials/09-flutter-quiz-app.md).
+
 ## Install
 
 Not on pub.dev yet (pre-1.0). Depend on it through git, the same way `zarvan create` wires generated projects:

@@ -29,7 +29,7 @@ zarvan engine operations --json
 zarvan engine operation level.list --json
 ```
 
-See [operations](reference/operations.md), [components](reference/components.md), [events](reference/events.md), and [transports](reference/transports.md). Published discovery index: [llms.txt](https://meetarash.ir/zarvan/llms.txt). See [API reference](api-reference.md) for public Dart libraries.
+See [operations](reference/operations.md), [components](reference/components.md), [events](reference/events.md), and [transports](reference/transports.md). Published discovery resources: [llms.txt](https://meetarash.ir/zarvan/llms.txt) (index) and [llms-full.txt](https://meetarash.ir/zarvan/llms-full.txt) (complete technical Markdown). See [API reference](api-reference.md) for public Dart libraries.
 
 ## Observe, validate, act, observe again
 
@@ -55,7 +55,7 @@ Register the behavior in a `BehaviorRegistry`, attach `AIState` to an entity and
 
 ## Permission and safety boundaries
 
-- `--read-only` protects against operations classified as file writes or destructive operations; some operations classified as reads change session or sandbox-world state. Use an explicit allowlist when observation must not change that state.
+- `--read-only` protects against operations classified as file writes or destructive operations; some operations classified as reads change session or sandbox-world state. Use an explicit server allowlist when observation must not change that state. Legacy CLI commands do not all use the registry policy; do not treat the CLI flag as a filesystem sandbox.
 - `WorldView` is a cooperative interface, not a security sandbox: it exposes the underlying world and may return mutable component objects. Never execute arbitrary untrusted Dart as an NPC.
 - Filter observations for external strategy agents before sending them. Fog-aware order validation does not make a full world snapshot private.
 - The API can perform file edits; use least privilege, previews, validation and confirmation. Never expose the bearer token to an untrusted agent.
@@ -83,7 +83,7 @@ The runtime Dart interface is cooperative, not process isolation. A custom behav
 1. Call `engine.capabilities` to check availability and restrictions.
 2. Call `engine.operations` to enumerate visible operations.
 3. Call `engine.operation` with `{"name":"level.list"}` (or the desired operation) to obtain its exact input schema, errors and examples.
-4. Call `engine.docs` for available Markdown pages or read the [published index](https://meetarash.ir/zarvan/llms.txt).
+4. Call `engine.docs` for available Markdown pages or read the [published index](https://meetarash.ir/zarvan/llms.txt) or [full technical Markdown](https://meetarash.ir/zarvan/llms-full.txt).
 
 Use the [operations reference](../reference/operations.md), [component shapes](../reference/components.md), [events](../reference/events.md) and [transport quick start](../reference/transports.md).
 
@@ -104,7 +104,7 @@ For project content, inspect `project.problems`, `level.validate` or `level.lint
 
 ## Rules and limits
 
-- Treat `--read-only` as a restriction on operation kinds, not immutable simulation state. Some read-classified operations change session or in-memory worlds. Restrict the allowlist if observation must be side-effect free.
+- Treat `--read-only` as a restriction on operation kinds, not immutable simulation state. Some read-classified operations change session or in-memory worlds. Restrict the server allowlist if observation must be side-effect free. Legacy CLI commands do not all use the registry policy.
 - Treat full snapshots as privileged: filter them before sharing with an external player. Order validation does not prevent information leaks.
 - Use `world.random` and fixed timesteps for deterministic simulation.
 - Register components before expecting them to appear in serialization. See [FAQ](../faq.md#my-component-isnt-saved-or-loaded).
@@ -116,7 +116,7 @@ Continue with [agent hub](../agents.md), [external strategy player tutorial](../
   'concepts/agent-api.md': '''# The agent-facing API: `Behavior` + `WorldView` + `AISystem`
 
 This is the engine\'s other AI-agent-friendly pillar (alongside
-[content-as-data.md](content-as-data.md)): a sandbox for a runtime
+[content-as-data.md](content-as-data.md)): an interface for a runtime
 agent/NPC to *drive an entity during simulation* — whether that agent
 is a hand-written state machine, a rule-based patrol AI, or an
 LLM-backed decision-maker — using a cooperative separation between observation and action. This is not a security boundary for untrusted Dart.
@@ -177,16 +177,16 @@ subclass is how you extend this without the engine needing to know
 about your domain logic:
 
 ```dart
-class TakeDamageAction implements Action {
-  TakeDamageAction(this.target, this.amount);
+class StopAction implements Action {
+  StopAction(this.target);
   final EntityId target;
-  final double amount;
 
   @override
   void apply(World world) {
-    // Apply domain-specific validation before mutating World.
-    final health = world.componentsOf<Health>().get(target);
-    // ...
+    final velocity = world.getComponent<Velocity>(target);
+    if (velocity == null) return;
+    velocity.x = 0;
+    velocity.y = 0;
   }
 }
 ```
@@ -204,12 +204,20 @@ components — they\'re registered under a string id rather than embedded
 in JSON, and `AIState.behaviorId` references that id:
 
 ```dart
-final behaviors = BehaviorRegistry();
-behaviors.register(\'patrol\', PatrolBehavior(waypoints: [...]));
-world.addSystem(AISystem(behaviors));
+import \'package:zarvan_core/zarvan_core.dart\';
 
-final enemy = world.spawn();
-world.componentsOf<AIState>().set(enemy, AIState(\'patrol\'));
+void main() {
+  final world = World(width: 320, height: 240);
+  registerCoreComponents(world);
+
+  final behaviors = BehaviorRegistry();
+  behaviors.registerFn(\'idle\', (view, self) => const NoOpAction());
+  world.addSystem(AISystem(behaviors));
+
+  final entity = world.spawn();
+  world.setComponent(entity, AIState(\'idle\'));
+  world.step(1 / 60);
+}
 ```
 
 `AIState.memory` is a free-form JSON-serializable blackboard (a
@@ -1429,7 +1437,7 @@ prints a warning).
     zarvan create my_topdown --template topdown_game
     ```
 
-    Four-direction movement and pickups. See [the developer guide](guides/for-developers.md).
+    Four-direction movement and pickups. Continue with [Tutorial 7](tutorials/07-top-down-game.md).
 
 === "Turn-based strategy"
 
@@ -1452,7 +1460,9 @@ prints a warning).
     catch-up — the economy is one JSON file. Continue with
     [Tutorial 5](tutorials/05-idle-game.md).
 
-Then:
+For quiz content there is no dedicated starter yet; use [Tutorial 8](tutorials/08-quiz-game.md) and `zarvan_quiz`.
+
+Then, for a generated starter:
 
 ```bash
 cd my_game          # or my_topdown / my_war / bakery
@@ -2124,6 +2134,47 @@ The server listens on localhost by default, needs the token for everything excep
 sizes and rate, and logs each call (no arguments, no results) to `.studio/api-requests.jsonl`. Send an
 `Idempotency-Key` header with a write to make retries safe. Configuration can live in `zarvan_api.yaml` in the project.
 
+
+## 5. A complete sandbox-world workflow
+
+Run these commands in Bash with `curl` and `jq` installed, after starting
+the HTTP server above and setting `TOKEN`. This example creates only an
+in-memory world. Use the same server process for every call.
+
+```bash
+set -euo pipefail
+
+api() {
+  curl -fsS -H "Authorization: Bearer \$TOKEN" \\
+    -H \'Content-Type: application/json\' \\
+    -X POST "http://127.0.0.1:7421/v1/\$1" -d "\$2"
+}
+
+built=\$(api world/build \'{"json":{"entities":[{"name":"probe","components":{"position":{"x":0,"y":0},"velocity":{"x":1,"y":0}}}]},"systems":["movement"]}\')
+world_id=\$(jq -er \'select(.ok).data.worldId\' <<< "\$built")
+entity_id=\$(jq -er \'.data.named.probe\' <<< "\$built")
+
+patch=\$(jq -n --arg w "\$world_id" --argjson id "\$entity_id" \\
+  \'{worldId:\$w,strict:true,dryRun:true,patch:{entities:[{id:\$id,components:{position:{x:10,y:20}}}]}}\')
+
+# Validate the proposal without mutating state.
+api world/patch "\$patch" | jq -e \'.ok and .data.ok\'
+
+# Apply the same checked patch and inspect the resulting component.
+api world/patch "\$(jq \'.dryRun = false\' <<< "\$patch")" | jq -e \'.ok and .data.applied\'
+query=\$(jq -n --arg w "\$world_id" \'{worldId:\$w,component:"position"}\')
+api world/query "\$query" | jq \'.data\'
+
+# Release the in-memory world.
+api world/discard "\$(jq -n --arg w "\$world_id" \'{worldId:\$w}\')" | jq -e \'.ok\'
+```
+
+The position query should include the probe at `x: 10, y: 20`. The world is
+not a running Flutter game; only the headless systems chosen at build time
+are installed. These world operations do not write project content, so they
+are allowed even on a read-only server unless the allow/deny policy excludes
+them. Inspect both outer `ok` and inner validation results before applying.
+
 ## What an agent cannot do
 
 Operations that need the Flutter SDK (`project.create`, `project.upgrade`, `release.build`) exist as CLI commands only
@@ -2178,8 +2229,8 @@ abstract class System {
 }
 ```
 
-Add one with `world.addSystem(YourSystem())`. **Registration order
-matters** — a system that reads state another system produces this
+Add one with `world.addSystem(YourSystem())`. **System phase and registration order
+matter** — a system that reads state another system produces this
 tick must run after it. `zarvan_platformer`\'s `installPlatformerSystems`
 exists specifically because getting this order right by hand is a real,
 easy-to-get-wrong problem (see its own doc comment in
@@ -2226,7 +2277,7 @@ common-case wrappers.
 ## See also
 
 - [content-as-data.md](content-as-data.md) — serializing/patching a `World` as JSON.
-- [agent-api.md](agent-api.md) — the `Behavior`/`WorldView` sandbox for runtime agents.
+- [agent-api.md](agent-api.md) — the cooperative `Behavior`/`WorldView` interface for trusted runtime agents.
 - [`packages/zarvan_core/README.md`](../../packages/zarvan_core/README.md) — full API reference.
 
 ## Time scale, hit-stop, pooling and spawners
@@ -2792,10 +2843,10 @@ Without `type`, clears every cue on the frame. With `type`, removes only matchin
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | string; required | |
-| `frame` | integer; required | |
-| `clip` | string | |
-| `type` | string | |
+| `path` | string; required | Project-relative animation clip JSON file. |
+| `frame` | integer; required | Zero-based index of the frame to edit. |
+| `clip` | string | Clip name when the file contains multiple clips. |
+| `type` | string | Optional event cue type to clear; omit to clear every type. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -2815,7 +2866,7 @@ Accepts a single clip object, a name→clip map, or `{ "clips": [ … ] }`. Retu
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | string; required | |
+| `path` | string; required | Project-relative animation clip JSON file. |
 
 Errors: `not_found`, `validation_failed`.
 
@@ -2835,9 +2886,9 @@ Ensures `frameEvents` exists, then appends `{type, data}` on `frame` (0-based). 
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | string; required | |
-| `frame` | integer; required | |
-| `type` | string; required | |
+| `path` | string; required | Project-relative animation clip JSON file. |
+| `frame` | integer; required | Zero-based index of the frame to edit. |
+| `type` | string; required | Type of the event cue to attach. |
 | `clip` | string | Clip name when the file holds more than one clip. |
 | `data` | object | Optional cue payload (e.g. {"id":"swing"}). |
 | `replaceType` | boolean | Replace existing cues of this type on the frame. |
@@ -2862,11 +2913,11 @@ Writes per-frame pivot offsets (atlas-pixel space). Pass `offsetX` and/or `offse
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | string; required | |
-| `frame` | integer; required | |
+| `path` | string; required | Project-relative animation clip JSON file. |
+| `frame` | integer; required | Zero-based index of the frame to edit. |
 | `clip` | string | Clip name when the file holds more than one clip. |
-| `offsetX` | number | |
-| `offsetY` | number | |
+| `offsetX` | number | Horizontal pivot offset in atlas pixels. |
+| `offsetY` | number | Vertical pivot offset in atlas pixels. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -2888,7 +2939,7 @@ Reports per-clip problems. `ok` is true when every clip passes.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | string; required | |
+| `path` | string; required | Project-relative animation clip JSON file. |
 
 Errors: `not_found`.
 
@@ -2910,7 +2961,7 @@ Look the atlas up by the id `asset.index` shows. Region objects are returned as 
 
 | Parameter | Type | Description |
 |---|---|---|
-| `atlas` | string; required | |
+| `atlas` | string; required | Atlas ID returned by asset.index. |
 
 Errors: `not_found`.
 
@@ -2945,10 +2996,10 @@ Recursively loads images under `input`, MaxRects-packs them (with optional resol
 | Parameter | Type | Description |
 |---|---|---|
 | `input` | path; required | Directory of source images (scanned recursively). |
-| `outputImage` | path; default `"assets/packed/atlas.png"` | |
+| `outputImage` | path; default `"assets/packed/atlas.png"` | Project-relative path of the packed PNG. |
 | `outputManifest` | path | Defaults to outputImage with a .json extension. |
-| `padding` | integer; default `2`; 0 to 64 | |
-| `maxWidth` | integer; default `2048`; 1 to 16384 | |
+| `padding` | integer; default `2`; 0 to 64 | Pixel padding between packed regions. |
+| `maxWidth` | integer; default `2048`; 1 to 16384 | Requested maximum atlas width in pixels. |
 | `scales` | string; default `"1.0"` | Comma-separated tiers, e.g. "1.0,0.5,0.25". |
 | `maxAttempts` | integer; default `20`; 1 to 100 | Grow-and-retry attempts before giving up. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
@@ -3043,7 +3094,7 @@ The catalogue. Filter by `group` or `kind`; operations hidden by the allow/deny 
 | Parameter | Type | Description |
 |---|---|---|
 | `group` | string | Only this group, e.g. level. |
-| `kind` | enumeration; one of `read`, `write`, `destructive` | |
+| `kind` | enumeration; one of `read`, `write`, `destructive` | Restrict the catalogue to the specified operation kind. |
 
 ```bash
 zarvan engine operations
@@ -3063,12 +3114,12 @@ The id defaults to `<kind><index>`. Parameters start at the kind\'s defaults (no
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `kind` | string; required | |
-| `id` | string | |
-| `params` | object | |
-| `x` | number; default `0` | |
-| `y` | number; default `0` | |
+| `path` | path; required | Project-relative graph JSON file. |
+| `kind` | string; required | Node kind from graph.node_kinds. |
+| `id` | string | Optional ID for the new node; defaults to a generated ID. |
+| `params` | object | Node parameter values overriding the kind defaults. |
+| `x` | number; default `0` | Horizontal canvas position of the node. |
+| `y` | number; default `0` | Vertical canvas position of the node. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3088,9 +3139,9 @@ Behavior-tree children follow the canvas left to right. Dialogue graphs have no 
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `output` | path | |
-| `id` | string; default `"fsm"` | |
+| `path` | path; required | Project-relative graph JSON file. |
+| `output` | path | Optional project-relative path for the compiled JSON. |
+| `id` | string; default `"fsm"` | Identifier assigned to the compiled state machine. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3112,11 +3163,11 @@ Ports are checked against the node kinds; a mismatch is `validation_failed` and 
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `from` | string; required | |
-| `fromPort` | string; required | |
-| `to` | string; required | |
-| `toPort` | string; required | |
+| `path` | path; required | Project-relative graph JSON file. |
+| `from` | string; required | Source node ID. |
+| `fromPort` | string; required | Output port on the source node. |
+| `to` | string; required | Destination node ID. |
+| `toPort` | string; required | Input port on the destination node. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3136,8 +3187,8 @@ Files live under `graphs/`. Fails with `conflict` when the file exists.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `type` | enumeration; default `"dialogue"`; one of `dialogue`, `behaviorTree`, `stateMachine` | |
+| `path` | path; required | Project-relative graph JSON file. |
+| `type` | enumeration; default `"dialogue"`; one of `dialogue`, `behaviorTree`, `stateMachine` | Graph type determining the available node kinds and validation rules. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3159,11 +3210,11 @@ Exact match on both ends; `not_found` when there is no such edge.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `from` | string; required | |
-| `fromPort` | string; required | |
-| `to` | string; required | |
-| `toPort` | string; required | |
+| `path` | path; required | Project-relative graph JSON file. |
+| `from` | string; required | Source node ID. |
+| `fromPort` | string; required | Output port on the source node. |
+| `to` | string; required | Destination node ID. |
+| `toPort` | string; required | Input port on the destination node. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3197,7 +3248,7 @@ Ports are typed (flow, string, number, boolean, entity, event); `connect` only j
 
 | Parameter | Type | Description |
 |---|---|---|
-| `type` | enumeration; default `"dialogue"`; one of `dialogue`, `behaviorTree`, `stateMachine` | |
+| `type` | enumeration; default `"dialogue"`; one of `dialogue`, `behaviorTree`, `stateMachine` | Graph type determining the available node kinds and validation rules. |
 
 ```bash
 zarvan graph node-kinds <type>
@@ -3215,7 +3266,7 @@ The file as saved: type, graph (nodes, edges, variables, entryNodeId) and canvas
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
+| `path` | path; required | Project-relative graph JSON file. |
 
 ```bash
 zarvan graph read <path>
@@ -3233,8 +3284,8 @@ Destructive: previews first. Clears the entry node if it was this one.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `id` | string; required | |
+| `path` | path; required | Project-relative graph JSON file. |
+| `id` | string; required | ID of the node to remove. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3254,10 +3305,10 @@ Free-form: the value is stored as given. Use graph.node_kinds to see what a kind
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `node` | string; required | |
-| `param` | string; required | |
-| `value` | json; required | |
+| `path` | path; required | Project-relative graph JSON file. |
+| `node` | string; required | ID of the node to edit. |
+| `param` | string; required | Name of the node parameter. |
+| `value` | json; required | JSON value to store for the parameter. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3277,7 +3328,7 @@ Uses the checks of the graph\'s type (trees check shape, state machines allow lo
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
+| `path` | path; required | Project-relative graph JSON file. |
 
 ```bash
 zarvan graph validate <path>
@@ -3315,9 +3366,9 @@ Writes `assets/i18n/<locale>.json` (creates the file when missing). Keys are sor
 
 | Parameter | Type | Description |
 |---|---|---|
-| `locale` | string; required | |
-| `key` | string; required | |
-| `text` | string; required | |
+| `locale` | string; required | Locale identifier matching the catalog filename. |
+| `key` | string; required | Translation key to create or update. |
+| `text` | string; required | Localized text for the key. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3339,10 +3390,10 @@ Loads the definition at its starting state (optionally with `owned` counts appli
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path | |
-| `json` | json | |
+| `path` | path | Project-relative idle game definition file; alternatively provide json. |
+| `json` | json | Inline idle game definition instead of path. |
 | `owned` | object | Generator id -> copies already owned. |
-| `mainResource` | string; default `"coins"` | |
+| `mainResource` | string; default `"coins"` | Resource ID used for income and balance reporting. |
 
 Errors: `validation_failed`.
 
@@ -3362,9 +3413,9 @@ Values are strings like "1.5e300" because they do not fit a double.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `value` | string; required | |
-| `style` | enumeration; default `"suffix"`; one of `suffix`, `scientific`, `engineering`, `grouped` | |
-| `decimals` | integer; default `2`; 0 to 10 | |
+| `value` | string; required | Big-number decimal or scientific-notation string. |
+| `style` | enumeration; default `"suffix"`; one of `suffix`, `scientific`, `engineering`, `grouped` | Number display notation. |
+| `decimals` | integer; default `2`; 0 to 10 | Number of decimal places to show. |
 
 ```bash
 zarvan idle format-number <value>
@@ -3382,12 +3433,12 @@ Always buys the best-payback purchase, waiting just long enough to afford it, an
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path | |
-| `json` | json | |
-| `days` | number; default `3`; 0.01 to 3650 | |
+| `path` | path | Project-relative idle game definition file; alternatively provide json. |
+| `json` | json | Inline idle game definition instead of path. |
+| `days` | number; default `3`; 0.01 to 3650 | Number of in-game days to simulate. |
 | `prestigeAt` | number; 0.01 to ∞ | Prestige a layer once its gain is this many times what is held of that layer\'s currency. |
 | `playChallenges` | boolean; default `true` | Start and complete incomplete challenges in definition order. |
-| `mainResource` | string; default `"coins"` | |
+| `mainResource` | string; default `"coins"` | Resource ID used for income and balance reporting. |
 
 Errors: `validation_failed`.
 
@@ -3407,10 +3458,10 @@ Loads the definition and, when `afterSeconds` is above zero, plays it with the g
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path | |
-| `json` | json | |
-| `afterSeconds` | integer; default `0`; 0 to 31536000 | |
-| `mainResource` | string; default `"coins"` | |
+| `path` | path | Project-relative idle game definition file; alternatively provide json. |
+| `json` | json | Inline idle game definition instead of path. |
+| `afterSeconds` | integer; default `0`; 0 to 31536000 | Number of simulated seconds before reading state. |
+| `mainResource` | string; default `"coins"` | Resource ID used for income and balance reporting. |
 
 Errors: `validation_failed`.
 
@@ -3430,7 +3481,7 @@ Give `path` (a project file such as assets/idle_game.json) or inline `json`. Not
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path | |
+| `path` | path | Project-relative idle game definition file; alternatively provide json. |
 | `json` | json | The definition, instead of a file. |
 
 ```bash
@@ -3451,10 +3502,10 @@ Conflicts when the entity already has the component; use level.set_field to chan
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `entity` | string; required | |
-| `component` | string; required | |
-| `values` | object | |
+| `path` | path; required | Project-relative level JSON file. |
+| `entity` | string; required | Name of the entity to edit. |
+| `component` | string; required | Registered component name. |
+| `values` | object | Map of fields to override on the new component. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3476,11 +3527,11 @@ Add an entity whose components start at their schema defaults.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `name` | string | |
-| `components` | array | |
-| `index` | integer; 0 to ∞ | |
-| `values` | object | |
+| `path` | path; required | Project-relative level JSON file. |
+| `name` | string | Optional name for the new entity. |
+| `components` | array | Registered component names to attach at schema defaults. |
+| `index` | integer; 0 to ∞ | Zero-based insertion index in the level entity list. |
+| `values` | object | Map of component names to field overrides. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3500,7 +3551,7 @@ Fails with `conflict` when the file exists. `entities` is the level\'s entity li
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
+| `path` | path; required | Project-relative level JSON file. |
 | `entities` | json | Entity list. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
@@ -3523,10 +3574,10 @@ Entities are matched by name. Each side is a project file (`a`, `b`) or inline J
 
 | Parameter | Type | Description |
 |---|---|---|
-| `a` | path | |
-| `b` | path | |
-| `aJson` | json | |
-| `bJson` | json | |
+| `a` | path | Project-relative path of the first level. |
+| `b` | path | Project-relative path of the second level. |
+| `aJson` | json | Inline JSON for the first level instead of a. |
+| `bJson` | json | Inline JSON for the second level instead of b. |
 
 ```bash
 zarvan level diff <a> <b>
@@ -3544,7 +3595,7 @@ Only formatting changes. A level that does not load is skipped and listed under 
 
 | Parameter | Type | Description |
 |---|---|---|
-| `paths` | array | |
+| `paths` | array | Optional list of level paths; omit to process all levels. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3564,11 +3615,11 @@ Only tiles and the four collision sets (solid, one-way, slopes) survive; ladders
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
+| `path` | path; required | Project-relative level file containing the tile map. |
 | `entity` | string | Entity holding the tileMap; default the first with one. |
-| `output` | path | |
-| `image` | string; default `"tiles.png"` | |
-| `tileset` | string; default `"tiles"` | |
+| `output` | path | Optional project-relative path of the exported TMX file. |
+| `image` | string; default `"tiles.png"` | Tileset image filename referenced by the exported map. |
+| `tileset` | string; default `"tiles"` | Name of the tileset in the exported map. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3588,11 +3639,11 @@ Four-connected fill, like the studio\'s bucket tool. Returns how many tiles chan
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `entity` | string; required | |
-| `col` | integer; required; 0 to ∞ | |
-| `row` | integer; required; 0 to ∞ | |
-| `tileId` | integer; required; 0 to ∞ | |
+| `path` | path; required | Project-relative level JSON file. |
+| `entity` | string; required | Name of the entity to edit. |
+| `col` | integer; required; 0 to ∞ | Zero-based tile column. |
+| `row` | integer; required; 0 to ∞ | Zero-based tile row. |
+| `tileId` | integer; required; 0 to ∞ | Tile ID to write; 0 erases the tile. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3612,9 +3663,9 @@ Makes a new level whose single entity holds the imported tileMap. Fails with `co
 
 | Parameter | Type | Description |
 |---|---|---|
-| `tmx` | path; required | |
+| `tmx` | path; required | Project-relative input Tiled TMX file. |
 | `output` | path | Default: assets/levels/<tmx name>.json. |
-| `entity` | string; default `"ground"` | |
+| `entity` | string; default `"ground"` | Name for the entity holding the imported tileMap. |
 | `layer` | string | Name of the tile layer to import; required when the map has more than one. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
@@ -3637,9 +3688,9 @@ Always checks structure like the engine loader. With `playable:true` it also wal
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path | |
-| `json` | json | |
-| `playable` | boolean; default `false` | |
+| `path` | path | Project-relative level JSON file; alternatively provide json. |
+| `json` | json | Inline level JSON instead of path. |
+| `playable` | boolean; default `false` | Run the tile-connectivity reachability heuristic in addition to structural checks. |
 | `includeRender` | boolean; default `false` | Include a base64 PNG structural preview of the tileMap (needs ImageCodec). |
 
 ```bash
@@ -3672,7 +3723,7 @@ Writes `<level>.lock` naming this session as owner. Other writers are refused wh
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
+| `path` | path; required | Project-relative level JSON file. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3694,7 +3745,7 @@ Reads `<level>.lock`. A lock older than two hours is treated as abandoned and re
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
+| `path` | path; required | Project-relative level JSON file. |
 
 ```bash
 zarvan level lock-status <path>
@@ -3712,10 +3763,10 @@ Per entity and component: one-sided changes win, identical changes apply once, d
 
 | Parameter | Type | Description |
 |---|---|---|
-| `base` | path; required | |
-| `ours` | path; required | |
-| `theirs` | path; required | |
-| `output` | path | |
+| `base` | path; required | Project-relative common ancestor level file. |
+| `ours` | path; required | Project-relative level containing our edits. |
+| `theirs` | path; required | Project-relative level containing the other edits. |
+| `output` | path | Optional project-relative destination for the merged level. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3737,10 +3788,10 @@ Writes the `position` component (created when absent).
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `name` | string; required | |
-| `x` | number; required | |
-| `y` | number; required | |
+| `path` | path; required | Project-relative level JSON file. |
+| `name` | string; required | Name of the existing entity. |
+| `x` | number; required | Horizontal world-space position. |
+| `y` | number; required | Vertical world-space position. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3760,11 +3811,11 @@ The entity needs a `tileMap` component; `col`/`row` must be inside its grid.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `entity` | string; required | |
-| `col` | integer; required; 0 to ∞ | |
-| `row` | integer; required; 0 to ∞ | |
-| `tileId` | integer; required; 0 to ∞ | |
+| `path` | path; required | Project-relative level JSON file. |
+| `entity` | string; required | Name of the entity to edit. |
+| `col` | integer; required; 0 to ∞ | Zero-based tile column. |
+| `row` | integer; required; 0 to ∞ | Zero-based tile row. |
+| `tileId` | integer; required; 0 to ∞ | Tile ID to write; 0 erases the tile. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3784,11 +3835,11 @@ Returns the level JSON. `entity` narrows to one named entity; `components` keeps
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
+| `path` | path; required | Project-relative level JSON file. |
 | `entity` | string | Only the entity with this name. |
 | `components` | array | Only these components. |
-| `entityOffset` | integer; default `0`; 0 to ∞ | |
-| `entityLimit` | integer; default `1000`; 1 to 5000 | |
+| `entityOffset` | integer; default `0`; 0 to ∞ | Zero-based offset into the filtered entity list. |
+| `entityLimit` | integer; default `1000`; 1 to 5000 | Maximum entities returned in this page. |
 
 Errors: `not_found`.
 
@@ -3808,9 +3859,9 @@ Destructive: previews first and needs `apply` plus the confirmation token.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `entity` | string; required | |
-| `component` | string; required | |
+| `path` | path; required | Project-relative level JSON file. |
+| `entity` | string; required | Name of the entity to edit. |
+| `component` | string; required | Registered component name. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3830,8 +3881,8 @@ Destructive: previews first and needs `apply` plus the confirmation token.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `name` | string; required | |
+| `path` | path; required | Project-relative level JSON file. |
+| `name` | string; required | Name of the existing entity. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3851,11 +3902,11 @@ Creates the component when absent. The edited level must still validate.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `entity` | string; required | |
-| `component` | string; required | |
-| `field` | string; required | |
-| `value` | json; required | |
+| `path` | path; required | Project-relative level JSON file. |
+| `entity` | string; required | Name of the entity to edit. |
+| `component` | string; required | Registered component name. |
+| `field` | string; required | Name of the component field to set. |
+| `value` | json; required | New JSON value for the field. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3875,10 +3926,10 @@ The component must already exist on the entity.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `entity` | string; required | |
-| `component` | string; required | |
-| `z` | integer; required | |
+| `path` | path; required | Project-relative level JSON file. |
+| `entity` | string; required | Name of the entity to edit. |
+| `component` | string; required | Registered component name. |
+| `z` | integer; required | Draw order to assign to the component. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3898,8 +3949,8 @@ Only the owner releases a live lock unless `force` is true.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `force` | boolean; default `false` | |
+| `path` | path; required | Project-relative level JSON file. |
+| `force` | boolean; default `false` | Allow breaking a live lock owned by another session. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3921,7 +3972,7 @@ Reports schema errors and warnings. Give either `path` or `json`. Nothing is wri
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path | |
+| `path` | path | Project-relative level JSON file. |
 | `json` | json | The level content, instead of a file. |
 
 ```bash
@@ -3956,10 +4007,10 @@ Fresh copies are added at the end of the level; entity names are made unique (`t
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `prefab` | string; required | |
-| `x` | number; default `0` | |
-| `y` | number; default `0` | |
+| `path` | path; required | Project-relative level JSON file. |
+| `prefab` | string; required | Name of the prefab to place. |
+| `x` | number; default `0` | Horizontal world-space placement coordinate. |
+| `y` | number; default `0` | Vertical world-space placement coordinate. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -3979,7 +4030,7 @@ The prefab JSON: its name and entities, positions relative to its origin.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `name` | string; required | |
+| `name` | string; required | Prefab name used to identify its saved JSON. |
 
 Errors: `not_found`.
 
@@ -3999,9 +4050,9 @@ Positions are stored relative to the group\'s top-left corner so the prefab can 
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
-| `name` | string; required | |
-| `entities` | array; required | |
+| `path` | path; required | Project-relative level JSON file. |
+| `name` | string; required | Prefab name used to identify its saved JSON. |
+| `entities` | array; required | Names of level entities to capture in the prefab. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -4039,11 +4090,11 @@ Implemented by `zarvan create` because it runs `flutter create` and `pub get`; s
 
 | Parameter | Type | Description |
 |---|---|---|
-| `name` | string; required | |
-| `template` | enumeration; default `"default_game"`; one of `default_game`, `topdown_game`, `strategy_game`, `idle_game` | |
-| `org` | string; default `"com.example"` | |
-| `outputDir` | string; default `"."` | |
-| `ref` | string; default `"main"` | |
+| `name` | string; required | Name of the generated Flutter project. |
+| `template` | enumeration; default `"default_game"`; one of `default_game`, `topdown_game`, `strategy_game`, `idle_game` | Starter project to scaffold. |
+| `org` | string; default `"com.example"` | Reverse-domain identifier for application bundles. |
+| `outputDir` | string; default `"."` | Directory in which to create the generated project. |
+| `ref` | string; default `"main"` | Engine Git ref to pin; internal dependency refs must agree. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -4156,7 +4207,7 @@ Any UTF-8 text file inside the project, up to 1 MiB. Binary files are refused, a
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path; required | |
+| `path` | path; required | Project-relative UTF-8 text file to read. |
 
 Errors: `not_found`, `too_large`, `forbidden`.
 
@@ -4176,8 +4227,8 @@ Case-insensitive substring search, as the studio\'s Find in project. Returns fil
 
 | Parameter | Type | Description |
 |---|---|---|
-| `query` | string; required | |
-| `limit` | integer; default `200`; 1 to 2000 | |
+| `query` | string; required | Case-insensitive text substring to find. |
+| `limit` | integer; default `200`; 1 to 2000 | Maximum number of matching results returned. |
 
 ```bash
 zarvan project search <query>
@@ -4213,8 +4264,8 @@ The same tree the studio shows. `filter` keeps one kind of file: code, level, gr
 
 | Parameter | Type | Description |
 |---|---|---|
-| `filter` | enumeration; default `"all"`; one of `all`, `code`, `level`, `graph`, `image`, `data`, `other` | |
-| `limit` | integer; default `2000`; 1 to 20000 | |
+| `filter` | enumeration; default `"all"`; one of `all`, `code`, `level`, `graph`, `image`, `data`, `other` | File category to include in the project tree. |
+| `limit` | integer; default `2000`; 1 to 20000 | Maximum number of matching results returned. |
 
 ```bash
 zarvan project tree
@@ -4446,19 +4497,19 @@ The same planning `zarvan build-release` does: the exact `flutter build` command
 
 | Parameter | Type | Description |
 |---|---|---|
-| `platform` | enumeration; required; one of `android`, `ios` | |
-| `target` | string; default `"lib/main.dart"` | |
-| `buildName` | string; default `"1.0.0"` | |
-| `buildNumber` | string; default `"1"` | |
-| `flavor` | string | |
-| `keystorePath` | string | |
-| `keystorePassword` | string | |
-| `keyAlias` | string | |
-| `keyPassword` | string | |
+| `platform` | enumeration; required; one of `android`, `ios` | Target store platform for the release plan. |
+| `target` | string; default `"lib/main.dart"` | Flutter application entry point. |
+| `buildName` | string; default `"1.0.0"` | User-visible application version. |
+| `buildNumber` | string; default `"1"` | Store build number. |
+| `flavor` | string | Optional Flutter build flavor. |
+| `keystorePath` | string | Path to the Android signing keystore. |
+| `keystorePassword` | string | Password for the Android keystore; supply securely. |
+| `keyAlias` | string | Alias of the Android signing key. |
+| `keyPassword` | string | Password for the Android signing key; supply securely. |
 | `gradleText` | string | Contents of android/app/build.gradle(.kts); checked for key.properties. |
-| `teamId` | string | |
-| `exportOptionsPlist` | string | |
-| `noCodesign` | boolean; default `false` | |
+| `teamId` | string | Apple developer team identifier. |
+| `exportOptionsPlist` | string | Path to the iOS export options property list. |
+| `noCodesign` | boolean; default `false` | Plan an unsigned iOS build. |
 
 ```bash
 zarvan release plan <platform>
@@ -4478,7 +4529,7 @@ Fails with `validation_failed` and a player-readable message when the text is da
 
 | Parameter | Type | Description |
 |---|---|---|
-| `code` | string; required | |
+| `code` | string; required | Shareable save code to decode and verify. |
 
 Errors: `validation_failed`.
 
@@ -4498,7 +4549,7 @@ The text carries the JSON in URL-safe base64 plus a checksum, so a typo is caugh
 
 | Parameter | Type | Description |
 |---|---|---|
-| `save` | object; required | |
+| `save` | object; required | Save JSON object. |
 
 ```bash
 zarvan save encode
@@ -4516,8 +4567,8 @@ Runs the registered migrations from the save\'s `saveVersion` (1 when absent) up
 
 | Parameter | Type | Description |
 |---|---|---|
-| `save` | object; required | |
-| `toVersion` | integer; required; 1 to ∞ | |
+| `save` | object; required | Save JSON object. |
+| `toVersion` | integer; required; 1 to ∞ | Target save schema version. |
 
 ```bash
 zarvan save migrate
@@ -4537,7 +4588,7 @@ Includes the default template, which is exactly what `level.add_entity` starts a
 
 | Parameter | Type | Description |
 |---|---|---|
-| `name` | string; required | |
+| `name` | string; required | Registered component name from schema.components. |
 
 Errors: `not_found`.
 
@@ -4589,7 +4640,7 @@ Start from this when building a component by hand.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `name` | string; required | |
+| `name` | string; required | Registered component name from schema.components. |
 
 ```bash
 zarvan schema template <name>
@@ -4607,8 +4658,8 @@ Runs the same validator as level validation on a one-entity level, so the answer
 
 | Parameter | Type | Description |
 |---|---|---|
-| `name` | string; required | |
-| `value` | json; required | |
+| `name` | string; required | Registered component name from schema.components. |
+| `value` | json; required | Component JSON to validate against its schema. |
 
 ```bash
 zarvan schema validate-component <name>
@@ -4642,10 +4693,10 @@ Loads a level (`path` or inline `json`) with team/grid/AP/unitStats entities, wi
 
 | Parameter | Type | Description |
 |---|---|---|
-| `path` | path | |
-| `json` | json | |
+| `path` | path | Project-relative level file describing the skirmish. |
+| `json` | json | Inline skirmish level JSON instead of path. |
 | `turns` | integer; default `1` | How many team-turns (TurnEndedEvent) to run before stopping. |
-| `ai` | enumeration; default `"aggressive"`; one of `aggressive`, `tactical` | |
+| `ai` | enumeration; default `"aggressive"`; one of `aggressive`, `tactical` | Built-in AI policy for simulated teams. |
 
 Errors: `validation_failed`.
 
@@ -4667,7 +4718,7 @@ Reads the journal in `.studio/undo/`. Each entry has the operation, who did it, 
 
 | Parameter | Type | Description |
 |---|---|---|
-| `limit` | integer; default `20`; 1 to 100 | |
+| `limit` | integer; default `20`; 1 to 100 | Maximum journal entries returned, newest first. |
 
 ```bash
 zarvan undo list
@@ -4686,7 +4737,7 @@ Re-applies a journal entry that was undone, if its files are still as the undo l
 | Parameter | Type | Description |
 |---|---|---|
 | `id` | string | Entry id from undo.list; default the newest undone. |
-| `force` | boolean; default `false` | |
+| `force` | boolean; default `false` | Allow restoring a journal entry despite conflicting file changes. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -4709,7 +4760,7 @@ Restores the files of a journal entry to their content before that write. It ref
 | Parameter | Type | Description |
 |---|---|---|
 | `id` | string | Entry id from undo.list; default the newest not yet undone. |
-| `force` | boolean; default `false` | |
+| `force` | boolean; default `false` | Allow restoring a journal entry despite conflicting file changes. |
 | `apply` | boolean | Write now (default for write operations) or only preview (default for destructive ones). |
 | `confirmation` | string | The token returned by the preview of a destructive operation; applies exactly that change. |
 
@@ -5107,7 +5158,9 @@ world.destroy(e);
 world.addSystem(MySystem());                   // order = phase, then registration order
 world.step(1 / 60);                            // run all systems, flush events
 world.systemOrder;                             // [\'orders\', \'turn\', …]
-world.toJson();  world.applyPatch(json);       // read / write everything
+world.toJson();                                // inspect serialized state
+world.checkPatch(json);                        // validate without applying
+world.applyPatch(json, strict: true);           // update existing entities
 world.save();    world.load(data);             // whole world incl. the random stream
 ```
 

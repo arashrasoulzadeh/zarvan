@@ -9,6 +9,7 @@ on:
       - 'packages/zarvan_schema/**'
       - 'packages/zarvan_cli/**'
       - 'docs/reference/operations.md'
+      - 'docs/reference/transports.md'
       - '.github/workflows/zarvan_api.yml'
   pull_request:
     paths:
@@ -17,6 +18,7 @@ on:
       - 'packages/zarvan_schema/**'
       - 'packages/zarvan_cli/**'
       - 'docs/reference/operations.md'
+      - 'docs/reference/transports.md'
       - '.github/workflows/zarvan_api.yml'
 
 jobs:

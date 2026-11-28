@@ -1,5 +1,7 @@
 """Publish Markdown discovery resources using MkDocs' actual navigation URLs."""
 
+import hashlib
+import json
 import re
 from pathlib import Path
 from urllib.parse import urljoin
@@ -48,12 +50,35 @@ def on_nav(nav, config, files, **kwargs):
     return nav
 
 
+def _write_text(site, relative, text):
+    path = site / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _operation_groups(markdown):
+    # The generated operations reference uses one lower-case H2 per group.
+    # Keep the header/permission contract with every group; do not split
+    # on H3 operation names or fenced snippets.
+    sections = re.split(r"(?m)^## ([a-z][a-z0-9_]*)\s*$", markdown)
+    intro = sections[0].strip()
+    for i in range(1, len(sections), 2):
+        name, body = sections[i:i + 2]
+        yield name, f"{intro}\n\n## {name}\n{body.rstrip()}\n"
+
+
 def on_post_build(config, **kwargs):
     base = (config.get("site_url") or "").rstrip("/") + "/"
+    site = Path(config["site_dir"])
+    manifest = {"formatVersion": 1, "pages": [], "operationGroups": []}
     lines = ["# ZARVAN", "", f"> {SUMMARY}", "",
              "Start with the Agent hub for integration contracts. "
-             "Use the live operation registry for exact tool schemas.", "",
+             "Use the live operation registry for exact tool schemas. Links below serve raw Markdown; "
+             "each page identifies its canonical HTML URL and original source path. "
+             "Relative links refer to the original source tree.", "",
              f"- [Full documentation Markdown]({urljoin(base, 'llms-full.txt')})",
+             f"- [Machine-readable documentation manifest]({urljoin(base, 'agent-docs/manifest.json')})",
              "", "## Pages", ""]
     full = ["# ZARVAN technical documentation", "", f"> {SUMMARY}", "",
             "Each page is identified by its canonical URL and source path. "
@@ -70,9 +95,31 @@ def on_post_build(config, **kwargs):
         title = title or (heading[1].strip() if heading else rel)
         canonical = urljoin(base, url)
         desc = _first_sentence(markdown)
-        lines.append(f"- [{title}]({canonical})" + (f": {desc}" if desc else ""))
+        raw_path = f"agent-docs/pages/{rel}"
+        raw_url = urljoin(base, raw_path)
+        raw = f"Source: {rel}\nURL: {canonical}\n\n{_body(markdown).rstrip()}\n"
+        digest = _write_text(site, raw_path, raw)
+        manifest["pages"].append({
+            "source": rel, "title": title, "description": desc,
+            "url": canonical, "markdownUrl": raw_url, "sha256": digest,
+            "language": "fa" if rel.startswith("fa/") else "en",
+        })
+        lines.append(f"- [{title}]({raw_url})" + (f": {desc}" if desc else ""))
+        if rel == "reference/operations.md":
+            for group, body in _operation_groups(markdown):
+                group_path = f"agent-docs/operations/{group}.md"
+                group_url = urljoin(base, group_path)
+                digest = _write_text(site, group_path, body)
+                manifest["operationGroups"].append({
+                    "name": group, "markdownUrl": group_url,
+                    "url": f"{canonical}#{group}", "sha256": digest,
+                })
         full.extend(["---", "", f"Source: {rel}", f"URL: {canonical}", "",
                      _body(markdown).rstrip(), ""])
-    site = Path(config["site_dir"])
+    lines.extend(["", "## Operation groups", ""])
+    for group in manifest["operationGroups"]:
+        lines.append(f"- [{group['name']}]({group['markdownUrl']})")
+    _write_text(site, "agent-docs/manifest.json",
+                json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
     (site / "llms.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
     (site / "llms-full.txt").write_text("\n".join(full) + "\n", encoding="utf-8")

@@ -84,6 +84,17 @@ void main() {
     expect((bare.data! as Map)['page'], 'concepts/ecs.md');
   });
 
+  test('documentation index pages use canonical directory URLs', () async {
+    File(p.join(tmp.path, 'tutorials', 'README.md'))
+      ..createSync(recursive: true)
+      ..writeAsStringSync('# Tutorials\n');
+    final response = await registry.call('engine.docs', {
+      'page': 'tutorials/README.md',
+    }, ctx(docs: tmp.path));
+    expect(response.ok, isTrue);
+    expect((response.data! as Map)['url'], '${kEngineDocsUrl}tutorials/');
+  });
+
   test('refuses path traversal and excluded pages', () async {
     expect(
       (await registry.call('engine.docs', {

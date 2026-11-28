@@ -29,6 +29,18 @@ void main() {
     );
   });
 
+  test('every public operation parameter has a useful description', () {
+    for (final op in buildRegistry().all) {
+      for (final param in [...op.params, ...op.implicitParams]) {
+        expect(
+          param.description.trim(),
+          isNotEmpty,
+          reason: '${op.name}.${param.name} needs a parameter description.',
+        );
+      }
+    }
+  });
+
   test('every operation has a section and Flutter-only ones say so', () {
     final text = renderOperationsReference(buildRegistry());
     for (final op in buildRegistry().all) {

@@ -28,3 +28,11 @@ Behavior.decide(WorldView, EntityId self) -> Action
 - از `world.random` و گام ثابت استفاده کنید؛ از زمان ساعت دیواری در شبیه‌سازی استفاده نکنید.
 
 مرجع کامل (انگلیسی): [The agent API](../concepts/agent-api.md) · [Operations](../reference/operations.md) · [For AI agents](../guides/for-ai-agents.md)
+
+## کشف عملیات و اعتبارسنجی
+
+ابتدا `engine.capabilities`، سپس `engine.operations` و برای هر عملیات `engine.operation` را فراخوانی کنید. طرح‌وارهٔ ورودی و خطاها را از رجیستری جاری بخوانید؛ نام پارامترها را حدس نزنید. برای `world.patch` ابتدا `dryRun: true` و سپس، در صورت موفقیت، `strict: true` را به‌کار ببرید. در Dart از `world.checkPatch(patch)` پیش از `world.applyPatch(patch, strict: true)` استفاده کنید.
+
+گزینهٔ `--read-only` عملیات دارای نوع نوشتن را محدود می‌کند، اما عملیات خواندنی مانند `world.step` و `world.patch` می‌توانند جهان درون حافظه را تغییر دهند. برای دسترسی صرفاً مشاهده‌ای، فهرست مجاز عملیات را در سرور محدود کنید. عملیات جهان نیازمند یک فرایند پایدار MCP/HTTP است؛ فراخوانی‌های جداگانهٔ CLI جهان مشترکی ندارند.
+
+[فهرست Markdown](https://meetarash.ir/zarvan/llms.txt) و [متن کامل فنی](https://meetarash.ir/zarvan/llms-full.txt) برای عامل‌ها تولید می‌شوند.

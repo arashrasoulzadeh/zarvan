@@ -17,7 +17,7 @@ The runtime Dart interface is cooperative, not process isolation. A custom behav
 1. Call `engine.capabilities` to check availability and restrictions.
 2. Call `engine.operations` to enumerate visible operations.
 3. Call `engine.operation` with `{"name":"level.list"}` (or the desired operation) to obtain its exact input schema, errors and examples.
-4. Call `engine.docs` for available Markdown pages or read the [published index](https://meetarash.ir/zarvan/llms.txt).
+4. Call `engine.docs` for available Markdown pages or read the [published index](https://meetarash.ir/zarvan/llms.txt) or [full technical Markdown](https://meetarash.ir/zarvan/llms-full.txt).
 
 Use the [operations reference](../reference/operations.md), [component shapes](../reference/components.md), [events](../reference/events.md) and [transport quick start](../reference/transports.md).
 
@@ -38,7 +38,7 @@ For project content, inspect `project.problems`, `level.validate` or `level.lint
 
 ## Rules and limits
 
-- Treat `--read-only` as a restriction on operation kinds, not immutable simulation state. Some read-classified operations change session or in-memory worlds. Restrict the allowlist if observation must be side-effect free.
+- Treat `--read-only` as a restriction on operation kinds, not immutable simulation state. Some read-classified operations change session or in-memory worlds. Restrict the server allowlist if observation must be side-effect free. Legacy CLI commands do not all use the registry policy.
 - Treat full snapshots as privileged: filter them before sharing with an external player. Order validation does not prevent information leaks.
 - Use `world.random` and fixed timesteps for deterministic simulation.
 - Register components before expecting them to appear in serialization. See [FAQ](../faq.md#my-component-isnt-saved-or-loaded).

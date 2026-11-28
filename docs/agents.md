@@ -26,6 +26,12 @@ zarvan engine operation level.list --json
 
 See [operations](reference/operations.md), [components](reference/components.md), [events](reference/events.md), and [transports](reference/transports.md). Published discovery resources: [llms.txt](https://meetarash.ir/zarvan/llms.txt) (index) and [llms-full.txt](https://meetarash.ir/zarvan/llms-full.txt) (complete technical Markdown). See [API reference](api-reference.md) for public Dart libraries.
 
+## Retrieve only the context you need
+
+The site publishes [agent-docs/manifest.json](https://meetarash.ir/zarvan/agent-docs/manifest.json), a versioned JSON index with source paths, canonical page URLs, Markdown URLs, language and SHA-256 hashes. The hashes identify content, not engine compatibility. The [world operation group](https://meetarash.ir/zarvan/agent-docs/operations/world.md) and other per-group Markdown references carry the common permission contract; discover their URLs in the manifest.
+
+Prefer a single relevant Markdown page or group over the full corpus. For exact parameters and permissions of the installed engine, still query the live registry. Relative links in raw Markdown refer to the original source paths.
+
 ## Observe, validate, act, observe again
 
 1. Inspect project or world state before editing.

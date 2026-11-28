@@ -46,8 +46,8 @@ abstract class System {
 }
 ```
 
-Add one with `world.addSystem(YourSystem())`. **Registration order
-matters** — a system that reads state another system produces this
+Add one with `world.addSystem(YourSystem())`. **System phase and registration order
+matter** — a system that reads state another system produces this
 tick must run after it. `zarvan_platformer`'s `installPlatformerSystems`
 exists specifically because getting this order right by hand is a real,
 easy-to-get-wrong problem (see its own doc comment in
@@ -94,7 +94,7 @@ common-case wrappers.
 ## See also
 
 - [content-as-data.md](content-as-data.md) — serializing/patching a `World` as JSON.
-- [agent-api.md](agent-api.md) — the `Behavior`/`WorldView` sandbox for runtime agents.
+- [agent-api.md](agent-api.md) — the cooperative `Behavior`/`WorldView` interface for trusted runtime agents.
 - [`packages/zarvan_core/README.md`](../../packages/zarvan_core/README.md) — full API reference.
 
 ## Time scale, hit-stop, pooling and spawners

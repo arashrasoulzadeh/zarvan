@@ -69,7 +69,9 @@ List<Operation> prefabOperations() => [
     scope: OperationScope.project,
     idempotent: true,
     params: const [
-      Param('name', ParamType.string, required: true, positional: true),
+      Param('name', ParamType.string, required: true, positional: true,
+        description: 'Prefab name used to identify its saved JSON.',
+      ),
     ],
     errors: {ErrorCode.notFound: 'No such prefab.'},
     handler: (ctx, a) =>
@@ -84,9 +86,15 @@ List<Operation> prefabOperations() => [
     kind: OperationKind.write,
     scope: OperationScope.project,
     params: const [
-      Param('path', ParamType.path, required: true, positional: true),
-      Param('name', ParamType.string, required: true),
-      Param('entities', ParamType.array, items: Param.string(), required: true),
+      Param('path', ParamType.path, required: true, positional: true,
+        description: 'Project-relative level JSON file.',
+      ),
+      Param('name', ParamType.string, required: true,
+        description: 'Prefab name used to identify its saved JSON.',
+      ),
+      Param('entities', ParamType.array, items: Param.string(), required: true,
+        description: 'Names of level entities to capture in the prefab.',
+      ),
     ],
     handler: (ctx, a) {
       final name = a['name']! as String;
@@ -122,10 +130,18 @@ List<Operation> prefabOperations() => [
     kind: OperationKind.write,
     scope: OperationScope.project,
     params: const [
-      Param('path', ParamType.path, required: true, positional: true),
-      Param('prefab', ParamType.string, required: true),
-      Param('x', ParamType.number, defaultValue: 0),
-      Param('y', ParamType.number, defaultValue: 0),
+      Param('path', ParamType.path, required: true, positional: true,
+        description: 'Project-relative level JSON file.',
+      ),
+      Param('prefab', ParamType.string, required: true,
+        description: 'Name of the prefab to place.',
+      ),
+      Param('x', ParamType.number, defaultValue: 0,
+        description: 'Horizontal world-space placement coordinate.',
+      ),
+      Param('y', ParamType.number, defaultValue: 0,
+        description: 'Vertical world-space placement coordinate.',
+      ),
     ],
     handler: (ctx, a) => editLevel(ctx, a, (doc, _) {
       final command = InstantiatePrefabCommand(

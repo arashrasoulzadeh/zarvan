@@ -164,8 +164,8 @@ Genre-general turn data and rules, usable headless (no Flutter): `TurnState`
 `AggressiveAI` / `AITurnSystem`. `zarvan_strategy` wires these together in the
 correct order.
 
-Guide: <https://meetarash.ir/agentic-game-engine/concepts/turn-based-strategy/> · Tutorial:
-<https://meetarash.ir/agentic-game-engine/tutorials/02-turn-based-strategy/>
+Guide: <https://meetarash.ir/zarvan/concepts/turn-based-strategy/> · Tutorial:
+<https://meetarash.ir/zarvan/tutorials/02-turn-based-strategy/>
 
 ## The agent-facing API
 
@@ -219,11 +219,7 @@ world.addSystem(AISystem(behaviors));
 world.componentsOf<AIState>().set(enemyId, AIState('chase'));
 ```
 
-A `Behavior` only ever sees a **read-only** `WorldView` — it cannot
-mutate the world directly, only return an `Action` for `AISystem` to
-apply. This is the sandbox: an LLM-backed or rule-based agent can
-control an entity without any path to corrupting simulation state
-outside what its own `Action` does.
+A `Behavior` receives a live `WorldView` and returns an `Action` for `AISystem` to apply. Trusted behaviors should observe rather than mutate the world directly (except documented state such as `AIState.memory`). The view exposes `WorldView.world` and mutable components; it is not a security sandbox for untrusted Dart. Actions are applied sequentially. See [the agent API](../../docs/concepts/agent-api.md).
 
 Define your own `Action` subclasses for game-specific effects — see
 `zarvan_platformer`'s `PatrolBehavior` for one that writes into the

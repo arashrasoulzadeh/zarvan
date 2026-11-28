@@ -42,6 +42,14 @@ prints a warning).
     A player, solid ground, patrol enemy, coin, health bar, keyboard and
     on-screen controls. Continue with [Tutorial 1](tutorials/01-hello-world.md).
 
+=== "Top-down"
+
+    ```bash
+    zarvan create my_topdown --template topdown_game
+    ```
+
+    Four-direction movement and pickups. See [the developer guide](guides/for-developers.md).
+
 === "Turn-based strategy"
 
     ```bash
@@ -66,7 +74,7 @@ prints a warning).
 Then:
 
 ```bash
-cd my_game          # or my_war / bakery
+cd my_game          # or my_topdown / my_war / bakery
 flutter run         # pick a device, or: flutter run -d chrome
 ```
 
@@ -135,14 +143,14 @@ zarvan upgrade --ref main                     # move the engine pin forward
 zarvan lint assets/levels/main.level.json     # validate a level (add --playable)
 zarvan idle validate assets/idle_game.json    # idle definition check
 zarvan strategy simulate-turns assets/levels/skirmish.level.json --turns 4
-zarvan project open .                         # then project.problems / level.* / idle.*
+zarvan project problems --json               # from your game project
 zarvan pack-assets --input art --output-image assets/packed/atlas.png
 ```
 
 See the [CLI reference](reference/cli.md) and [transports](reference/transports.md) for MCP/REST.
 
 Published docs (when `engine.docs` has no local `docs/`):
-<https://meetarash.ir/agentic-game-engine/> (`engine.capabilities` → `docsUrl`).
+<https://meetarash.ir/zarvan/> (`engine.capabilities` → `docsUrl`).
 
 ## Why a git dependency?
 

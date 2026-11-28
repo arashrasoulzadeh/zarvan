@@ -19,7 +19,7 @@ It does not by itself imply an integrated hosted AI model or service.
 | [zarvan_strategy](packages/zarvan_strategy/README.md) | One-call wiring and unit spawning for turn-based strategy (rules live in `zarvan_core/lib/src/turn/`) | `zarvan_core`, `zarvan_flutter` |
 | [zarvan_cli](packages/zarvan_cli/README.md) | Game scaffolding, dependency upgrades, content validation and asset packing | `zarvan_core`, `zarvan_schema` |
 | [zarvan_idle](packages/zarvan_idle/README.md) | Idle game widgets and session | `zarvan_core`, `zarvan_flutter` |
-| [zarvan_quiz](packages/zarvan_quiz/README.md) | Quiz widgets and session | `zarvan_core`, `zarvan_flutter` |
+| [zarvan_quiz](packages/zarvan_quiz/README.md) | Quiz scenes and session | `zarvan_core`, `zarvan_flutter` |
 | [zarvan_ads](packages/zarvan_ads/README.md) | Optional mobile ads integration | None |
 | [zarvan_api](packages/zarvan_api/README.md) | MCP, REST and JSON-RPC over the registry | `zarvan_core`, `zarvan_schema` |
 | [zarvan_studio](docs/packages/zarvan_studio.md) | Desktop authoring application | `zarvan_core`, `zarvan_schema`, `zarvan_flutter`, `zarvan_platformer` |

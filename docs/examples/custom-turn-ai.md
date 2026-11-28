@@ -1,8 +1,7 @@
 # Recipe: write your own turn-based AI
 
 A `TurnAI` plays one team's whole turn by calling `submitOrder` — the same
-function a tap uses. That means it can't cheat: fog, turn order and action
-points all apply to it.
+function a tap uses. Those orders are subject to turn and gameplay rules. A custom `TurnAI` receives a mutable `World` and must voluntarily follow this convention; it is trusted Dart code, not an isolation boundary.
 
 ```dart
 /// Targets the visible enemy with the fewest hit points.
@@ -61,7 +60,7 @@ round.
   unit; they run in order.
 - Clear a unit's old orders first (`world.componentsOf<OrderQueue>().get(unit)?.orders.clear()`)
   if it may still hold one from last turn — `AggressiveAI` does this.
-- To use an LLM, build the observation from `world.toJson()` and parse the
+- To use an LLM, build a team-filtered observation from `world.toJson()` and parse the
   reply with `Order.fromJson` — see [Tutorial 3](../tutorials/03-agent-driven-game.md).
 
 *Verified by `doc_examples_test.dart` ("custom TurnAI").*

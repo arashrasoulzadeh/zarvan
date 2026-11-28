@@ -1,8 +1,7 @@
 # zarvan_api
 
 An MCP server and an HTTP / JSON-RPC API for the engine. Every operation (every studio command, engine function and project
-function) is declared once in a registry in `zarvan_core` and is available as a `zarvan <group> <verb>` command, an MCP
-tool, a REST route and a JSON-RPC method. The full specification is [engine_mcp.md](../../engine_mcp.md).
+function) is declared once in a registry in `zarvan_core`. Non-Flutter operations are available via CLI, MCP, REST and JSON-RPC; Flutter-dependent operations are CLI-only. The full specification is [engine_mcp.md](../../engine_mcp.md).
 
 ## Run it
 
@@ -32,8 +31,8 @@ Flags: `--read-only`, `--allow <glob>`, `--deny <glob>`, `--underscore-tool-name
 
 ## How operations behave
 
-- Reads change nothing. Writes apply immediately, are validated first, and can be undone with `undo.undo` (last 100 are kept in
-  `.studio/undo/`). Destructive writes answer with a preview and a confirmation token; send the token back to apply.
+- Read-classified operations do not write project content, but may change session or sandbox-world state; `--read-only` does not block `world.patch` or `world.step`. Use a server allowlist for stricter access.
+- Journalled file writes are validated and undoable with `undo.undo` (last 100 in `.studio/undo/`). Destructive writes answer with a preview and confirmation token; send the token back to apply.
 - Results are one envelope: `{ok, data, warnings, diff?, undoId?, durationMs}` or `{ok:false, error:{code, message, hint?}}`.
   Operation failures are `isError` MCP results; the `error.code` is stable (`not_found`, `validation_failed`, `read_only`, ...).
 - Operations that need the Flutter SDK (`release.build`, `project.create`, `project.upgrade`) are listed by `engine.capabilities`

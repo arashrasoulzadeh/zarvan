@@ -21,6 +21,10 @@ The runtime Dart interface is cooperative, not process isolation. A custom behav
 
 Use the [operations reference](../reference/operations.md), [component shapes](../reference/components.md), [events](../reference/events.md) and [transport quick start](../reference/transports.md).
 
+## Retrieve focused context
+
+Read [the documentation manifest](https://meetarash.ir/zarvan/agent-docs/manifest.json) for raw Markdown URLs and operation-group files. Choose only the pages that match the task. Use the live registry when published docs and the installed version differ. For repository work, see [custom components](../examples/custom-component-system.md), [operation extensions](extending-operations.md) and [replay diagnosis](../examples/debug-deterministic-replay.md).
+
 ## Validate before applying
 
 Dart patches use a two-step pattern:

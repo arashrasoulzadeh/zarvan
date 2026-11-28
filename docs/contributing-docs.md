@@ -16,7 +16,7 @@ mkdocs build --strict   # what CI runs: fails on broken links
 
 ## Conventions
 
-- One idea per page. Concepts explain *why*; tutorials are linear; recipes are
+- One idea per page. State the audience, prerequisites, public import, expected result and limitations where applicable. Mark incomplete extracts as such. Concepts explain *why*; tutorials are linear; recipes are
   standalone; reference pages are tables.
 - Prefer a table or diagram to a paragraph when you're listing or comparing.
 - Diagrams are [Mermaid](https://mermaid.js.org/) fenced blocks — they render on
@@ -32,7 +32,8 @@ mkdocs build --strict   # what CI runs: fails on broken links
   `packages/zarvan_strategy/test/doc_examples_test.dart` and
   `packages/zarvan_core/test/agent_turn_based_test.dart`. When you change a
   sample, change the test in the same commit (and vice versa).
-- For other samples, check the signature against the source before committing.
+- For other samples, check the signature against the source before committing; add executable tests for new behavior-oriented examples. Do not present CLI placeholders as runnable commands.
+- Distinguish trusted Dart behaviors from external agents, file writes from in-memory changes, and public exports from implementation paths. Use the actual registry schema for operation parameters.
 - Never use `const` with `Position`, `Velocity` or `Collider` — their
   constructors aren't const.
 
@@ -53,6 +54,27 @@ JSON-RPC method). After adding or changing an operation:
 ```bash
 cd packages/zarvan_api
 dart run tool/gen_api_docs.dart > ../../docs/reference/operations.md
+dart run tool/gen_api_docs.dart --transports > ../../docs/reference/transports.md
 ```
 
 `packages/zarvan_api/test/docs_test.dart` fails when the committed page is stale.
+
+## Agent discovery and offline documentation
+
+MkDocs generates `llms.txt` and `llms-full.txt` from navigation using the real page URLs. The standalone landing page is excluded. Test the hook from the repository root:
+
+```bash
+python -m unittest discover -s hooks -p 'test_*.py'
+mkdocs build --strict
+test -s site/llms.txt && test -s site/llms-full.txt
+```
+
+When a curated page listed in `kRemoteDocsPages` changes, regenerate the offline Markdown bundle after regenerating references:
+
+```bash
+cd packages/zarvan_core
+dart run tool/gen_bundled_docs.dart
+dart test test/ops/engine_docs_test.dart
+```
+
+The bundle is generated, not hand-authored. API parameter descriptions belong in the operation declarations, not the generated Markdown. Use `engine.operation` to check machine-readable schemas and examples.

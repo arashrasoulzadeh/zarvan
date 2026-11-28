@@ -63,13 +63,16 @@ final snapshot = world.toJson();
 // {"tick": 120, "width": 800, "height": 600,
 //  "entities": [{"id": 3, "components": {"position": {...}, ...}}, ...]}
 
-world.applyPatch(snapshot); // full restore
+// applyPatch updates existing entities; it does not recreate a world.
+world.applyPatch(snapshot, strict: true); // matching live entity IDs required
 world.applyPatch({
   "entities": [
     {"id": 3, "components": {"position": {"x": 250, "y": 200}}}
   ]
 }); // partial patch — only entity 3's position changes
 ```
+
+For a complete restore use the engine's save/load path; see [Save / load](../examples/save-load.md). `applyPatch` does not spawn entities or restore tick, random stream, systems or timers. Validate with `world.checkPatch(patch)` before calling `applyPatch(patch, strict: true)`.
 
 `applyPatch` accepts a **subset** — only entities/components you
 include are touched, everything else is left alone. It throws
@@ -89,6 +92,6 @@ isn't showing up in a snapshot, check it's registered (see
 
 ## See also
 
-- [agent-api.md](agent-api.md) — the runtime `Behavior`/`WorldView` sandbox (for driving an entity *during* simulation, as opposed to patching state from outside it).
+- [agent-api.md](agent-api.md) — the runtime `Behavior`/`WorldView` interface (for driving an entity *during* simulation, as opposed to patching state from outside it).
 - [`packages/zarvan_core/README.md`](../../packages/zarvan_core/README.md) — full `Level`/`World` API, hot-reload (`LevelHandle`), localization.
 - [`packages/zarvan_cli/README.md`](../../packages/zarvan_cli/README.md) — `zarvan lint`.
